@@ -1,0 +1,90 @@
+#root {
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+  padding: 0;
+}
+
+.logo {
+  height: 6em;
+  /* padding: 1.5em; */
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.dosis-font {
+  font-family: 'Dosis', sans-serif;
+  font-weight: 400; 
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.content-wrap {
+  flex: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+footer {
+  /* width: 100%; */
+  margin: 0;
+  position: bottom;
+  left: 50%;
+  right: 50%;
+  /* margin-left: -50vw;
+  margin-right: -50vw; */
+
+  background-color: #e0f5ff;
+  /* padding: 1rem 0; */
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
