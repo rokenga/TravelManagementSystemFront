@@ -8,12 +8,8 @@ import {
   Button,
   Card,
   CardContent,
-  List,
-  ListItem,
-  ListItemText,
   Divider,
   CircularProgress,
-  Paper,
   Chip,
   Dialog,
   DialogTitle,
@@ -21,67 +17,44 @@ import {
   DialogContentText,
   DialogActions,
   IconButton,
-  TextField,
-  Avatar,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import UserContext from "../contexts/UserContext";
-import { RecordWithCommentsResponse } from "../types/Record";
 import MarkdownViewer from "../components/MarkdownView";
 import EventIcon from "@mui/icons-material/Event";
 import PersonIcon from "@mui/icons-material/Person";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import AddCommentIcon from "@mui/icons-material/AddComment";
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(3),
   boxShadow: theme.shadows[3],
 }));
 
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  marginBottom: theme.spacing(3),
-  backgroundColor: theme.palette.background.default,
-  boxShadow: theme.shadows[2],
-}));
-
-const CommentItem = styled(ListItem)(({ theme }) => ({
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  marginBottom: theme.spacing(2),
-  boxShadow: theme.shadows[1],
-  padding: theme.spacing(2),
-}));
-
 const Record: React.FC = () => {
   const User = useContext(UserContext);
-  const { destinationId, recordId } = useParams<{ destinationId: string; recordId: string }>();
+  const { recordId } = useParams<{ recordId: string }>();
   const navigate = useNavigate();
 
-  const [record, setRecord] = useState<RecordWithCommentsResponse | null>(null);
+  const [record, setRecord] = useState(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [deleteCommentDialogOpen, setDeleteCommentDialogOpen] = useState<boolean>(false);
-  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
-  const [showCommentForm, setShowCommentForm] = useState<boolean>(false);
-  const [newComment, setNewComment] = useState<string>("");
 
   useEffect(() => {
     const fetchRecordData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await axios.get<RecordWithCommentsResponse>(
-          `${API_URL}/Destination/${destinationId}/Records/${recordId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
-        setRecord(response.data.recordWithCommentsResponse);
+
+        const response = await axios.get(`${API_URL}/Record/${recordId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+
+        // Corrected to set the record directly from response.data
+        setRecord(response.data);
       } catch (err: any) {
         console.error("Error fetching record data:", err);
         setError("Nepavyko gauti įrašo duomenų.");
@@ -90,10 +63,10 @@ const Record: React.FC = () => {
       }
     };
 
-    if (recordId && destinationId) {
+    if (recordId) {
       fetchRecordData();
     }
-  }, [recordId, destinationId]);
+  }, [recordId]);
 
   const handleDeleteRecord = async () => {
     try {
@@ -102,126 +75,14 @@ const Record: React.FC = () => {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
-      navigate(`/destination/${destinationId}`);
+      navigate("/records"); // Fixed redirection path
     } catch (err) {
       console.error("Error deleting record:", err);
       setError("Nepavyko ištrinti įrašo.");
     }
   };
 
-  const handleRemoveComment = async (commentId: string) => {
-    setCommentToDelete(commentId);
-    setDeleteCommentDialogOpen(true);
-  };
-
-  const [editingComment, setEditingComment] = useState<null | { id: string; text: string }>(null);
-
-// Function to open the edit form
-const handleEditComment = (comment: { id: string; text: string }) => {
-  setEditingComment({ id: comment.id, text: comment.text });
-};
-
-// Function to handle input change
-const handleEditCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (editingComment) {
-    setEditingComment({ ...editingComment, text: e.target.value });
-  }
-};
-
-// Function to submit edited comment
-const handleSubmitEditedComment = async () => {
-  if (!editingComment) return;
-  try {
-    await axios.put(
-      `${API_URL}/Comment/${editingComment.id}`,
-      { text: editingComment.text,
-        recordId: recordId
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      }
-    );
-    // Refresh comments
-    const response = await axios.get<RecordWithCommentsResponse>(
-      `${API_URL}/Destination/${destinationId}/Records/${recordId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      }
-    );
-    setRecord(response.data.recordWithCommentsResponse);
-    setEditingComment(null);
-  } catch (err) {
-    console.error("Error editing comment:", err);
-    setError("Nepavyko redaguoti komentaro.");
-  }
-};
-
-
-  const confirmRemoveComment = async () => {
-    if (commentToDelete) {
-      try {
-        await axios.delete(`${API_URL}/Comment/${commentToDelete}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
-  
-        setRecord((prevRecord) => ({
-          ...prevRecord!,
-          comments: prevRecord!.comments.filter((comment) => comment.id !== commentToDelete),
-        }));
-      } catch (err) {
-        console.error("Error removing comment:", err);
-        setError("Nepavyko pašalinti komentaro.");
-      } finally {
-        setDeleteCommentDialogOpen(false);
-        setCommentToDelete(null);
-      }
-    }
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim()) {
-      setError("Komentaras negali būti tuščias.");
-      return;
-    }
-    try {
-      await axios.post(
-        `${API_URL}/Comment`,
-        { 
-          text: newComment, 
-          recordId: recordId
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-      setNewComment("");
-      setShowCommentForm(false);
-      setError(null);
-  
-      const response = await axios.get<RecordWithCommentsResponse>(
-        `${API_URL}/Destination/${destinationId}/Records/${recordId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
-      setRecord(response.data.recordWithCommentsResponse);
-    } catch (err) {
-      console.error("Error adding comment:", err);
-      setError("Nepavyko pridėti komentaro.");
-    }
-  };
-
-  const handleBack = () => navigate(`/destination/${destinationId}`);
+  const handleBack = () => navigate("/records"); // Fixed redirection path
   const openDeleteDialog = () => setDeleteDialogOpen(true);
   const closeDeleteDialog = () => setDeleteDialogOpen(false);
 
@@ -241,11 +102,11 @@ const handleSubmitEditedComment = async () => {
                 <Typography variant="h4" gutterBottom>
                   {record.title}
                 </Typography>
-                {(User?.role === "Admin" || User?.role === "Agent") && (User?.email === record.author)  &&(
+                {(User?.role === "Admin" || User?.role === "Agent") && User?.email === record.author && (
                   <Box>
                     <IconButton
                       color="primary"
-                      onClick={() => navigate(`/destination/${destinationId}/records/edit/${recordId}`)}
+                      onClick={() => navigate(`/records/edit/${recordId}`)}
                       sx={{ mr: 1 }}
                     >
                       <EditIcon />
@@ -270,126 +131,6 @@ const handleSubmitEditedComment = async () => {
             </CardContent>
           </StyledCard>
 
-          <StyledPaper>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-            <Typography variant="h5">Komentarai</Typography>
-            {User.id != "" && ( 
-                <Button
-                variant="contained"
-                startIcon={<AddCommentIcon />}
-                onClick={() => setShowCommentForm(true)}
-                >
-                Pridėti komentarą
-                </Button>
-            )}
-            </Box>
-
-            {showCommentForm && (
-              <Box sx={{ mb: 3, p: 2, bgcolor: "background.paper", borderRadius: 1 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  variant="outlined"
-                  placeholder="Įveskite savo komentarą"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
-                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim()}
-                  >
-                    Paskelbti komentarą
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      setShowCommentForm(false);
-                      setNewComment("");
-                    }}
-                  >
-                    Atšaukti
-                  </Button>
-                </Box>
-              </Box>
-            )}
-
-            {record.comments.length > 0 ? (
-              <List>
-              {record.comments.map((comment) => (
-                <CommentItem key={comment.id}>
-                  <Avatar sx={{ mr: 2 }}>{comment.author[0]}</Avatar>
-                  <ListItemText
-                    primary={
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {comment.author.substring(0, 4)}
-                      </Typography>
-                    }
-                    secondary={
-                      <>
-                        {editingComment && editingComment.id === comment.id ? (
-                          <Box sx={{ mt: 1 }}>
-                            <TextField
-                              fullWidth
-                              variant="outlined"
-                              value={editingComment.text}
-                              onChange={handleEditCommentChange}
-                              multiline
-                            />
-                            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 1 }}>
-                              <Button
-                                variant="outlined"
-                                onClick={() => setEditingComment(null)}
-                              >
-                                Atšaukti
-                              </Button>
-                              <Button
-                                variant="contained"
-                                onClick={handleSubmitEditedComment}
-                              >
-                                Išsaugoti
-                              </Button>
-                            </Box>
-                          </Box>
-                        ) : (
-                          <Typography variant="body1" paragraph>
-                            {comment.text}
-                          </Typography>
-                        )}
-                        <Typography variant="caption" color="text.secondary">
-                          {`Sukurta: ${new Date(comment.createdAt).toLocaleString()}`}
-                        </Typography>
-                      </>
-                    }
-                  />
-                  {User?.email === comment.author && (
-                    <>
-                      <IconButton
-                        color="primary"
-                        onClick={() => handleEditComment(comment)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        color="error"
-                        onClick={() => handleRemoveComment(comment.id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </>
-                  )}
-                </CommentItem>
-              ))}
-            </List>
-            
-            ) : (
-              <Typography>Nėra komentarų.</Typography>
-            )}
-          </StyledPaper>
-
           <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog}>
             <DialogTitle>Ištrinti įrašą</DialogTitle>
             <DialogContent>
@@ -406,23 +147,6 @@ const handleSubmitEditedComment = async () => {
               </Button>
             </DialogActions>
           </Dialog>
-
-          <Dialog open={deleteCommentDialogOpen} onClose={() => setDeleteCommentDialogOpen(false)}>
-            <DialogTitle>Ištrinti komentarą</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Ar tikrai norite ištrinti šį komentarą? Šis veiksmas yra negrįžtamas.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-            <Button onClick={confirmRemoveComment} color="error">
-                Ištrinti
-              </Button>
-              <Button onClick={() => setDeleteCommentDialogOpen(false)} color="primary">
-                Atšaukti
-              </Button>
-            </DialogActions>
-          </Dialog>
         </>
       ) : (
         <Typography>Įrašas nerastas.</Typography>
@@ -435,4 +159,3 @@ const handleSubmitEditedComment = async () => {
 };
 
 export default Record;
-

@@ -1,1 +1,1 @@
-export const API_URL = " https://octopus-app-eqveu.ondigitalocean.app/api";
+export const API_URL = "http://localhost:5047/api";

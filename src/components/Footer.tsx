@@ -20,7 +20,6 @@ const Footer: React.FC = () => {
         style={{
           height: "60px",
           display: "flex",
-          animation: "spin 5s linear infinite", // Add animation
           alignItems: "center",
         }}
       >
@@ -30,7 +29,6 @@ const Footer: React.FC = () => {
         style={{
           fontSize: "14px",
           color: "#004784",
-          fontFamily: "'Dosis', sans-serif", // Apply Dosis font
           fontWeight: 400, // Optional: Adjust font weight as needed
         }}
       >

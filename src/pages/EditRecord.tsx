@@ -25,15 +25,14 @@ const theme = createTheme({
 });
 
 const EditRecord: React.FC = () => {
-  const { destinationId, recordId } = useParams<{ destinationId: string; recordId: string }>();
+  const { recordId } = useParams<{ recordId: string }>();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<RecordRequest>({
     title: "",
-    content: "",
-    destinationId: destinationId || "",
+    content: ""
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -52,7 +51,6 @@ const EditRecord: React.FC = () => {
         setFormData({
           title: response.data.title,
           content: response.data.content,
-          destinationId: response.data.destinationId,
         });
       } catch (err: any) {
         console.error("Error fetching record data:", err);
@@ -62,10 +60,10 @@ const EditRecord: React.FC = () => {
       }
     };
 
-    if (destinationId && recordId) {
+    if (recordId) {
       fetchRecord();
     }
-  }, [destinationId, recordId]);
+  }, [recordId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -91,7 +89,7 @@ const EditRecord: React.FC = () => {
       );
       setSnackbarMessage("Įrašas sėkmingai atnaujintas!");
       setSnackbarOpen(true);
-      setTimeout(() => navigate(`/destination/${destinationId}/records/${recordId}`), 2000);
+      setTimeout(() => navigate(`/records/${recordId}`), 2000);
     } catch (err: any) {
       console.error("Error updating record:", err);
       setError(err.response?.data?.message || "Nepavyko atnaujinti įrašo.");
@@ -100,7 +98,7 @@ const EditRecord: React.FC = () => {
     }
   };
 
-  const handleCancel = () => navigate(`/destination/${destinationId}/records/${recordId}`);
+  const handleCancel = () => navigate(`/records/${recordId}`);
 
   if (isLoading) {
     return (

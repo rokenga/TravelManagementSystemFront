@@ -29,7 +29,6 @@ interface RecordData {
 }
 
 const CreateRecord: React.FC = () => {
-  const { destinationId } = useParams<{ destinationId: string }>(); // Get the destinationId from URL
   const navigate = useNavigate();
 
   const [recordData, setRecordData] = useState<RecordData>({
@@ -65,7 +64,6 @@ const CreateRecord: React.FC = () => {
         {
           title: recordData.title,
           content: recordData.content,
-          destinationId,
         },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
@@ -76,7 +74,7 @@ const CreateRecord: React.FC = () => {
         const newRecordId = response.data;
         setSnackbarMessage("Įrašas sėkmingai sukurtas!");
         setSnackbarOpen(true);
-        setTimeout(() => navigate(`/destination/${destinationId}/records/${newRecordId}`), 2000);
+        setTimeout(() => navigate(`/records/${newRecordId}`), 2000);
       }
     } catch (error) {
       console.error("Klaida kuriant įrašą:", error);
@@ -88,7 +86,7 @@ const CreateRecord: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate(`/destination/${destinationId}`);
+    navigate(`/records`);
   };
 
   return (
