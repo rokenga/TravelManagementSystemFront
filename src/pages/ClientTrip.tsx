@@ -6,7 +6,8 @@ import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import { UserContext } from "../contexts/UserContext"
-import { Box, Typography, Divider, Card, CardContent, CircularProgress, Paper, Button } from "@mui/material"
+import { Box, Typography, Divider, Card, CardContent, CircularProgress, Paper, Button, Tooltip } from "@mui/material"
+import { Edit as EditIcon } from "@mui/icons-material"
 import type { TripResponse } from "../types/ClientTrip"
 import type { TripEvent } from "../types/TripEvent"
 import { translateTripCategory, translateTripStatus } from "../Utils/translateEnums"
@@ -19,6 +20,7 @@ const ClientTrip: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tripImages, setTripImages] = useState<any[]>([])
+  const [canEdit, setCanEdit] = useState(true)
 
   const user = useContext(UserContext)
   const token = localStorage.getItem("accessToken")
@@ -33,6 +35,14 @@ const ClientTrip: React.FC = () => {
           },
         })
         setTrip(response.data)
+
+        // Check if trip can be edited (start date is in the future)
+        if (response.data.startDate) {
+          const startDate = new Date(response.data.startDate)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0) // Reset time to start of day for accurate comparison
+          setCanEdit(startDate > today)
+        }
       } catch (err: any) {
         console.error("Failed to fetch trip:", err)
         setError(err.response?.data?.message || "Nepavyko gauti kelionės informacijos.")
@@ -100,34 +110,67 @@ const ClientTrip: React.FC = () => {
     <Box sx={{ maxWidth: 900, margin: "auto", padding: 3 }}>
       <Card sx={{ marginBottom: 3 }}>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h5">{trip.tripName}</Typography>
-            <Button variant="contained" color="primary" onClick={handleEditClick}>
-              Redaguoti
-            </Button>
+          <Box sx={{ display: "flex", flexDirection: "column", position: "relative" }}>
+            {/* Centered trip name */}
+            <Typography
+              variant="h5"
+              sx={{
+                textAlign: "center",
+                mb: 3,
+                fontWeight: "bold",
+                paddingX: 6, // Add padding to avoid overlap with button
+              }}
+            >
+              {trip.tripName}
+            </Typography>
+
+            {/* Edit button positioned in the top right */}
+            <Box sx={{ position: "absolute", top: 0, right: 0 }}>
+              <Tooltip title={!canEdit ? "Kelionės, kurios jau prasidėjo, redaguoti negalima" : ""}>
+                <span>
+                  {" "}
+                  {/* Wrapper needed for disabled tooltip */}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleEditClick}
+                    disabled={!canEdit}
+                    startIcon={<EditIcon />}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      boxShadow: 2,
+                    }}
+                  >
+                    Redaguoti
+                  </Button>
+                </span>
+              </Tooltip>
+            </Box>
+
+            <Typography variant="body1">
+              <strong>Būsena:</strong> {trip.status ? translateTripStatus(trip.status) : "Nežinomas statusas"}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Kategorija:</strong> {trip.category ? translateTripCategory(trip.category) : "Be kategorijos"}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Pradžios data:</strong>{" "}
+              {trip.startDate ? new Date(trip.startDate).toLocaleDateString("lt-LT") : "—"}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Pabaigos data:</strong> {trip.endDate ? new Date(trip.endDate).toLocaleDateString("lt-LT") : "—"}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Kaina:</strong> €{trip.price ?? 0}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Draudimas:</strong> {trip.insuranceTaken ? "Taip" : "Ne"}
+            </Typography>
+            <Typography variant="body1" sx={{ marginTop: 2 }}>
+              <strong>Aprašymas:</strong> {trip.itinerary?.description || "Nėra aprašymo"}
+            </Typography>
           </Box>
-          <Typography variant="body1">
-            <strong>Būsena:</strong> {trip.status ? translateTripStatus(trip.status) : "Nežinomas statusas"}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Kategorija:</strong> {trip.category ? translateTripCategory(trip.category) : "Be kategorijos"}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Pradžios data:</strong>{" "}
-            {trip.startDate ? new Date(trip.startDate).toLocaleDateString("lt-LT") : "—"}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Pabaigos data:</strong> {trip.endDate ? new Date(trip.endDate).toLocaleDateString("lt-LT") : "—"}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Kaina:</strong> €{trip.price ?? 0}
-          </Typography>
-          <Typography variant="body1">
-            <strong>Draudimas:</strong> {trip.insuranceTaken ? "Taip" : "Ne"}
-          </Typography>
-          <Typography variant="body1" sx={{ marginTop: 2 }}>
-            <strong>Aprašymas:</strong> {trip.itinerary?.description || "Nėra aprašymo"}
-          </Typography>
         </CardContent>
       </Card>
 

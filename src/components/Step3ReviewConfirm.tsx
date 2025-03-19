@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React from "react"
 import { Grid, Typography, Button, Paper, Box, Divider, Badge, IconButton } from "@mui/material"
 import { Warning as WarningIcon } from "@mui/icons-material"
 import PDFActions from "./PDFActions"
@@ -23,6 +22,7 @@ interface Step3Props {
   onConfirm: () => void
   onSaveDraft: () => void
   validationWarnings?: ValidationWarning[]
+  isSaving?: boolean
 }
 
 const Step3ReviewConfirm: React.FC<Step3Props> = ({
@@ -32,6 +32,7 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
   onConfirm,
   onSaveDraft,
   validationWarnings = [],
+  isSaving = false,
 }) => {
   const dayByDay = tripData.dayByDayItineraryNeeded
 
@@ -47,7 +48,7 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
   const showItineraryInfo = tripData.itineraryTitle || tripData.itineraryDescription
 
   // State for validation warnings dialog
-  const [warningsDialogOpen, setWarningsDialogOpen] = useState(false)
+  const [warningsDialogOpen, setWarningsDialogOpen] = React.useState(false)
 
   // Count warnings by type
   const hasWarnings = validationWarnings.length > 0
@@ -109,16 +110,15 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         </Paper>
       </Grid>
 
-      {/* Buttons */}
       <Grid item xs={12} sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-        <Button variant="outlined" onClick={onBack} sx={{ mr: 2 }}>
+        <Button variant="outlined" onClick={onBack} sx={{ mr: 2 }} disabled={isSaving}>
           Atgal
         </Button>
-        <Button variant="outlined" onClick={onSaveDraft} sx={{ mr: 2 }}>
-          Išsaugoti juodraštį
+        <Button variant="outlined" onClick={onSaveDraft} sx={{ mr: 2 }} disabled={isSaving}>
+          {isSaving ? "Išsaugoma..." : "Išsaugoti juodraštį"}
         </Button>
-        <Button variant="contained" color="primary" onClick={onConfirm}>
-          Patvirtinti
+        <Button variant="contained" color="primary" onClick={onConfirm} disabled={isSaving}>
+          {isSaving ? "Išsaugoma..." : "Patvirtinti"}
         </Button>
       </Grid>
 

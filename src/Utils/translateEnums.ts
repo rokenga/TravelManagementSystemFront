@@ -1,100 +1,115 @@
-import { TagCategory } from "../types/ClientTag";
-import { TripCategory, TripStatus, PaymentStatus } from "../types/ClientTrip";
-import { TransportType } from "../types/Transport";
-import { BoardBasisType } from "../types/Accommodation";
+import { TagCategory } from "../types/ClientTag"
+import { TripCategory, TripStatus, PaymentStatus } from "../types/ClientTrip"
+import { TransportType } from "../types/Transport"
+import { BoardBasisType } from "../types/Accommodation"
+import { TripRequestStatus } from "../types/TripRequest"
+
+export const translateTripRequestStatus = (status: TripRequestStatus): string => {
+  switch (status) {
+    case TripRequestStatus.New:
+      return "Naujas"
+    case TripRequestStatus.Locked:
+      return "Užrakintas"
+    case TripRequestStatus.Confirmed:
+      return "Patvirtintas"
+    default:
+      return String(status)
+  }
+}
 
 export const translateTripCategory = (category: TripCategory): string => {
   switch (category) {
     case TripCategory.Tourist:
-      return "Pažintinė";
+      return "Pažintinė"
     case TripCategory.Group:
-      return "Grupinė";
+      return "Grupinė"
     case TripCategory.Relax:
-      return "Poilsinė";
+      return "Poilsinė"
     case TripCategory.Business:
-      return "Verslo";
+      return "Verslo"
     case TripCategory.Cruise:
-      return "Kruizas";
+      return "Kruizas"
     default:
-      return category;
+      return category
   }
-};
+}
 
 export const translateTripStatus = (status: TripStatus): string => {
   switch (status) {
     case TripStatus.Draft:
-      return "Juodraštis";
+      return "Juodraštis"
     case TripStatus.Confirmed:
-      return "Patvirtinta";
+      return "Patvirtinta"
     case TripStatus.Cancelled:
-      return "Atšaukta";
+      return "Atšaukta"
     default:
-      return status;
+      return status
   }
-};
+}
 
 export const translatePaymentStatus = (status: PaymentStatus): string => {
   switch (status) {
     case PaymentStatus.Unpaid:
-      return "Neapmokėta";
+      return "Neapmokėta"
     case PaymentStatus.PartiallyPaid:
-      return "Avansas sumokėtas";
+      return "Avansas sumokėtas"
     case PaymentStatus.Paid:
-      return "Apmokėta";
+      return "Apmokėta"
     default:
-      return status;
+      return status
   }
-};
+}
 
 export const translateTagCategory = (category: TagCategory): string => {
   switch (category) {
     case TagCategory.TravelPreference:
-      return "Kelionių pomėgiai";
+      return "Kelionių pomėgiai"
     case TagCategory.TravelFrequency:
-      return "Kelionių dažnumas";
+      return "Kelionių dažnumas"
     case TagCategory.DestinationInterest:
-      return "Mėgstamos vietos";
+      return "Mėgstamos vietos"
     case TagCategory.SpecialRequirements:
-      return "Specialūs pageidavimai";
+      return "Specialūs pageidavimai"
     case TagCategory.Other:
-      return "Kita";
+      return "Kita"
     default:
-      return category;
+      return category
   }
-};
+}
 
 export const translateTransportType = (transportType: TransportType): string => {
   switch (transportType) {
     case TransportType.Flight:
-      return "Skrydis";
+      return "Skrydis"
     case TransportType.Train:
-      return "Traukinys";
+      return "Traukinys"
     case TransportType.Bus:
-      return "Autobusas";
+      return "Autobusas"
     case TransportType.Car:
-      return "Automobilis";
+      return "Automobilis"
     case TransportType.Ferry:
-      return "Keltas";
+      return "Keltas"
     case TransportType.Cruise:
-      return "Kruizas";
+      return "Kruizas"
     default:
-      return transportType;
+      return transportType
   }
-};
+}
 
 export const translateBoardBasisType = (boardBasis: BoardBasisType): string => {
   switch (boardBasis) {
     case BoardBasisType.BedAndBreakfast:
-      return "Pusryčiai įskaičiuoti";
+      return "Pusryčiai įskaičiuoti"
     case BoardBasisType.HalfBoard:
-      return "Pusryčiai ir vakarienė";
+      return "Pusryčiai ir vakarienė"
     case BoardBasisType.FullBoard:
-      return "Pilnas maitinimas";
+      return "Pilnas maitinimas"
     case BoardBasisType.AllInclusive:
-      return "Viskas įskaičiuota";
+      return "Viskas įskaičiuota"
     case BoardBasisType.UltraAllInclusive:
-      return "Ultra viskas įskaičiuota";
+      return "Ultra viskas įskaičiuota"
     default:
-      return boardBasis;
+      return boardBasis
   }
-};
+}
+

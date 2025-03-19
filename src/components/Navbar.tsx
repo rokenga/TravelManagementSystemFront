@@ -116,7 +116,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
-            <ListItem button onClick={() => navigateTo(item.path)}>
+            <ListItem button onClick={() => navigateTo(item.path)} data-path={item.path}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItem>
@@ -124,13 +124,13 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
         ))}
         {role && (
           <>
-            <ListItem button onClick={() => navigateTo("/profile-page")}>
+            <ListItem button onClick={() => navigateTo("/profile-page")} data-path="/profile-page">
               <ListItemIcon>
                 <ProfileIcon />
               </ListItemIcon>
               <ListItemText primary="Paskyra" />
             </ListItem>
-            <ListItem button onClick={handleLogout}>
+            <ListItem button onClick={handleLogout} data-path="/login">
               <ListItemIcon>
                 <LogoutIcon />
               </ListItemIcon>
@@ -191,6 +191,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                   }}
                   onClick={() => navigateTo(item.path)}
                   startIcon={item.icon}
+                  data-path={item.path} // Add data-path attribute
                 >
                   {item.text}
                 </Button>
@@ -244,6 +245,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                         alignItems: "center",
                         gap: 1,
                       }}
+                      data-path="/profile-page" // Add data-path attribute
                     >
                       <ProfileIcon sx={{ fontSize: 20 }} />
                       Peržiūrėti paskyrą
@@ -258,6 +260,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                         alignItems: "center",
                         gap: 1,
                       }}
+                      data-path="/login" // Add data-path attribute
                     >
                       <LogoutIcon sx={{ fontSize: 20 }} />
                       Atsijungti
@@ -286,4 +289,3 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
 }
 
 export default Navbar
-

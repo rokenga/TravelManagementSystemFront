@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState } from "react"
 import { Typography, Box, Paper, useTheme, useMediaQuery, Button, Grid, Divider } from "@mui/material"
 import { ArrowBack, ArrowForward } from "@mui/icons-material"
@@ -44,6 +44,29 @@ interface Step2Props {
 
 const SIDEBAR_WIDTH = 240
 
+// Global variable to store the current itinerary data
+let currentItineraryData: ItineraryDay[] = []
+
+// Export a function to get the current itinerary data
+export function getCurrentItineraryData(): ItineraryDay[] {
+  console.log("Getting current itinerary data:", currentItineraryData)
+  // Create a deep copy to ensure we don't have reference issues
+  return JSON.parse(JSON.stringify(currentItineraryData))
+}
+
+// Export a function to validate the itinerary data
+export function validateItineraryData(itinerary: ItineraryDay[]): { valid: boolean; message: string } {
+  // Check if there are any events
+  const hasEvents = itinerary.some((day) => day.events.length > 0)
+
+  if (!hasEvents) {
+    return { valid: true, message: "" } // No events, so no validation needed
+  }
+
+  // Validate that all events have valid dates
+  return validateAllEvents(itinerary)
+}
+
 const Step2Itinerary: React.FC<Step2Props> = ({ tripData, itinerary, onSubmit, onBack }) => {
   const [localItinerary, setLocalItinerary] = useState<ItineraryDay[]>(itinerary)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
@@ -54,6 +77,12 @@ const Step2Itinerary: React.FC<Step2Props> = ({ tripData, itinerary, onSubmit, o
     severity: "error",
   })
   const [addMenuOpen, setAddMenuOpen] = useState(false)
+
+  // Update the global currentItineraryData whenever localItinerary changes
+  React.useEffect(() => {
+    currentItineraryData = [...localItinerary]
+    console.log("Updated current itinerary data:", currentItineraryData)
+  }, [localItinerary])
 
   // Add menu anchor for dropdown
   const [addMenuAnchorEl, setAddMenuAnchorEl] = useState<null | HTMLElement>(null)

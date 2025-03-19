@@ -2,7 +2,19 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Stepper, Step, StepLabel, Paper, Box } from "@mui/material"
+import {
+  Stepper,
+  Step,
+  StepLabel,
+  Paper,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from "@mui/material"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import axios from "axios"
@@ -13,8 +25,8 @@ import Step2Itinerary from "./Step2Itinerary"
 import Step2_5FileUploads from "./Step2_5FileUploads"
 import Step3ReviewConfirm from "./Step3ReviewConfirm"
 import CustomSnackbar from "../components/CustomSnackBar"
+import { usePreventNavigation } from "../hooks/usePreventNavigation"
 
-// Import types
 import {
   type TripFormData,
   type ItineraryDay,
@@ -36,7 +48,7 @@ const steps = ["Kelionės informacija", "Kelionės planas", "Dokumentai ir nuotr
  */
 function buildDateRange(startStr: string, endStr: string) {
   const result: { dayLabel: string; dayDescription: string; events: any[] }[] = []
-  if (!startStr || !endStr) return result
+  if (!startStr || !startStr) return result
 
   const startDate = new Date(startStr)
   const endDate = new Date(endStr)
@@ -80,6 +92,18 @@ function mergeItinerary(
 const WizardForm: React.FC = () => {
   const navigate = useNavigate()
   const [activeStep, setActiveStep] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Navigation blocking state
+  const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true)
+
+  // Use our custom hook for navigation prevention
+  const {
+    showDialog: showNavigationDialog,
+    handleStay,
+    handleLeave,
+    pendingLocation,
+  } = usePreventNavigation(shouldBlockNavigation && activeStep < 3)
 
   // Data used across steps
   const [formState, setFormState] = useState<WizardFormState>(() => {
@@ -135,6 +159,251 @@ const WizardForm: React.FC = () => {
 
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false })
+  }
+
+  // Handle "Leave" (save as draft and then leave)
+  const handleLeaveWithSave = async () => {
+    try {
+      setIsSaving(true)
+      // Get the current form data based on which step we're on
+      let currentTripData = { ...formState.tripData }
+      let currentItinerary = [...formState.itinerary]
+      let currentImages = [...formState.images]
+      let currentDocuments = [...formState.documents]
+
+      // Step 1: Get the latest form data from Step1TripInfo
+      if (activeStep === 0) {
+        try {
+          // Import the function to get the current form data
+          const { getCurrentFormData } = await import("./Step1TripInfo")
+          // Get the latest form data
+          const latestFormData = getCurrentFormData()
+          console.log("Got latest form data from Step1TripInfo:", latestFormData)
+
+          // Only update if we got valid data
+          if (latestFormData && latestFormData.tripName !== undefined) {
+            currentTripData = latestFormData
+          }
+        } catch (error) {
+          console.error("Error getting current form data from Step1:", error)
+        }
+      }
+
+      // Step 2: Get the latest itinerary data and validate it
+      if (activeStep === 1) {
+        try {
+          // Import the functions to get and validate the current itinerary data
+          const { getCurrentItineraryData, validateItineraryData } = await import("./Step2Itinerary")
+
+          // Get the latest itinerary data
+          const latestItineraryData = getCurrentItineraryData()
+          console.log("Got latest itinerary data:", latestItineraryData)
+
+          // Check if there are any events that need validation
+          const validationResult = validateItineraryData(latestItineraryData)
+
+          // If there are events with invalid dates, show an error and don't save
+          if (!validationResult.valid) {
+            setSnackbar({
+              open: true,
+              message: validationResult.message,
+              severity: "error",
+            })
+            setIsSaving(false)
+            return // Don't proceed with saving
+          }
+
+          // Only update if we got valid data
+          if (latestItineraryData && latestItineraryData.length > 0) {
+            currentItinerary = latestItineraryData
+          }
+        } catch (error) {
+          console.error("Error getting current itinerary data from Step2:", error)
+        }
+      }
+
+      // Step 2.5: Get the latest files data
+      if (activeStep === 2) {
+        try {
+          // Import the function to get the current files data
+          const { getCurrentFilesData } = await import("./Step2_5FileUploads")
+
+          // Get the latest files data
+          const latestFilesData = getCurrentFilesData()
+          console.log(
+            "Got latest files data - Images:",
+            latestFilesData.images.length,
+            "Documents:",
+            latestFilesData.documents.length,
+          )
+
+          // Only update if we got valid data
+          if (latestFilesData) {
+            currentImages = latestFilesData.images
+            currentDocuments = latestFilesData.documents
+          }
+        } catch (error) {
+          console.error("Error getting current files data from Step2_5:", error)
+        }
+      }
+
+      console.log("Saving trip with data:", currentTripData)
+      console.log("Saving itinerary with events:", currentItinerary)
+      console.log("Saving with images:", currentImages.length, "and documents:", currentDocuments.length)
+
+      // Create a FormData object to handle file uploads
+      const formData = new FormData()
+
+      // Add basic trip data
+      const clientId = currentTripData.clientId ? String(currentTripData.clientId) : ""
+      formData.append("clientId", clientId)
+      formData.append("tripName", currentTripData.tripName || "")
+      formData.append("description", currentTripData.description || "")
+      formData.append("category", currentTripData.category || "")
+      formData.append("status", "Draft")
+      formData.append("paymentStatus", "Unpaid")
+      formData.append("insuranceTaken", String(currentTripData.insuranceTaken || false))
+
+      if (currentTripData.startDate) {
+        formData.append("startDate", new Date(currentTripData.startDate).toISOString())
+      }
+
+      if (currentTripData.endDate) {
+        formData.append("endDate", new Date(currentTripData.endDate).toISOString())
+      }
+
+      formData.append("price", String(currentTripData.price || 0))
+      formData.append("dayByDayItineraryNeeded", String(currentTripData.dayByDayItineraryNeeded))
+      formData.append("adultsCount", String(currentTripData.adultsCount || 0))
+      formData.append("childrenCount", String(currentTripData.childrenCount || 0))
+
+      // Prepare itinerary data
+      const itinerarySteps = []
+
+      for (let i = 0; i < currentItinerary.length; i++) {
+        const day = currentItinerary[i]
+
+        // Extract events by type
+        const transportEvents = day.events.filter((e) => e.type === "transport" || e.type === "cruise")
+        const accommodationEvents = day.events.filter((e) => e.type === "accommodation")
+        const activityEvents = day.events.filter((e) => e.type === "activity")
+
+        // Create step object
+        const step = {
+          dayNumber: currentTripData.dayByDayItineraryNeeded ? i + 1 : null,
+          description: day.dayDescription || null,
+          transports: transportEvents.map((e) => {
+            const transportEvent = e as TransportEvent
+            const finalTransportType = e.type === "cruise" ? TransportType.Cruise : transportEvent.transportType || null
+
+            return {
+              transportType: finalTransportType,
+              departureTime: transportEvent.departureTime || null,
+              arrivalTime: transportEvent.arrivalTime || null,
+              departurePlace: transportEvent.departurePlace || null,
+              arrivalPlace: transportEvent.arrivalPlace || null,
+              description: e.description || null,
+              companyName: transportEvent.companyName || null,
+              transportName: transportEvent.transportName || null,
+              transportCode: transportEvent.transportCode || null,
+              cabinType: transportEvent.cabinType || null,
+            }
+          }),
+          accommodations: accommodationEvents.map((e) => {
+            const accommodationEvent = e as AccommodationEvent
+
+            return {
+              hotelName: accommodationEvent.hotelName || null,
+              checkIn: accommodationEvent.checkIn || null,
+              checkOut: accommodationEvent.checkOut || null,
+              hotelLink: accommodationEvent.hotelLink || null,
+              description: e.description || null,
+              boardBasis: accommodationEvent.boardBasis || null,
+              roomType: accommodationEvent.roomType || null,
+            }
+          }),
+          activities: activityEvents.map((e) => {
+            const activityEvent = e as ActivityEvent
+
+            return {
+              description: e.description || null,
+              activityTime: activityEvent.activityTime || null,
+            }
+          }),
+        }
+
+        itinerarySteps.push(step)
+      }
+
+      // Create the itinerary object
+      const itineraryData = {
+        title: currentTripData.itineraryTitle || "",
+        description: currentTripData.itineraryDescription || "",
+        itinerarySteps: itinerarySteps,
+      }
+
+      // Debug log to verify the itinerary data structure
+      console.log("Formatted itinerary data for server:", JSON.stringify(itineraryData, null, 2))
+
+      // Try a different approach - stringify the itinerary data and append it as a string
+      formData.append("itinerary", JSON.stringify(itineraryData))
+
+      // Add files - use the current state which will have the latest files
+      currentImages.forEach((file) => {
+        formData.append("Images", file)
+      })
+
+      currentDocuments.forEach((file) => {
+        formData.append("Documents", file)
+      })
+
+      console.log("Sending draft trip data to server...")
+
+      // Log the form data for debugging
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`)
+      }
+
+      // Send request
+      const response = await axios.post(`${API_URL}/client-trips`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+
+      if (response.status >= 200 && response.status < 300) {
+        console.log("Draft saved successfully:", response.data)
+        setSnackbar({
+          open: true,
+          message: "Kelionė išsaugota kaip juodraštis!",
+          severity: "success",
+        })
+
+        // If save was successful, allow navigation
+        handleLeave(true)
+        setShouldBlockNavigation(false)
+
+        // Log the pending location before navigating
+        console.log("Will navigate to:", pendingLocation)
+      } else {
+        throw new Error(`Server returned status ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Error saving draft:", error)
+      setSnackbar({
+        open: true,
+        message: "Nepavyko išsaugoti juodraščio. Bandykite dar kartą.",
+        severity: "error",
+      })
+      setIsSaving(false)
+    }
+  }
+
+  // Handle "Leave without saving"
+  const handleLeaveWithoutSaving = () => {
+    setShouldBlockNavigation(false)
+    handleLeave(true)
   }
 
   /**
@@ -412,10 +681,14 @@ const WizardForm: React.FC = () => {
    * Final save: either "Draft" or "Confirmed"
    */
   const handleSaveTrip = async (status: "Draft" | "Confirmed") => {
+    // Set saving state to true when starting the save operation
+    setIsSaving(true)
+
     // Check if all fields are valid (if "Confirmed")
     const validationResult = validateTrip(formState.tripData, formState.itinerary, status === "Confirmed")
 
     if (!validationResult.isValid) {
+      setIsSaving(false)
       return
     }
 
@@ -458,77 +731,75 @@ const WizardForm: React.FC = () => {
       formData.append("adultsCount", String(formState.tripData.adultsCount || 0))
       formData.append("childrenCount", String(formState.tripData.childrenCount || 0))
 
-      // Add itinerary data as JSON
+      // Prepare itinerary data
+      const itinerarySteps = []
+
+      for (let i = 0; i < formState.itinerary.length; i++) {
+        const day = formState.itinerary[i]
+
+        // Extract events by type
+        const transportEvents = day.events.filter((e) => e.type === "transport" || e.type === "cruise")
+        const accommodationEvents = day.events.filter((e) => e.type === "accommodation")
+        const activityEvents = day.events.filter((e) => e.type === "activity")
+
+        // Create step object
+        const step = {
+          dayNumber: formState.tripData.dayByDayItineraryNeeded ? i + 1 : null,
+          description: day.dayDescription || null,
+          transports: transportEvents.map((e) => {
+            const transportEvent = e as TransportEvent
+            const finalTransportType = e.type === "cruise" ? TransportType.Cruise : transportEvent.transportType || null
+
+            return {
+              transportType: finalTransportType,
+              departureTime: transportEvent.departureTime || null,
+              arrivalTime: transportEvent.arrivalTime || null,
+              departurePlace: transportEvent.departurePlace || null,
+              arrivalPlace: transportEvent.arrivalPlace || null,
+              description: e.description || null,
+              companyName: transportEvent.companyName || null,
+              transportName: transportEvent.transportName || null,
+              transportCode: transportEvent.transportCode || null,
+              cabinType: transportEvent.cabinType || null,
+            }
+          }),
+          accommodations: accommodationEvents.map((e) => {
+            const accommodationEvent = e as AccommodationEvent
+
+            return {
+              hotelName: accommodationEvent.hotelName || null,
+              checkIn: accommodationEvent.checkIn || null,
+              checkOut: accommodationEvent.checkOut || null,
+              hotelLink: accommodationEvent.hotelLink || null,
+              description: e.description || null,
+              boardBasis: accommodationEvent.boardBasis || null,
+              roomType: accommodationEvent.roomType || null,
+            }
+          }),
+          activities: activityEvents.map((e) => {
+            const activityEvent = e as ActivityEvent
+
+            return {
+              description: e.description || null,
+              activityTime: activityEvent.activityTime || null,
+            }
+          }),
+        }
+
+        itinerarySteps.push(step)
+      }
+
+      // Create the itinerary object
       const itineraryData = {
         title: itineraryTitle,
         description: itineraryDescription,
-        itinerarySteps: formState.itinerary.map((day, idx) => ({
-          dayNumber: formState.tripData.dayByDayItineraryNeeded ? idx + 1 : null,
-          description: day.dayDescription || null,
-
-          // Combine "transport" and "cruise" events
-          transports: day.events
-            .filter((e) => e.type === "transport" || e.type === "cruise")
-            .map((e) => {
-              // Use type assertion to handle the union type
-              const transportEvent = e as TransportEvent
-
-              // If event is "cruise", we explicitly set the transportType to "Cruise"
-              // Otherwise use the user-selected transportType, e.g. "Flight", "Bus", ...
-              const finalTransportType =
-                e.type === "cruise" ? TransportType.Cruise : transportEvent.transportType || null
-
-              return {
-                transportType: finalTransportType,
-                departureTime: transportEvent.departureTime || null,
-                arrivalTime: transportEvent.arrivalTime || null,
-                departurePlace: transportEvent.departurePlace || null,
-                arrivalPlace: transportEvent.arrivalPlace || null,
-                description: e.description || null,
-
-                // Additional new fields:
-                companyName: transportEvent.companyName || null,
-                transportName: transportEvent.transportName || null,
-                transportCode: transportEvent.transportCode || null,
-                cabinType: transportEvent.cabinType || null,
-              }
-            }),
-
-          // ---------- ACCOMMODATION ----------
-          accommodations: day.events
-            .filter((e) => e.type === "accommodation")
-            .map((e) => {
-              // Use type assertion to handle the union type
-              const accommodationEvent = e as AccommodationEvent
-
-              return {
-                hotelName: accommodationEvent.hotelName || null,
-                checkIn: accommodationEvent.checkIn || null,
-                checkOut: accommodationEvent.checkOut || null,
-                hotelLink: accommodationEvent.hotelLink || null,
-                description: e.description || null,
-
-                // Additional new fields: make sure they match your C# enum names exactly
-                boardBasis: accommodationEvent.boardBasis || null,
-                roomType: accommodationEvent.roomType || null,
-              }
-            }),
-
-          // ---------- ACTIVITIES ----------
-          activities: day.events
-            .filter((e) => e.type === "activity")
-            .map((e) => {
-              // Use type assertion to handle the union type
-              const activityEvent = e as ActivityEvent
-
-              return {
-                description: e.description || null,
-                activityTime: activityEvent.activityTime || null,
-              }
-            }),
-        })),
+        itinerarySteps: itinerarySteps,
       }
 
+      // Debug log to verify the itinerary data structure
+      console.log("Formatted itinerary data for server:", JSON.stringify(itineraryData, null, 2))
+
+      // Try a different approach - stringify the itinerary data and append it as a string
       formData.append("itinerary", JSON.stringify(itineraryData))
 
       // Add files
@@ -541,6 +812,11 @@ const WizardForm: React.FC = () => {
       })
 
       console.log("Sending trip data to server...")
+
+      // Log the form data for debugging
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`)
+      }
 
       // ---------- SEND REQUEST ----------
       const response = await axios.post(`${API_URL}/client-trips`, formData, {
@@ -558,6 +834,9 @@ const WizardForm: React.FC = () => {
           severity: "success",
         })
 
+        // After successful save, we can allow navigation
+        setShouldBlockNavigation(false)
+
         // Redirect to the newly created trip page if ID is returned
         if (tripId) {
           setTimeout(() => {
@@ -570,6 +849,8 @@ const WizardForm: React.FC = () => {
           message: "Nepavyko išsaugoti kelionės (HTTP status " + response.status + ").",
           severity: "error",
         })
+        // Set saving state to false on error
+        setIsSaving(false)
       }
     } catch (error) {
       console.error("Error saving trip:", error)
@@ -578,12 +859,14 @@ const WizardForm: React.FC = () => {
         message: "Nepavyko išsaugoti kelionės (server error).",
         severity: "error",
       })
+      // Set saving state to false on error
+      setIsSaving(false)
     }
   }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%" }} data-wizard-form="true">
         <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
           {steps.map((label) => (
             <Step key={label}>
@@ -592,13 +875,14 @@ const WizardForm: React.FC = () => {
           ))}
         </Stepper>
 
-        <Paper elevation={3} sx={{ p: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }} data-wizard-form="true">
           {/* -------------- STEP 1 -------------- */}
           {activeStep === 0 && (
             <Step1TripInfo
               initialData={formState.tripData}
               onSubmit={handleStep1Submit}
               currentItinerary={formState.itinerary}
+              data-wizard-navigation="true"
             />
           )}
 
@@ -609,6 +893,7 @@ const WizardForm: React.FC = () => {
               itinerary={formState.itinerary}
               onSubmit={handleStep2Submit}
               onBack={handleBack}
+              data-wizard-navigation="true"
             />
           )}
 
@@ -619,6 +904,7 @@ const WizardForm: React.FC = () => {
               initialDocuments={formState.documents}
               onSubmit={handleFileUploadsSubmit}
               onBack={handleBack}
+              data-wizard-navigation="true"
             />
           )}
 
@@ -631,10 +917,38 @@ const WizardForm: React.FC = () => {
               onConfirm={() => handleSaveTrip("Confirmed")}
               onSaveDraft={() => handleSaveTrip("Draft")}
               validationWarnings={formState.validationWarnings}
+              isSaving={isSaving}
+              data-wizard-navigation="true"
             />
           )}
         </Paper>
       </Box>
+
+      {/* Confirmation Dialog for leaving the page */}
+      <Dialog
+        open={showNavigationDialog}
+        onClose={handleStay}
+        aria-labelledby="leave-dialog-title"
+        aria-describedby="leave-dialog-description"
+      >
+        <DialogTitle id="leave-dialog-title">Išsaugoti kaip juodraštį?</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="leave-dialog-description">
+            Ar norite išsaugoti šią kelionę kaip juodraštį prieš išeidami? Jei ne, pakeitimai bus prarasti.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleStay} color="primary">
+            Likti
+          </Button>
+          <Button onClick={handleLeaveWithoutSaving} color="error">
+            Išeiti be išsaugojimo
+          </Button>
+          <Button onClick={handleLeaveWithSave} color="primary" variant="contained">
+            Išsaugoti ir išeiti
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <CustomSnackbar
         open={snackbar.open}

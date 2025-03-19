@@ -23,6 +23,30 @@ interface Step1Props {
   onSubmit: (data: TripFormData, updatedItinerary?: ItineraryDay[]) => void
 }
 
+// Add a global variable to store the current form data
+let currentFormData: TripFormData = {
+  tripName: "",
+  clientId: "",
+  clientName: null,
+  description: "",
+  startDate: null,
+  endDate: null,
+  category: "",
+  price: 0,
+  adultsCount: null,
+  childrenCount: null,
+  insuranceTaken: false,
+  dayByDayItineraryNeeded: false,
+  itineraryTitle: "",
+  itineraryDescription: "",
+};
+
+// Export a function to get the current form data
+export function getCurrentFormData(): TripFormData {
+  console.log("Getting current form data:", currentFormData);
+  return { ...currentFormData };
+}
+
 const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, onSubmit }) => {
   // Store the selected client ID in a ref to ensure it's not lost
   const selectedClientIdRef = useRef<string>(initialData?.clientId || "")
@@ -43,6 +67,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     itineraryTitle: initialData?.itineraryTitle || "",
     itineraryDescription: initialData?.itineraryDescription || "",
   })
+
+  // Update the global currentFormData whenever formData changes
+  useEffect(() => {
+    currentFormData = { ...formData };
+    console.log("Updated current form data:", currentFormData);
+  }, [formData]);
 
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
@@ -460,4 +490,3 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
 }
 
 export default Step1TripInfo
-

@@ -1,80 +1,73 @@
-import React, { useState } from 'react';
-import ReactMde from 'react-mde';
-import ReactMarkdown from 'react-markdown';
-import 'react-mde/lib/styles/css/react-mde-all.css';
-import { Box } from '@mui/material';
+"use client"
+
+import type React from "react"
+import MDEditor from "@uiw/react-md-editor"
+import { Box, Typography, useTheme } from "@mui/material"
 
 interface MarkdownEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  label?: string;
+  value: string
+  onChange: (value: string | undefined) => void
+  label?: string
+  minHeight?: number
 }
 
-const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange, label }) => {
-  const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
-
-  // Customize toolbar to remove unwanted options
-  const toolbarCommands = [
-    ["header", "bold", "italic", "strikethrough"],
-    ["unordered-list", "ordered-list"],
-  ];
+const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange, label, minHeight = 200 }) => {
+  const theme = useTheme()
 
   return (
-    <Box
-      sx={{
-        '& .mde-header': {
-          backgroundColor: '#f5f5f5',
-          border: '1px solid #ddd',
-          borderBottom: 'none',
-        },
-        '& .mde-header .mde-tabs button': {
-          padding: '0.5rem 1rem',
-          color: '#666',
-          '&.selected': {
-            backgroundColor: '#fff',
-            border: '1px solid #ddd',
-            borderBottom: 'none',
-            marginBottom: '-1px',
-          },
-        },
-        '& .mde-text': {
-          backgroundColor: '#fff',
-          color: '#000',
-          border: '1px solid #ddd',
-          padding: '0.5rem',
-          minHeight: '200px',
-        },
-        '& .mde-preview': {
-          backgroundColor: '#fff',
-          border: '1px solid #ddd',
-          padding: '0.5rem',
-          minHeight: '200px',
-        },
-      }}
-    >
+    <Box sx={{ width: "100%" }}>
       {label && (
-        <Box sx={{ mb: 1 }}>
-          <label style={{ fontWeight: 'bold' }}>{label}</label>
-        </Box>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            mb: 1,
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+          }}
+        >
+          {label}
+        </Typography>
       )}
-      <ReactMde
+
+      <MDEditor
         value={value}
         onChange={onChange}
-        selectedTab={selectedTab}
-        onTabChange={setSelectedTab}
-        toolbarCommands={toolbarCommands} // Use customized toolbar
-        generateMarkdownPreview={(markdown) =>
-          Promise.resolve(
-            <div className="mde-preview">
-              <ReactMarkdown>{markdown}</ReactMarkdown>
-            </div>
-          )
-        }
-        minEditorHeight={200}
-        heightUnits="px"
+        height={minHeight}
+        preview="edit"
+        visibleDragbar={false}
+        textareaProps={{
+          placeholder: "Įveskite tekstą naudodami Markdown formatavimą...",
+        }}
+        style={{
+          borderRadius: theme.shape.borderRadius,
+          overflow: "hidden",
+        }}
       />
-    </Box>
-  );
-};
 
-export default MarkdownEditor;
+      <Box
+        sx={{
+          mt: 1,
+          display: "flex",
+          justifyContent: "flex-end",
+          color: theme.palette.text.secondary,
+          fontSize: "0.75rem",
+        }}
+      >
+        <a
+          href="https://www.markdownguide.org/basic-syntax/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: theme.palette.primary.main,
+            textDecoration: "none",
+          }}
+        >
+          Markdown sintaksės pagalba
+        </a>
+      </Box>
+    </Box>
+  )
+}
+
+export default MarkdownEditor
+

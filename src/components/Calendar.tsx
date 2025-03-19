@@ -2,9 +2,15 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { Paper, Typography, Box, CircularProgress, useTheme } from "@mui/material"
-import { API_URL } from "../Utils/Configuration"
+import { Paper, Typography, Box, CircularProgress, useTheme, Grid } from "@mui/material"
 import axios from "axios"
+import { API_URL } from "../Utils/Configuration"
+
+// Consistent typography styles
+const typographyStyles = {
+  fontSize: "1rem",
+  fontWeight: 400,
+}
 
 const Calendar: React.FC = () => {
   const theme = useTheme()
@@ -18,6 +24,20 @@ const Calendar: React.FC = () => {
   const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1
 
   const days = ["Pir", "Ant", "Tre", "Ket", "Pen", "Šeš", "Sek"]
+  const monthNames = [
+    "Sausis",
+    "Vasaris",
+    "Kovas",
+    "Balandis",
+    "Gegužė",
+    "Birželis",
+    "Liepa",
+    "Rugpjūtis",
+    "Rugsėjis",
+    "Spalis",
+    "Lapkritis",
+    "Gruodis",
+  ]
 
   // Fetch today's events
   useEffect(() => {
@@ -83,7 +103,7 @@ const Calendar: React.FC = () => {
   return (
     <Paper
       sx={{
-        p: 3,
+        p: { xs: 2, sm: 3 },
         mt: 2,
         "& .calendar-header": {
           display: "flex",
@@ -97,7 +117,7 @@ const Calendar: React.FC = () => {
           "& > div": {
             width: "calc(100% / 7)",
             textAlign: "center",
-            fontSize: "1rem",
+            fontSize: { xs: "0.75rem", sm: "0.875rem", md: "1rem" },
             fontWeight: 400,
           },
         },
@@ -112,23 +132,26 @@ const Calendar: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "rgba(0, 0, 0, 0.04)",
+          backgroundColor: "white", // Changed from grey to white
+          border: "1px solid #f0f0f0", // Light border to separate days
           borderRadius: 1,
-          fontSize: "1rem",
+          fontSize: { xs: "0.75rem", sm: "0.875rem", md: "1rem" },
           fontWeight: 400,
           userSelect: "none",
           "&.today": {
             backgroundColor: theme.palette.primary.main,
             color: "white",
+            border: "none", // Remove border for today
           },
           "&.empty": {
             backgroundColor: "transparent",
+            border: "none", // No border for empty cells
           },
         },
       }}
     >
-      <Typography variant="h4" align="center" sx={{ mb: 3, fontWeight: 400 }}>
-        Kalendorius
+      <Typography align="center" sx={{ ...typographyStyles, fontSize: "1.25rem", mb: 2 }}>
+        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
       </Typography>
 
       <div className="calendar-days">
@@ -141,47 +164,47 @@ const Calendar: React.FC = () => {
 
       {/* Events Section */}
       <Paper sx={{ mt: 3, p: 2, bgcolor: "grey.50" }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 400 }}>
-          Šiandienos įvykiai
-        </Typography>
+        <Typography sx={{ ...typographyStyles, fontSize: "1.25rem", mb: 2 }}>Šiandienos įvykiai</Typography>
 
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
             <CircularProgress size={24} />
           </Box>
         ) : Object.entries(events).length > 0 ? (
-          Object.entries(events).map(([category, eventList]) => (
-            <Box key={category} sx={{ mt: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 400, mt: 2 }}>
-                {category === "Šiandienos grįžimai" ? "🏠" : category === "Šiandienos išvykimai" ? "✈️" : "🎂"} {category}
-              </Typography>
-              {eventList.map((event, index) => (
-                <Typography
-                  key={index}
-                  variant="body1"
-                  sx={{
-                    ml: 2,
-                    my: 0.5,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    "& > span": {
-                      display: "inline-flex",
-                      alignItems: "center",
-                    },
-                  }}
-                >
-                  <span>{category === "Šiandienos grįžimai" ? "🏠" : category === "Šiandienos išvykimai" ? "🌍" : "🎂"}</span>
-                  {event}
+          <Grid container spacing={1}>
+            {Object.entries(events).map(([category, eventList]) => (
+              <Grid item xs={12} key={category}>
+                <Typography sx={{ ...typographyStyles, fontWeight: 500, mt: 1 }}>
+                  {category === "Šiandienos grįžimai" ? "🏠" : category === "Šiandienos išvykimai" ? "✈️" : "🎂"}{" "}
+                  {category}
                 </Typography>
-              ))}
-            </Box>
-          ))
-          
+                {eventList.map((event, index) => (
+                  <Typography
+                    key={index}
+                    sx={{
+                      ...typographyStyles,
+                      ml: 2,
+                      my: 0.5,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      "& > span": {
+                        display: "inline-flex",
+                        alignItems: "center",
+                      },
+                    }}
+                  >
+                    <span>
+                      {category === "Šiandienos grįžimai" ? "🏠" : category === "Šiandienos išvykimai" ? "🌍" : "🎂"}
+                    </span>
+                    {event}
+                  </Typography>
+                ))}
+              </Grid>
+            ))}
+          </Grid>
         ) : (
-          <Typography variant="body1" sx={{ color: "text.secondary" }}>
-            📅 Šiandien jokių įvykių nėra.
-          </Typography>
+          <Typography sx={{ ...typographyStyles, color: "text.secondary" }}>📅 Šiandien jokių įvykių nėra.</Typography>
         )}
       </Paper>
     </Paper>

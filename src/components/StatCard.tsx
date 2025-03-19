@@ -7,6 +7,12 @@ interface StatsCardProps {
   color?: string
 }
 
+// Consistent typography styles
+const typographyStyles = {
+  fontSize: "1rem",
+  fontWeight: 400,
+}
+
 const StatsCard: React.FC<StatsCardProps> = ({ title, value, color = "primary.main" }) => {
   return (
     <Paper
@@ -21,10 +27,10 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, color = "primary.ma
         borderColor: color,
       }}
     >
-      <Typography variant="h4" align="center" color={color}>
+      <Typography align="center" color={color} sx={{ ...typographyStyles, fontSize: "2rem", fontWeight: 500 }}>
         {value}
       </Typography>
-      <Typography variant="body2" align="center" color="text.secondary">
+      <Typography align="center" color="text.secondary" sx={{ ...typographyStyles }}>
         {title}
       </Typography>
     </Paper>
