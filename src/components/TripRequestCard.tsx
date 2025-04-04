@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Card, CardContent, Typography, Box, Chip, styled } from "@mui/material"
+import { Card, CardContent, CardActionArea, Typography, Box, Chip, styled } from "@mui/material"
+import { Email, Phone, CalendarToday, Message } from "@mui/icons-material"
 import { type TripRequestResponse, TripRequestStatus } from "../types/TripRequest"
 import { format } from "date-fns"
 import { lt } from "date-fns/locale"
@@ -13,12 +14,14 @@ interface TripRequestCardProps {
 }
 
 const StyledCard = styled(Card)(({ theme }) => ({
+  width: "100%",
+  display: "flex",
+  flexDirection: "column",
+  transition: "all 0.3s ease-in-out",
   marginBottom: theme.spacing(1),
-  transition: "transform 0.2s",
-  cursor: "pointer",
   "&:hover": {
-    transform: "translateY(-2px)",
-    boxShadow: theme.shadows[2],
+    transform: "translateY(-5px)",
+    boxShadow: theme.shadows[6],
   },
 }))
 
@@ -26,8 +29,6 @@ const getStatusColor = (status: TripRequestStatus) => {
   switch (status) {
     case TripRequestStatus.New:
       return "#4caf50" // Green
-    case TripRequestStatus.Locked:
-      return "#ff9800" // Orange
     case TripRequestStatus.Confirmed:
       return "#2196f3" // Blue
     default:
@@ -35,94 +36,115 @@ const getStatusColor = (status: TripRequestStatus) => {
   }
 }
 
-// Consistent typography styles
-const typographyStyles = {
-  fontSize: "1rem",
-  fontWeight: 400,
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number) => {
+  if (!text) return ""
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text
 }
 
 const TripRequestCard: React.FC<TripRequestCardProps> = ({ request, onClick }) => {
   const formattedDate = format(new Date(request.createdAt), "yyyy-MM-dd HH:mm", { locale: lt })
 
-  return (
-    <StyledCard onClick={() => onClick(request.id)}>
-      <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography sx={{ ...typographyStyles, fontWeight: 500 }}>{request.fullName}</Typography>
-          <Chip
-            label={translateTripRequestStatus(request.status)}
-            size="small"
-            sx={{
-              backgroundColor: getStatusColor(request.status),
-              color: "white",
-              height: 24,
-              fontSize: "0.75rem",
-            }}
-          />
-        </Box>
+  // Truncate name and message
+  const truncatedName = truncateText(request.fullName, 30)
+  const truncatedMessage = request.message ? truncateText(request.message, 100) : ""
 
-        <Box
+  return (
+    <StyledCard>
+      <CardActionArea onClick={() => onClick(request.id)}>
+        <CardContent
           sx={{
             display: "flex",
-            flexWrap: "wrap",
-            gap: 1,
-            mt: 1,
-            "& > div": {
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-              fontSize: "0.875rem",
-              color: "text.secondary",
-            },
+            alignItems: "flex-start",
+            py: 2,
+            px: 2,
+            position: "relative",
+            "&:last-child": { pb: 2 },
           }}
         >
-          <div>
-            <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem", fontWeight: 500 }}>
-              El. paštas:
-            </Typography>
-            <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem" }}>
-              {request.email}
-            </Typography>
-          </div>
-          <div>
-            <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem", fontWeight: 500 }}>
-              Tel:
-            </Typography>
-            <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem" }}>
-              {request.phoneNumber}
-            </Typography>
-          </div>
-          <div>
-            <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem", fontWeight: 500 }}>
-              Data:
-            </Typography>
-            <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem" }}>
-              {formattedDate}
-            </Typography>
-          </div>
-          {request.message && (
-            <div style={{ width: "100%" }}>
-              <Typography component="span" sx={{ ...typographyStyles, fontSize: "0.875rem", fontWeight: 500 }}>
-                Žinutė:
-              </Typography>
-              <Typography
-                component="span"
-                sx={{
-                  ...typographyStyles,
-                  fontSize: "0.875rem",
-                  display: "inline-block",
-                  maxWidth: "100%",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {request.message}
-              </Typography>
-            </div>
-          )}
-        </Box>
-      </CardContent>
+          <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", mb: 1 }}
+            >
+              <Typography variant="h6">{truncatedName}</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    color: "text.secondary",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  <CalendarToday fontSize="small" sx={{ mr: 0.5, fontSize: "0.875rem" }} />
+                  {formattedDate}
+                </Box>
+                <Chip
+                  label={translateTripRequestStatus(request.status)}
+                  size="small"
+                  sx={{
+                    backgroundColor: getStatusColor(request.status),
+                    color: "white",
+                    height: 24,
+                    fontSize: "0.75rem",
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+              {request.status === TripRequestStatus.Confirmed && (
+                <>
+                  <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+                    <Email fontSize="small" sx={{ mr: 0.5, color: "text.secondary", flexShrink: 0 }} />
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {request.email}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+                    <Phone fontSize="small" sx={{ mr: 0.5, color: "text.secondary", flexShrink: 0 }} />
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {request.phoneNumber}
+                    </Typography>
+                  </Box>
+                </>
+              )}
+              {request.message && (
+                <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, flex: 1, width: "100%" }}>
+                  <Message fontSize="small" sx={{ mr: 0.5, color: "text.secondary", flexShrink: 0 }} />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {truncatedMessage}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </CardContent>
+      </CardActionArea>
     </StyledCard>
   )
 }

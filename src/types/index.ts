@@ -1,6 +1,6 @@
 // Export all types from a single entry point
 
-export * from "./common"
+export * from "./Common"
 export * from "./Enums"
 export * from "./Events"
 export * from "./Itinerary"

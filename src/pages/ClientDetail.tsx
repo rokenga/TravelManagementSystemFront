@@ -7,28 +7,19 @@ import axios from "axios"
 import {
   Box,
   Typography,
-  Button,
   Card,
   CardContent,
   Divider,
   CircularProgress,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  IconButton,
-  Tabs,
-  Tab,
   Paper,
   Grid,
   Avatar,
+  Tabs,
+  Tab,
 } from "@mui/material"
 import { styled } from "@mui/material/styles"
 import { UserContext } from "../contexts/UserContext"
-import EditIcon from "@mui/icons-material/Edit"
-import DeleteIcon from "@mui/icons-material/Delete"
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff"
 import LocalOfferIcon from "@mui/icons-material/LocalOffer"
 import HistoryIcon from "@mui/icons-material/History"
@@ -37,6 +28,11 @@ import TagManagementModal from "../components/TagManagementModal"
 import ClientTimeline from "../components/ClientTimeline"
 import TripSummaryCard from "../components/TripSummaryCard"
 import type { TripResponse } from "../types/ClientTrip"
+import { useNavigation } from "../contexts/NavigationContext"
+import ActionBar from "../components/ActionBar"
+import ClientFormModal from "../components/ClientFormModal"
+import ConfirmationDialog from "../components/ConfirmationDialog"
+import CustomSnackbar from "../components/CustomSnackBar"
 
 enum TagCategory {
   DestinationInterest = "DestinationInterest",
@@ -102,11 +98,19 @@ interface Offer {
   createdAt?: string
 }
 
+// Define the client detail state interface
+interface ClientDetailState {
+  clientId: string
+  tabValue: number
+  scrollPosition: number
+}
+
 // Now let's update the ClientDetail component to include tag functionality
 const ClientDetail: React.FC = () => {
   const user = useContext(UserContext)
   const { clientId } = useParams<{ clientId: string }>()
   const navigate = useNavigate()
+  const { savePageState, getPageState, setNavigationSource, setSourceClientId, navigateBack } = useNavigation()
 
   const [client, setClient] = useState<Client | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -115,7 +119,14 @@ const ClientDetail: React.FC = () => {
   const [tabValue, setTabValue] = useState<number>(0)
   const [clientTags, setClientTags] = useState<ClientTagAssignment[]>([])
   const [isTagModalOpen, setIsTagModalOpen] = useState<boolean>(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false)
   const [clientTrips, setClientTrips] = useState<TripResponse[]>([])
+  const [initialStateLoaded, setInitialStateLoaded] = useState<boolean>(false)
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  })
 
   const mockOffers: Offer[] = [
     {
@@ -144,6 +155,39 @@ const ClientDetail: React.FC = () => {
     },
   ]
 
+  // Save current state to be restored when coming back
+  const saveCurrentState = useCallback(() => {
+    if (!clientId) return
+
+    const state: ClientDetailState = {
+      clientId,
+      tabValue,
+      scrollPosition: window.scrollY,
+    }
+    console.log("Saving client detail state:", state)
+    savePageState(`client-detail-${clientId}`, state)
+  }, [clientId, tabValue, savePageState])
+
+  const fetchClientData = useCallback(async () => {
+    if (!clientId) return
+
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const response = await axios.get(`${API_URL}/Client/${clientId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      })
+
+      setClient(response.data)
+    } catch (err: any) {
+      console.error("Error fetching client data:", err)
+      setError("Nepavyko gauti kliento duomenų.")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [clientId])
+
   const fetchClientTrips = useCallback(async () => {
     if (!clientId) return
 
@@ -171,58 +215,102 @@ const ClientDetail: React.FC = () => {
     }
   }, [clientId])
 
+  // Restore state only once when component mounts
   useEffect(() => {
-    const fetchClientData = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+    if (!clientId || initialStateLoaded) return
 
-        const response = await axios.get(`${API_URL}/Client/${clientId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-        })
-
-        setClient(response.data)
-      } catch (err: any) {
-        console.error("Error fetching client data:", err)
-        setError("Nepavyko gauti kliento duomenų.")
-      } finally {
-        setIsLoading(false)
-      }
+    const savedState = getPageState(`client-detail-${clientId}`) as ClientDetailState | null
+    if (savedState && savedState.clientId === clientId) {
+      setTabValue(savedState.tabValue || 0)
+      setTimeout(() => {
+        window.scrollTo(0, savedState.scrollPosition || 0)
+      }, 100)
     }
+    setInitialStateLoaded(true)
+  }, [clientId, getPageState, initialStateLoaded])
 
+  useEffect(() => {
     if (clientId) {
       fetchClientData()
       fetchClientTags()
       fetchClientTrips()
     }
-  }, [clientId, fetchClientTags, fetchClientTrips])
+  }, [clientId, fetchClientData, fetchClientTags, fetchClientTrips])
+
+  // Save state when component unmounts
+  useEffect(() => {
+    return () => {
+      saveCurrentState()
+    }
+  }, [saveCurrentState])
 
   const handleDeleteClient = async () => {
     try {
       await axios.delete(`${API_URL}/Client/${clientId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       })
-      navigate("/admin-client-list")
-    } catch (err) {
+
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: "Klientas sėkmingai ištrintas!",
+        severity: "success",
+      })
+
+      // Add a small delay before navigation to ensure the snackbar is seen
+      setTimeout(() => {
+        navigate("/admin-client-list")
+      }, 1500) // 1.5 second delay
+    } catch (err: any) {
       console.error("Error deleting client:", err)
-      setError("Nepavyko ištrinti kliento.")
+
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Nepavyko ištrinti kliento.",
+        severity: "error",
+      })
+
+      setDeleteDialogOpen(false)
     }
   }
 
-  const handleBack = () => navigate("/admin-client-list")
+  const handleEditClient = () => {
+    setIsEditModalOpen(true)
+  }
+
+  const handleEditSuccess = () => {
+    // Refresh client data after successful edit
+    fetchClientData()
+  }
+
+  const handleTagClick = () => {
+    setIsTagModalOpen(true)
+  }
+
   const openDeleteDialog = () => setDeleteDialogOpen(true)
   const closeDeleteDialog = () => setDeleteDialogOpen(false)
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
   }
 
-  // Add a function to handle tag modal
-  const handleTagClick = () => {
-    setIsTagModalOpen(true)
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false })
   }
 
   const handleTripClick = (tripId: string) => {
-    navigate(`/trips/${tripId}`)
+    // Save the current state before navigating
+    saveCurrentState()
+
+    // Set the navigation source to identify where we came from
+    setNavigationSource("client-details")
+
+    // Save the client ID as the source
+    if (clientId) {
+      setSourceClientId(clientId)
+    }
+
+    // Navigate to the trip detail page
+    navigate(`/admin-trip-list/${tripId}`)
   }
 
   return (
@@ -235,6 +323,27 @@ const ClientDetail: React.FC = () => {
         <Typography color="error">{error}</Typography>
       ) : client ? (
         <>
+          {/* Action Bar */}
+          <ActionBar
+            backUrl="/admin-client-list"
+            showBackButton={true}
+            showEditButton={user?.role === "Admin" || user?.role === "Agent"}
+            showDeleteButton={user?.role === "Admin" || user?.role === "Agent"}
+            showTagButton={user?.role === "Admin" || user?.role === "Agent"}
+            showCreateTripButton={tabValue === 0 && (user?.role === "Admin" || user?.role === "Agent")}
+            showCreateOfferButton={tabValue === 1 && (user?.role === "Admin" || user?.role === "Agent")}
+            onEdit={handleEditClient}
+            onDelete={openDeleteDialog}
+            onTagManage={handleTagClick}
+            onBackClick={navigateBack}
+            onCreateTrip={() =>
+              navigate(
+                `/admin-trip-list/create?clientId=${clientId}&clientName=${encodeURIComponent(`${client.name} ${client.surname}`)}`,
+              )
+            }
+            onCreateOffer={() => navigate("/special-offers/create")}
+          />
+
           <StyledCard>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: "flex", alignItems: "flex-start", gap: 3 }}>
@@ -255,24 +364,6 @@ const ClientDetail: React.FC = () => {
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
                       {client.name} {client.surname}
                     </Typography>
-                    {(user?.role === "Admin" || user?.role === "Agent") && (
-                      <Box>
-                        <IconButton color="primary" onClick={handleTagClick} sx={{ mr: 1 }} aria-label="Manage tags">
-                          <LocalOfferIcon />
-                        </IconButton>
-                        <IconButton
-                          color="primary"
-                          onClick={() => navigate(`/clients/edit/${clientId}`)}
-                          sx={{ mr: 1 }}
-                          aria-label="Edit client"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton color="error" onClick={openDeleteDialog} aria-label="Delete client">
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    )}
                   </Box>
 
                   <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 3 }}>
@@ -358,23 +449,11 @@ const ClientDetail: React.FC = () => {
             </Tabs>
 
             <TabPanel value={tabValue} index={0}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() =>
-                  navigate(
-                    `/trips/client?clientId=${clientId}&clientName=${encodeURIComponent(`${client.name} ${client.surname}`)}`,
-                  )
-                }
-                sx={{ mb: 2 }}
-              >
-                Pridėti kelionę
-              </Button>
               {clientTrips.length > 0 ? (
                 <Grid container spacing={2}>
                   {clientTrips.map((trip) => (
                     <Grid item xs={12} sm={6} key={trip.id}>
-                      <TripSummaryCard trip={trip} onClick={handleTripClick} />
+                      <TripSummaryCard trip={trip} onClick={() => handleTripClick(trip.id)} />
                     </Grid>
                   ))}
                 </Grid>
@@ -386,14 +465,6 @@ const ClientDetail: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => console.log("Navigate to create offer")}
-                sx={{ mb: 2 }}
-              >
-                Pridėti pasiūlymą
-              </Button>
               <Grid container spacing={2}>
                 {mockOffers.map((offer) => (
                   <Grid item xs={12} sm={6} key={offer.id}>
@@ -431,20 +502,14 @@ const ClientDetail: React.FC = () => {
             </TabPanel>
           </Paper>
 
-          <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog}>
-            <DialogTitle>Ištrinti klientą</DialogTitle>
-            <DialogContent>
-              <DialogContentText>Ar tikrai norite ištrinti šį klientą? Šis veiksmas yra negrįžtamas.</DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={closeDeleteDialog} color="primary">
-                Atšaukti
-              </Button>
-              <Button onClick={handleDeleteClient} color="error">
-                Ištrinti
-              </Button>
-            </DialogActions>
-          </Dialog>
+          {/* Custom Confirmation Dialog for Delete */}
+          <ConfirmationDialog
+            open={deleteDialogOpen}
+            title="Ištrinti klientą"
+            message="Ar tikrai norite ištrinti šį klientą? Šis veiksmas yra negrįžtamas, bus ištrinta visa susijusi informacija."
+            onConfirm={handleDeleteClient}
+            onCancel={closeDeleteDialog}
+          />
 
           {/* Add Tag Management Modal */}
           <TagManagementModal
@@ -458,13 +523,26 @@ const ClientDetail: React.FC = () => {
             }))}
             onTagsUpdated={fetchClientTags}
           />
+
+          {/* Client Edit Modal */}
+          <ClientFormModal
+            open={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onSuccess={handleEditSuccess}
+            clientId={clientId}
+          />
+
+          {/* Snackbar for notifications */}
+          <CustomSnackbar
+            open={snackbar.open}
+            message={snackbar.message}
+            severity={snackbar.severity}
+            onClose={handleCloseSnackbar}
+          />
         </>
       ) : (
         <Typography>Klientas nerastas.</Typography>
       )}
-      <Button variant="outlined" onClick={handleBack} sx={{ mt: 2 }}>
-        Grįžti
-      </Button>
     </Box>
   )
 }

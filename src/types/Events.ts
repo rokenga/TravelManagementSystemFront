@@ -39,8 +39,14 @@ export interface ActivityEvent extends BaseEvent {
   activityTime?: string
 }
 
+// Image event
+export interface ImageEvent extends BaseEvent {
+  type: "images"
+  description?: string
+}
+
 // Union type for all event types
-export type TripEvent = TransportEvent | AccommodationEvent | ActivityEvent
+export type TripEvent = TransportEvent | AccommodationEvent | ActivityEvent | ImageEvent
 
 // Type guard functions
 export function isTransportEvent(event: TripEvent): event is TransportEvent {
@@ -53,5 +59,9 @@ export function isAccommodationEvent(event: TripEvent): event is AccommodationEv
 
 export function isActivityEvent(event: TripEvent): event is ActivityEvent {
   return event.type === "activity"
+}
+
+export function isImageEvent(event: TripEvent): event is ImageEvent {
+  return event.type === "images"
 }
 

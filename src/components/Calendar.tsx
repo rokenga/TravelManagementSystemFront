@@ -103,8 +103,8 @@ const Calendar: React.FC = () => {
   return (
     <Paper
       sx={{
-        p: { xs: 2, sm: 3 },
-        mt: 2,
+        p: { xs: 2, sm: 2 },
+        mt: 0.5,
         "& .calendar-header": {
           display: "flex",
           justifyContent: "space-between",

@@ -41,37 +41,41 @@ const TripRequestList: React.FC = () => {
   const loadingRef = useRef(false)
 
   const fetchRequests = async () => {
-    // Skip if already loading
-    if (loadingRef.current) return
-
-    loadingRef.current = true
-
+    if (loadingRef.current) return; // Skip if already loading
+    loadingRef.current = true;
+  
     try {
-      const response = await axios.get<TripRequestResponse[]>(`${API_URL}/TripRequest`)
-
-      // Only update state if data has changed
-      const newData = response.data
-      const hasChanged = JSON.stringify(newData) !== JSON.stringify(requestsRef.current)
-
+  
+      const response = await axios.get<TripRequestResponse[]>(`${API_URL}/TripRequest`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
+  
+      // Handle new data
+      const newData = response.data;
+      const hasChanged = JSON.stringify(newData) !== JSON.stringify(requestsRef.current);
+  
       if (hasChanged) {
-        setRequests(newData)
-        requestsRef.current = newData
-
-        // Auto-expand if there are new requests and it's the first load
+        setRequests(newData);
+        requestsRef.current = newData;
+  
+        // Auto-expand if there are new requests and no previous data
         if (newData.some((req) => req.status === TripRequestStatus.New) && requestsRef.current.length === 0) {
-          setExpanded(true)
+          setExpanded(true);
         }
       }
-
-      setError(null)
+  
+      setError(null);
     } catch (err) {
-      console.error("Klaida gaunant užklausas:", err)
-      setError("Nepavyko gauti kelionių užklausų.")
+      console.error("Klaida gaunant užklausas:", err);
+      setError("Nepavyko gauti kelionių užklausų. Patikrinkite savo prisijungimą.");
     } finally {
-      loadingRef.current = false
-      setLoading(false)
+      loadingRef.current = false;
+      setLoading(false);
     }
-  }
+  };
+  
 
   useEffect(() => {
     // Initial fetch

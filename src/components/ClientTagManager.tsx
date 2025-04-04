@@ -28,7 +28,7 @@ import ConfirmationDialog from "./ConfirmationDialog"
 interface Props {
   open: boolean
   onClose: () => void
-  onTagsUpdated: () => void 
+  onTagsUpdated: () => void
 }
 
 const categoryColors: Record<TagCategory, string> = {
@@ -66,7 +66,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       showSnackbar("Nepavyko gauti žymeklių. Bandykite dar kartą.", "error")
     }
   }
-  
 
   const handleSaveTag = async () => {
     if (!newTagName || !newTagCategory) return
@@ -104,6 +103,9 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       setNewTagCategory("")
       setEditingTag(null)
       fetchTags()
+
+      // Call onTagsUpdated to refresh the filter panel
+      onTagsUpdated()
     } catch (err) {
       console.error("Failed to save tag:", err)
       showSnackbar("Nepavyko išsaugoti žymeklio. Bandykite dar kartą.", "error")
@@ -121,7 +123,7 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       })
       fetchTags()
       showSnackbar("Žymeklis sėkmingai ištrintas!", "success")
-      onTagsUpdated() 
+      onTagsUpdated()
     } catch (err) {
       console.error("Failed to delete tag:", err)
       showSnackbar("Nepavyko ištrinti žymeklio. Bandykite dar kartą.", "error")

@@ -136,6 +136,12 @@ export const isEventComplete = (event: any): boolean => {
     case "activity":
       return Boolean(event.activityTime && event.description)
 
+    case "images":
+      // For image events, check both new images and existing images
+      const hasNewImages = Boolean(event.stepImages && event.stepImages.length > 0)
+      const hasExistingImages = Boolean(event.existingImageUrls && event.existingImageUrls.length > 0)
+      return hasNewImages || hasExistingImages
+
     default:
       return false
   }

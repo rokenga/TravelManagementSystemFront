@@ -7,11 +7,11 @@ import { TripRequestStatus } from "../types/TripRequest"
 export const translateTripRequestStatus = (status: TripRequestStatus): string => {
   switch (status) {
     case TripRequestStatus.New:
-      return "Naujas"
-    case TripRequestStatus.Locked:
-      return "Užrakintas"
+      return "Nauja"
     case TripRequestStatus.Confirmed:
-      return "Patvirtintas"
+      return "Patvirtinta"
+    case TripRequestStatus.Completed:
+      return "Užbaigta"
     default:
       return String(status)
   }

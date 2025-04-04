@@ -1,3 +1,5 @@
+"use client"
+
 import React from "react"
 import { Button, Menu, MenuItem } from "@mui/material"
 import { KeyboardArrowDown, Sort } from "@mui/icons-material"
@@ -5,9 +7,10 @@ import { KeyboardArrowDown, Sort } from "@mui/icons-material"
 interface SortMenuProps {
   options: string[]
   onSort: (option: string) => void
+  value: string
 }
 
-const SortMenu: React.FC<SortMenuProps> = ({ options, onSort }) => {
+const SortMenu: React.FC<SortMenuProps> = ({ options, onSort, value }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -38,7 +41,7 @@ const SortMenu: React.FC<SortMenuProps> = ({ options, onSort }) => {
           },
         }}
       >
-        Rikiuoti
+        {value || "Rikiuoti"}
       </Button>
       <Menu
         anchorEl={anchorEl}
@@ -67,6 +70,7 @@ const SortMenu: React.FC<SortMenuProps> = ({ options, onSort }) => {
           <MenuItem
             key={index}
             onClick={() => handleSortOptionClick(option)}
+            selected={option === value}
             sx={{
               display: "flex",
               alignItems: "center",

@@ -78,5 +78,5 @@ export interface TripResponse {
 }
 
 // Import ValidationWarning
-import type { ValidationWarning } from "./common"
+import type { ValidationWarning } from "./Common"
 

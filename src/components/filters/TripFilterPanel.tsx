@@ -1,38 +1,28 @@
 "use client"
 
-import React, { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
-  Button,
-  Chip,
-  Drawer,
-  Paper,
   Typography,
-  useMediaQuery,
-  useTheme,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  Button,
+  Drawer,
+  Divider,
   FormGroup,
   FormControlLabel,
   Checkbox,
   Slider,
-  Stack,
-  styled,
+  Paper,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material"
-import { FilterList, Close, ExpandMore } from "@mui/icons-material"
-import { TripCategory, TripStatus } from "../../types/ClientTrip"
-import { translateTripCategory, translateTripStatus } from "../../Utils/translateEnums"
 import CustomDateTimePicker from "../CustomDatePicker"
 import dayjs from "dayjs"
 
-/**
- * The shape of the filters we maintain in the panel,
- * including the priceRange array for the slider.
- */
 export interface TripFilters {
-  categories: TripCategory[]
-  statuses: TripStatus[]
+  categories: string[]
+  statuses: string[]
+  paymentStatuses: string[] // Added payment statuses
   startDate: string | null
   endDate: string | null
   priceRange: [number, number]
@@ -45,334 +35,253 @@ interface TripFilterPanelProps {
   initialFilters: TripFilters
 }
 
-// Styled components for consistent typography
-const FilterTitle = styled(Typography)(() => ({
-  fontSize: "1.125rem",
-  fontWeight: 500,
-}))
-
-const FilterAccordion = styled(Accordion)({
-  "&.MuiAccordion-root": {
-    borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
-    "&:before": {
-      display: "none",
-    },
-  },
-})
-
-const FilterAccordionSummary = styled(AccordionSummary)(() => ({
-  padding: "0 0",
-  "& .MuiAccordionSummary-content": {
-    margin: "12px 0",
-  },
-}))
-
-const FilterAccordionDetails = styled(AccordionDetails)({
-  padding: "0 0 16px 0",
-})
-
-const FilterCheckboxLabel = styled(FormControlLabel)({
-  "& .MuiFormControlLabel-label": {
-    fontSize: "1rem",
-  },
-})
-
-/**
- * A component that displays filter accordions, including a Price Range slider.
- */
-const TripFilterPanel: React.FC<TripFilterPanelProps> = ({
-  isOpen,
-  onClose,
-  onApplyFilters,
-  initialFilters,
-}) => {
-  // We copy the initialFilters into state
-  const [filters, setFilters] = useState<TripFilters>({
-    ...initialFilters,
-    // If the user hasn't chosen a range yet, default to [0, 20000]
-    priceRange: initialFilters.priceRange ?? [0, 20000],
-  })
-
-  const [expandedSection, setExpandedSection] = useState<string | false>("category")
+const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onApplyFilters, initialFilters }) => {
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  /**
-   * Accordion expansion
-   */
-  const handleAccordionChange = (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpandedSection(isExpanded ? panel : false)
+  // Initialize state with initialFilters
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialFilters.categories || [])
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialFilters.statuses || [])
+  const [selectedPaymentStatuses, setSelectedPaymentStatuses] = useState<string[]>(initialFilters.paymentStatuses || [])
+  const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(
+    initialFilters.startDate ? dayjs(initialFilters.startDate) : null,
+  )
+  const [endDate, setEndDate] = useState<dayjs.Dayjs | null>(
+    initialFilters.endDate ? dayjs(initialFilters.endDate) : null,
+  )
+  const [priceRange, setPriceRange] = useState<[number, number]>(initialFilters.priceRange || [0, 20000])
+
+  // Update local state when initialFilters change
+  useEffect(() => {
+    setSelectedCategories(initialFilters.categories || [])
+    setSelectedStatuses(initialFilters.statuses || [])
+    setSelectedPaymentStatuses(initialFilters.paymentStatuses || [])
+    setStartDate(initialFilters.startDate ? dayjs(initialFilters.startDate) : null)
+    setEndDate(initialFilters.endDate ? dayjs(initialFilters.endDate) : null)
+    setPriceRange(initialFilters.priceRange || [0, 20000])
+  }, [initialFilters])
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
+    )
   }
 
-  /**
-   * Toggling categories
-   */
-  const handleCategoryToggle = (category: TripCategory) => {
-    setFilters((prev) => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter((c) => c !== category)
-        : [...prev.categories, category],
-    }))
+  const handleStatusChange = (status: string) => {
+    setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
   }
 
-  /**
-   * Toggling statuses
-   */
-  const handleStatusToggle = (status: TripStatus) => {
-    setFilters((prev) => ({
-      ...prev,
-      statuses: prev.statuses.includes(status)
-        ? prev.statuses.filter((s) => s !== status)
-        : [...prev.statuses, status],
-    }))
+  const handlePaymentStatusChange = (status: string) => {
+    setSelectedPaymentStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
   }
 
-  /**
-   * For picking start/end date
-   */
-  const handleDateChange = (field: "startDate" | "endDate", value: dayjs.Dayjs | null) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value ? value.format("YYYY-MM-DD") : null,
-    }))
+  const handlePriceChange = (event: Event, newValue: number | number[]) => {
+    setPriceRange(newValue as [number, number])
   }
 
-  /**
-   * Price Range slider
-   */
-  const handlePriceRangeChange = (_event: Event, newValue: number | number[]) => {
-    setFilters((prev) => ({
-      ...prev,
-      priceRange: newValue as [number, number],
-    }))
-  }
-
-  /**
-   * Apply filters
-   */
   const handleApply = () => {
-    onApplyFilters(filters)
+    onApplyFilters({
+      categories: selectedCategories,
+      statuses: selectedStatuses,
+      paymentStatuses: selectedPaymentStatuses,
+      startDate: startDate ? startDate.format("YYYY-MM-DD") : null,
+      endDate: endDate ? endDate.format("YYYY-MM-DD") : null,
+      priceRange,
+    })
     if (isMobile) {
       onClose()
     }
   }
 
-  /**
-   * Clear all filters
-   */
-  const handleClear = () => {
-    const clearedFilters: TripFilters = {
-      categories: [],
-      statuses: [],
-      startDate: null,
-      endDate: null,
-      priceRange: [0, 20000],
-    }
-    setFilters(clearedFilters)
-    onApplyFilters(clearedFilters)
+  const handleReset = () => {
+    setSelectedCategories([])
+    setSelectedStatuses([])
+    setSelectedPaymentStatuses([])
+    setStartDate(null)
+    setEndDate(null)
+    setPriceRange([0, 20000])
   }
 
-  /**
-   * Count how many filters are active, for display
-   */
-  const getActiveFilterCount = () => {
-    let count = 0
-    if (filters.categories.length > 0) count++
-    if (filters.statuses.length > 0) count++
-    if (filters.startDate) count++
-    if (filters.endDate) count++
-    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 20000) count++
-    return count
-  }
-
-  /**
-   * The main UI for the filter panel
-   */
   const filterContent = (
-    <Box sx={{ p: 3, width: isMobile ? "100%" : 300 }}>
-      {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <FilterTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <FilterList /> Filtrai
-          {getActiveFilterCount() > 0 && (
-            <Chip size="small" label={getActiveFilterCount()} color="primary" sx={{ ml: 1 }} />
-          )}
-        </FilterTitle>
-        {isMobile && (
-          <Button onClick={onClose} sx={{ minWidth: "auto", p: 0.5 }}>
-            <Close />
-          </Button>
-        )}
-      </Box>
-
-      <Stack spacing={0}>
-        {/* CATEGORY */}
-        <FilterAccordion
-          expanded={expandedSection === "category"}
-          onChange={handleAccordionChange("category")}
-          elevation={0}
-          disableGutters
-        >
-          <FilterAccordionSummary expandIcon={<ExpandMore />}>
-            <FilterTitle>Kelionės kategorija</FilterTitle>
-          </FilterAccordionSummary>
-          <FilterAccordionDetails>
-            <FormGroup>
-              {Object.values(TripCategory).map((category) => (
-                <FilterCheckboxLabel
-                  key={category}
-                  control={
-                    <Checkbox
-                      checked={filters.categories.includes(category)}
-                      onChange={() => handleCategoryToggle(category)}
-                    />
-                  }
-                  label={translateTripCategory(category)}
-                />
-              ))}
-            </FormGroup>
-          </FilterAccordionDetails>
-        </FilterAccordion>
-
-        {/* STATUS */}
-        <FilterAccordion
-          expanded={expandedSection === "status"}
-          onChange={handleAccordionChange("status")}
-          elevation={0}
-          disableGutters
-        >
-          <FilterAccordionSummary expandIcon={<ExpandMore />}>
-            <FilterTitle>Kelionės statusas</FilterTitle>
-          </FilterAccordionSummary>
-          <FilterAccordionDetails>
-            <FormGroup>
-              {Object.values(TripStatus).map((status) => (
-                <FilterCheckboxLabel
-                  key={status}
-                  control={
-                    <Checkbox
-                      checked={filters.statuses.includes(status)}
-                      onChange={() => handleStatusToggle(status)}
-                    />
-                  }
-                  label={translateTripStatus(status)}
-                />
-              ))}
-            </FormGroup>
-          </FilterAccordionDetails>
-        </FilterAccordion>
-
-        {/* DATE */}
-        <FilterAccordion
-          expanded={expandedSection === "date"}
-          onChange={handleAccordionChange("date")}
-          elevation={0}
-          disableGutters
-        >
-          <FilterAccordionSummary expandIcon={<ExpandMore />}>
-            <FilterTitle>Kelionės data</FilterTitle>
-          </FilterAccordionSummary>
-          <FilterAccordionDetails>
-            <Stack spacing={2}>
-              <CustomDateTimePicker
-                label="Nuo"
-                value={filters.startDate ? dayjs(filters.startDate) : null}
-                onChange={(date) => handleDateChange("startDate", date)}
-                showTime={false}
-              />
-              <CustomDateTimePicker
-                label="Iki"
-                value={filters.endDate ? dayjs(filters.endDate) : null}
-                onChange={(date) => handleDateChange("endDate", date)}
-                showTime={false}
-                minDate={filters.startDate ? dayjs(filters.startDate) : undefined}
-              />
-            </Stack>
-          </FilterAccordionDetails>
-        </FilterAccordion>
-
-        {/* PRICE */}
-        <FilterAccordion
-          expanded={expandedSection === "price"}
-          onChange={handleAccordionChange("price")}
-          elevation={0}
-          disableGutters
-        >
-          <FilterAccordionSummary expandIcon={<ExpandMore />}>
-            <FilterTitle>Kaina (€)</FilterTitle>
-          </FilterAccordionSummary>
-          <FilterAccordionDetails>
-            <Box sx={{ px: 2, pt: 1 }}>
-              <Slider
-                value={filters.priceRange}
-                onChange={handlePriceRangeChange}
-                valueLabelDisplay="auto"
-                min={0}
-                max={20000}
-                step={100}
-                marks={[
-                  { value: 0, label: "0 €" },
-                  { value: 20000, label: "20000 €" },
-                ]}
-                sx={{
-                  "& .MuiSlider-markLabel": {
-                    fontSize: "1rem",
-                  },
-                }}
-              />
-            </Box>
-          </FilterAccordionDetails>
-        </FilterAccordion>
-      </Stack>
-
-      <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-        <Button 
-          variant="contained" 
-          fullWidth 
-          onClick={handleApply} 
-          color="primary" 
-          sx={{ fontSize: "1rem" }}
-        >
-          Pritaikyti
-        </Button>
-        <Button 
-          variant="outlined" 
-          onClick={handleClear} 
-          sx={{ fontSize: "1rem" }}
-        >
+    <Box sx={{ p: 2, width: isMobile ? "auto" : "300px" }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        <Typography variant="h6">Filtrai</Typography>
+        <Button size="small" onClick={handleReset}>
           Išvalyti
         </Button>
       </Box>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Typography variant="subtitle1" gutterBottom>
+        Kategorija
+      </Typography>
+      <FormGroup sx={{ mb: 2 }}>
+        <FormControlLabel
+          control={
+            <Checkbox checked={selectedCategories.includes("Relax")} onChange={() => handleCategoryChange("Relax")} />
+          }
+          label="Poilsinė"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedCategories.includes("Business")}
+              onChange={() => handleCategoryChange("Business")}
+            />
+          }
+          label="Verslo"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedCategories.includes("Tourist")}
+              onChange={() => handleCategoryChange("Tourist")}
+            />
+          }
+          label="Pažintinė"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox checked={selectedCategories.includes("Group")} onChange={() => handleCategoryChange("Group")} />
+          }
+          label="Grupinė"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox checked={selectedCategories.includes("Cruise")} onChange={() => handleCategoryChange("Cruise")} />
+          }
+          label="Kruizas"
+        />
+      </FormGroup>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Typography variant="subtitle1" gutterBottom>
+        Būsena
+      </Typography>
+      <FormGroup sx={{ mb: 2 }}>
+        <FormControlLabel
+          control={
+            <Checkbox checked={selectedStatuses.includes("Draft")} onChange={() => handleStatusChange("Draft")} />
+          }
+          label="Juodraštis"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedStatuses.includes("Confirmed")}
+              onChange={() => handleStatusChange("Confirmed")}
+            />
+          }
+          label="Patvirtinta"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedStatuses.includes("Cancelled")}
+              onChange={() => handleStatusChange("Cancelled")}
+            />
+          }
+          label="Atšaukta"
+        />
+      </FormGroup>
+
+      <Divider sx={{ mb: 2 }} />
+
+      {/* New Payment Status Filter Section */}
+      <Typography variant="subtitle1" gutterBottom>
+        Mokėjimo būsena
+      </Typography>
+      <FormGroup sx={{ mb: 2 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedPaymentStatuses.includes("Unpaid")}
+              onChange={() => handlePaymentStatusChange("Unpaid")}
+            />
+          }
+          label="Neapmokėta"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedPaymentStatuses.includes("PartiallyPaid")}
+              onChange={() => handlePaymentStatusChange("PartiallyPaid")}
+            />
+          }
+          label="Dalinai apmokėta"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedPaymentStatuses.includes("Paid")}
+              onChange={() => handlePaymentStatusChange("Paid")}
+            />
+          }
+          label="Apmokėta"
+        />
+      </FormGroup>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Typography variant="subtitle1" gutterBottom>
+        Datos
+      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <CustomDateTimePicker
+          label="Nuo"
+          value={startDate}
+          onChange={setStartDate}
+          showTime={false}
+          sx={{ mb: 2, width: "100%" }}
+        />
+        <CustomDateTimePicker
+          label="Iki"
+          value={endDate}
+          onChange={setEndDate}
+          showTime={false}
+          minDate={startDate}
+          sx={{ width: "100%" }}
+        />
+      </Box>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Typography variant="subtitle1" gutterBottom>
+        Kaina (€)
+      </Typography>
+      <Box sx={{ px: 1, mb: 3 }}>
+        <Slider
+          value={priceRange}
+          onChange={handlePriceChange}
+          valueLabelDisplay="auto"
+          min={0}
+          max={20000}
+          step={100}
+        />
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography variant="body2">€{priceRange[0]}</Typography>
+          <Typography variant="body2">€{priceRange[1]}</Typography>
+        </Box>
+      </Box>
+
+      <Button variant="contained" color="primary" fullWidth onClick={handleApply}>
+        Taikyti filtrus
+      </Button>
     </Box>
   )
 
-  return (
-    <>
-      {isMobile ? (
-        <Drawer anchor="left" open={isOpen} onClose={onClose}>
-          {filterContent}
-        </Drawer>
-      ) : (
-        <Paper
-          elevation={0}
-          sx={{
-            width: 300,
-            borderRadius: 2,
-            border: "1px solid",
-            borderColor: "divider",
-            height: "fit-content",
-            position: "sticky",
-            top: 24,
-            alignSelf: "flex-start", // Add this to ensure it stays at the top
-            zIndex: 1, // Add a z-index to ensure it stays above other content
-          }}
-        >
-          {filterContent}
-        </Paper>
-      )}
-    </>
+  return isMobile ? (
+    <Drawer anchor="right" open={isOpen} onClose={onClose}>
+      {filterContent}
+    </Drawer>
+  ) : (
+    <Paper elevation={2} sx={{ borderRadius: 2 }}>
+      {filterContent}
+    </Paper>
   )
 }
 
 export default TripFilterPanel
+

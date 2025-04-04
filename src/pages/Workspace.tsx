@@ -31,12 +31,16 @@ const Workspace: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} alignItems="flex-start">
         <Grid item xs={12} md={8}>
-          <TripRequestList />
+          <Box sx={{ height: '100%' }}>
+            <TripRequestList />
+          </Box>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Calendar />
+          <Box sx={{ height: '100%', mt: { xs: 2, md: 0 } }}>
+            <Calendar />
+          </Box>
         </Grid>
       </Grid>
     </Box>

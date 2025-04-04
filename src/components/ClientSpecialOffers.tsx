@@ -1,119 +1,104 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardActionArea,
-  useMediaQuery,
-  useTheme,
-  Button,
-} from "@mui/material";
-import FilterMenu from "../components/FilterMenu";
-import SearchBar from "../components/SearchBar";
-import SortMenu from "../components/SortMenu";
-import { FilterList } from "@mui/icons-material";
+"use client"
+
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
+import { API_URL } from "../Utils/Configuration"
+import { Box, Typography, Grid, Button, CircularProgress } from "@mui/material"
+import SpecialOfferCard from "./ClientSpecialOfferCard"
+import type { TripResponse } from "../types/ClientTrip"
 
 const ClientSpecialOffers: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [offers, setOffers] = useState<TripResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const offers = [
-    { id: 1, name: "Poilsis Maldyvuose", category: "Poilsio", price: 2000 },
-    { id: 2, name: "Žygis Alpėse", category: "Nuotykių", price: 1200 },
-    { id: 3, name: "Prabangus kruizas", category: "Prabangos", price: 3000 },
-  ];
+  const navigate = useNavigate()
 
-  const filterSections = [
-    {
-      title: "Kategorija",
-      options: [
-        {
-          type: "checkbox" as const,
-          label: "Kategorijos",
-          options: ["Poilsio", "Nuotykių", "Prabangos"],
+  /**
+   * Fetch the special offers from the API
+   */
+  const fetchOffers = async () => {
+    try {
+      setLoading(true)
+
+      // Initialize axios GET request for the trips
+      const response = await axios.get<TripResponse[]>(`${API_URL}/ClientTripOfferFacade`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
-      ],
-    },
-  ];
+      })
+
+      setOffers(response.data)
+    } catch (err: any) {
+      console.error("Failed to fetch special offers:", err)
+      setError(err.response?.data?.message || "Nepavyko gauti specialių pasiūlymų sąrašo.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOfferClick = (id: string) => {
+    navigate(`/special-offers/${id}`)
+  }
+
+  const handleCreateOffer = () => {
+    navigate("/special-offers/create")
+  }
+
+  // Initial load
+  useEffect(() => {
+    fetchOffers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency array for initial load
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column" }}>
       <Box sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          Klientams skirti pasiūlymai
-        </Typography>
-
-        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Ieškoti pasiūlymų..." />
-
         <Box
           sx={{
             mt: 2,
             mb: 3,
             display: "flex",
-            justifyContent: isMobile ? "flex-end" : "space-between",
+            justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
             gap: 2,
           }}
         >
-          {isMobile && (
-            <Button
-              variant="outlined"
-              startIcon={<FilterList />}
-              onClick={() => setIsFilterDrawerOpen(true)}
-            >
-              Filtruoti
+          <Box>
+            <Button variant="contained" color="primary" onClick={handleCreateOffer}>
+              Sukurti naują pasiūlymą
             </Button>
-          )}
-          <SortMenu
-            options={["Naujausi pirmi", "Seniausi pirmi", "Kaina didėjimo tvarka", "Kaina mažėjimo tvarka"]}
-            onSort={() => {}}
-          />
-        </Box>
-
-        <Box sx={{ display: "flex" }}>
-          {!isMobile && (
-            <FilterMenu
-              sections={filterSections}
-              onApplyFilters={() => {}}
-              isOpen={isFilterDrawerOpen}
-              onClose={() => setIsFilterDrawerOpen(false)}
-            />
-          )}
-          <Box sx={{ flex: 1 }}>
-            <Grid container spacing={2}>
-              {offers.map((offer) => (
-                <Grid item xs={12} key={offer.id}>
-                  <Card>
-                    <CardActionArea>
-                      <CardContent>
-                        <Typography variant="h6">{offer.name}</Typography>
-                        <Typography variant="body2">Kategorija: {offer.category}</Typography>
-                        <Typography variant="body2">Kaina: €{offer.price}</Typography>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
           </Box>
         </Box>
+
+        {loading ? (
+          <Box display="flex" justifyContent="center" sx={{ my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error" textAlign="center">
+            {error}
+          </Typography>
+        ) : offers.length > 0 ? (
+          <Grid container spacing={2}>
+            {offers.map((offer) => (
+              <Grid item xs={12} sm={6} md={4} key={offer.id}>
+                <SpecialOfferCard offer={offer} onClick={handleOfferClick} />
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Typography variant="body1" textAlign="center" sx={{ my: 4 }}>
+            Nėra sukurtų specialių pasiūlymų.
+          </Typography>
+        )}
       </Box>
-
-      {isMobile && (
-        <FilterMenu
-          sections={filterSections}
-          onApplyFilters={() => {}}
-          isOpen={isFilterDrawerOpen}
-          onClose={() => setIsFilterDrawerOpen(false)}
-        />
-      )}
     </Box>
-  );
-};
+  )
+}
 
-export default ClientSpecialOffers;
+export default ClientSpecialOffers
+

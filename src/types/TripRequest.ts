@@ -1,7 +1,7 @@
 export enum TripRequestStatus {
     New ="New",
-    Locked ="Locked",
     Confirmed ="Confirmed",
+    Completed ="Completed",
   }
   
   export interface TripRequestCreate {
@@ -20,6 +20,7 @@ export enum TripRequestStatus {
     status: TripRequestStatus
     createdAt: string 
     agentId?: string
+    confirmedByAgentId?: string
   }
   
   

@@ -19,74 +19,80 @@ export enum PaymentStatus {
 }
 
 export interface CreateTripRequest {
-  agentId?: string;
-  clientId?: string;
-  tripName?: string;
-  description?: string;
-  category?: TripCategory;
-  status?: TripStatus;
-  paymentStatus?: PaymentStatus;
-  insuranceTaken?: boolean;
-  startDate?: string;
-  endDate?: string;
-  price?: number;
-  dayByDayItineraryNeeded?: boolean;
+  agentId?: string
+  clientId?: string
+  tripName?: string
+  description?: string
+  category?: TripCategory
+  status?: TripStatus
+  paymentStatus?: PaymentStatus
+  insuranceTaken?: boolean
+  startDate?: string
+  endDate?: string
+  price?: number
+  dayByDayItineraryNeeded?: boolean
 
   // The final itinerary structure
   itinerary?: {
-    title?: string;
-    description?: string;
+    title?: string
+    description?: string
     itinerarySteps?: Array<{
-      dayNumber?: number;
-      description?: string;
-      transports?: any[];
-      accommodations?: any[];
-      activities?: any[];
-    }>;
-  };
+      dayNumber?: number
+      description?: string
+      transports?: any[]
+      accommodations?: any[]
+      activities?: any[]
+    }>
+  }
 
-  childrenCount?: number;
-  adultsCount?: number;
+  childrenCount?: number
+  adultsCount?: number
 }
 
 export interface TripResponse {
-  itinerary: any;
-  id: string;
-  agentId?: string;
-  clientId?: string;
-  tripName?: string;
-  description?: string;
-  category?: TripCategory;
-  status?: TripStatus;
-  paymentStatus?: PaymentStatus;
-  insuranceTaken?: boolean;
-  startDate?: string;
-  endDate?: string;
-  price?: number;
-  adultsCount?: number;
-  childrenCount?: number;
-  dayByDayItineraryNeeded: boolean;
+  itinerary: any
+  id: string
+  agentId?: string
+  clientId?: string
+  clientFullName?: string
+  tripName?: string
+  description?: string
+  category?: TripCategory
+  status?: TripStatus
+  paymentStatus?: PaymentStatus
+  insuranceTaken?: boolean
+  startDate?: string
+  endDate?: string
+  createdAt?: string
+  price?: number
+  adultsCount?: number
+  childrenCount?: number
+  dayByDayItineraryNeeded: boolean
 }
 
 /** ======= Pagination & Filtering Types ======= **/
 
 export interface TripQueryParams {
-  pageNumber: number;
-  pageSize: number;
-  searchTerm?: string;
-  sortBy?: string;
-  descending?: boolean;
-  category?: TripCategory;
-  status?: TripStatus;
-  startDate?: string;
-  endDate?: string;
-  priceMin?: number;
-  priceMax?: number;
+  pageNumber: number
+  pageSize: number
+  searchTerm?: string
+  sortBy?: string
+  descending?: boolean
+  category?: TripCategory
+  status?: TripStatus
+  startDate?: string
+  endDate?: string
+  priceMin?: number
+  priceMax?: number
+  // Add these new fields for array support
+  categories?: TripCategory[]
+  statuses?: TripStatus[]
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
+  items: T[]
+  totalCount: number
+  pageNumber: number
+  pageSize: number
 }
+

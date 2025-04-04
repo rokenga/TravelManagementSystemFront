@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
-import type { TripResponse, TripQueryParams } from "../types/ClientTrip"
+import type { TripResponse } from "../types/ClientTrip"
 import type { PaginatedResponse } from "../types/Pagination"
 import { Box, Typography, Grid, Button, CircularProgress, useMediaQuery, useTheme, Chip } from "@mui/material"
 import { FilterList } from "@mui/icons-material"
@@ -15,106 +15,156 @@ import TripFilterPanel, { type TripFilters } from "../components/filters/TripFil
 import SearchBar from "../components/SearchBar"
 import SortMenu from "../components/SortMenu"
 import TripSummaryCard from "../components/TripSummaryCard"
+import { useNavigation } from "../contexts/NavigationContext"
+
+// Default values for list state
+const defaultFilters: TripFilters = {
+  categories: [],
+  statuses: [],
+  paymentStatuses: [], // Added payment statuses with default empty array
+  startDate: null,
+  endDate: null,
+  priceRange: [0, 20000],
+}
 
 const AdminTripList: React.FC = () => {
+  const { setNavigationSource } = useNavigation()
+  const navigate = useNavigate()
+  const theme = useTheme()
+  const isFilterCollapsed = useMediaQuery(theme.breakpoints.down("md"))
+
+  // State for trips data
   const [trips, setTrips] = useState<TripResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
+
+  // UI state
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
+
+  // List state with defaults
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
-  const [totalPages, setTotalPages] = useState(1)
-  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
   const [sortOption, setSortOption] = useState<string>("Naujausios pirmos")
+  const [selectedFilters, setSelectedFilters] = useState<TripFilters>(defaultFilters)
 
-  // Use the correct TripFilters interface that only has priceRange
-  const [selectedFilters, setSelectedFilters] = useState<TripFilters>({
-    categories: [],
-    statuses: [],
-    startDate: null,
-    endDate: null,
-    priceRange: [0, 20000], // Default range
-  })
+  // Pagination state
+  const [totalPages, setTotalPages] = useState(1)
 
-  const navigate = useNavigate()
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  // Ref to track if we should fetch data
+  const shouldFetch = useRef(true)
+
   const token = localStorage.getItem("accessToken")
 
   /**
    * Fetch the trips from the API with all filtering options
+   * This is now a memoized function that doesn't take parameters
+   * but reads from component state
    */
-  const fetchTrips = async (page: number, search: string, size: number = pageSize) => {
+  const fetchTrips = useCallback(async () => {
+    if (!shouldFetch.current) return
+
     try {
       setLoading(true)
-      const params: TripQueryParams = {
-        pageNumber: page,
-        pageSize: size,
-        searchTerm: search || undefined,
+
+      // Create URLSearchParams object for proper parameter serialization
+      const searchParams = new URLSearchParams()
+
+      // Add basic pagination parameters
+      searchParams.append("PageNumber", currentPage.toString())
+      searchParams.append("PageSize", pageSize.toString())
+
+      // Add search term if present
+      if (searchTerm) {
+        searchParams.append("SearchTerm", searchTerm)
       }
 
       // Add sorting parameters
       if (sortOption) {
+        let sortBy: string
+        let descending: boolean
+
         switch (sortOption) {
           case "Naujausios pirmos":
-            params.sortBy = "createdAt" // Using createdAt from second implementation
-            params.descending = true
+            sortBy = "createdAt"
+            descending = true
             break
           case "Seniausios pirmos":
-            params.sortBy = "createdAt"
-            params.descending = false
+            sortBy = "createdAt"
+            descending = false
             break
           case "Kaina (didėjimo tvarka)":
-            params.sortBy = "price"
-            params.descending = false
+            sortBy = "price"
+            descending = false
             break
           case "Kaina (mažėjimo tvarka)":
-            params.sortBy = "price"
-            params.descending = true
+            sortBy = "price"
+            descending = true
             break
+          default:
+            sortBy = "createdAt"
+            descending = true
         }
+
+        searchParams.append("SortBy", sortBy)
+        searchParams.append("Descending", descending.toString())
       }
 
-      // Add filter parameters
+      // Add categories - using the exact parameter name 'Categories' with proper casing
       if (selectedFilters.categories.length > 0) {
-        params.category = selectedFilters.categories[0] // API might need to be updated to handle multiple categories
+        selectedFilters.categories.forEach((category) => {
+          searchParams.append("Categories", category)
+        })
       }
 
+      // Add statuses - using the exact parameter name 'Statuses' with proper casing
       if (selectedFilters.statuses.length > 0) {
-        params.status = selectedFilters.statuses[0] // API might need to be updated to handle multiple statuses
+        selectedFilters.statuses.forEach((status) => {
+          searchParams.append("Statuses", status)
+        })
       }
 
+      // Add payment statuses - using the exact parameter name 'Payments' as expected by the backend
+      if (selectedFilters.paymentStatuses.length > 0) {
+        selectedFilters.paymentStatuses.forEach((status) => {
+          searchParams.append("Payments", status)
+        })
+      }
+
+      // Add date filters
       if (selectedFilters.startDate) {
-        params.startDate = selectedFilters.startDate
+        searchParams.append("StartDate", selectedFilters.startDate)
       }
 
       if (selectedFilters.endDate) {
-        params.endDate = selectedFilters.endDate
+        searchParams.append("EndDate", selectedFilters.endDate)
       }
 
-      // Use priceRange for min/max price filtering
+      // Add price range filters
       if (selectedFilters.priceRange) {
-        // Only set priceMin if it's different from the default minimum
         if (selectedFilters.priceRange[0] > 0) {
-          params.priceMin = selectedFilters.priceRange[0]
+          searchParams.append("PriceMin", selectedFilters.priceRange[0].toString())
         }
 
-        // Only set priceMax if it's different from the default maximum
         if (selectedFilters.priceRange[1] < 20000) {
-          params.priceMax = selectedFilters.priceRange[1]
+          searchParams.append("PriceMax", selectedFilters.priceRange[1].toString())
         }
       }
 
-      const response = await axios.get<PaginatedResponse<TripResponse>>(`${API_URL}/client-trips`, {
+      // Log the full URL for debugging
+      const queryString = searchParams.toString()
+      console.log(`Fetching trips with URL: ${API_URL}/client-trips?${queryString}`)
+
+      // Make the API call with the manually constructed query string
+      const response = await axios.get<PaginatedResponse<TripResponse>>(`${API_URL}/client-trips?${queryString}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        params,
       })
 
       // Update state with data from the backend
       setTrips(response.data.items)
-      setCurrentPage(response.data.pageNumber) // Use the page number from the response
+      setCurrentPage(response.data.pageNumber)
       setPageSize(response.data.pageSize)
 
       // Calculate total pages based on the response data
@@ -133,19 +183,23 @@ const AdminTripList: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, pageSize, searchTerm, selectedFilters, sortOption, token])
 
+  // Centralized data fetching in a single useEffect
+  useEffect(() => {
+    fetchTrips()
+  }, [fetchTrips])
+
+  // These handlers now just update state, which triggers the useEffect
   const handlePageChange = (newPage: number) => {
     console.log(`Changing to page ${newPage}`)
     setCurrentPage(newPage)
-    fetchTrips(newPage, searchTerm)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
     console.log(`Changing page size to ${newPageSize}`)
     setPageSize(newPageSize)
     setCurrentPage(1) // Reset to first page when changing page size
-    fetchTrips(1, searchTerm, newPageSize)
   }
 
   const handleSearchChange = (newSearchTerm: string) => {
@@ -165,7 +219,9 @@ const AdminTripList: React.FC = () => {
   }
 
   const handleTripClick = (id: string) => {
-    navigate(`/trips/${id}`)
+    // Set the navigation source to identify where we came from
+    setNavigationSource("admin-trip-list")
+    navigate(`/admin-trip-list/${id}`)
   }
 
   /**
@@ -175,6 +231,7 @@ const AdminTripList: React.FC = () => {
     let count = 0
     if (selectedFilters.categories.length > 0) count++
     if (selectedFilters.statuses.length > 0) count++
+    if (selectedFilters.paymentStatuses.length > 0) count++ // Count payment statuses
     if (selectedFilters.startDate) count++
     if (selectedFilters.endDate) count++
 
@@ -186,24 +243,18 @@ const AdminTripList: React.FC = () => {
     return count
   }
 
-  // Initial load
+  // Initial data fetch - only on mount
   useEffect(() => {
-    fetchTrips(currentPage, searchTerm)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Empty dependency array for initial load
-
-  // Re-fetch when filters, sort, or search changes
-  useEffect(() => {
-    if (searchTerm || sortOption || getActiveFilterCount() > 0) {
-      fetchTrips(1, searchTerm)
+    shouldFetch.current = true
+    return () => {
+      shouldFetch.current = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, sortOption, selectedFilters])
+  }, [])
 
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
-        Jūsų sukurtos kelionės
+        Kelionių sąrašas
       </Typography>
 
       <SearchBar value={searchTerm} onChange={handleSearchChange} placeholder="Ieškoti kelionių..." />
@@ -220,15 +271,14 @@ const AdminTripList: React.FC = () => {
         }}
       >
         <Box>
-          <Button variant="contained" color="primary" onClick={() => navigate("/trips/client")}>
+          <Button variant="contained" color="primary" onClick={() => navigate("/admin-trip-list/create")}>
             Sukurti kelionę klientui
           </Button>
         </Box>
-
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <PageSizeSelector pageSize={pageSize} onPageSizeChange={handlePageSizeChange} options={[25, 50, 100]} />
 
-          {isMobile && (
+          {isFilterCollapsed && (
             <Button
               variant="outlined"
               startIcon={<FilterList />}
@@ -244,7 +294,7 @@ const AdminTripList: React.FC = () => {
           <SortMenu
             options={["Naujausios pirmos", "Seniausios pirmos", "Kaina (didėjimo tvarka)", "Kaina (mažėjimo tvarka)"]}
             onSort={handleSortChange}
-            value={sortOption} // Changed from selectedOption to value based on error
+            value={sortOption}
           />
         </Box>
       </Box>
@@ -253,14 +303,13 @@ const AdminTripList: React.FC = () => {
         sx={{
           display: "flex",
           gap: 3,
-          position: "relative", // Add this to create a positioning context
-          minHeight: trips.length > 0 ? "800px" : "auto", // Add minimum height to prevent layout shifts
+          position: "relative",
+          minHeight: trips.length > 0 ? "800px" : "auto",
         }}
       >
-        {!isMobile && (
+        {!isFilterCollapsed && (
           <Box sx={{ position: "sticky", top: 0, alignSelf: "flex-start", zIndex: 1 }}>
             <TripFilterPanel
-              key="desktop-filter-panel" // Add a stable key
               isOpen={isFilterDrawerOpen}
               onClose={() => setIsFilterDrawerOpen(false)}
               onApplyFilters={handleApplyFilters}
@@ -307,7 +356,7 @@ const AdminTripList: React.FC = () => {
         </Box>
       </Box>
 
-      {isMobile && (
+      {isFilterCollapsed && (
         <TripFilterPanel
           isOpen={isFilterDrawerOpen}
           onClose={() => setIsFilterDrawerOpen(false)}
