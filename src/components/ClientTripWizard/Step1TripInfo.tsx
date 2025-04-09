@@ -10,12 +10,13 @@ import ConfirmationDialog from "../ConfirmationDialog"
 
 // Import types
 import type { Client, TripFormData, ItineraryDay } from "../../types"
+import type { Country } from "../DestinationAutocomplete"
 
 // Import components
 import BasicTripInfo from "./trip-info/BasicTripInfo"
-//import TripDates from "./trip-info/TripDates"
 import TripDetails from "./trip-info/TripDetails"
 import ItineraryOptions from "./trip-info/ItineraryOptions"
+import fullCountriesList from "../../assets/full-countries-lt.json"
 
 interface Step1Props {
   initialData: TripFormData
@@ -40,6 +41,7 @@ let currentFormData: TripFormData = {
   dayByDayItineraryNeeded: false,
   itineraryTitle: "",
   itineraryDescription: "",
+  destination: null, // Add destination field
 }
 
 // Export a function to get the current form data
@@ -48,9 +50,34 @@ export function getCurrentFormData(): TripFormData {
   return { ...currentFormData }
 }
 
+// Helper function to convert string destination to Country object
+const stringToCountry = (destination?: string): Country | null => {
+  if (!destination) return null
+
+  // Find the country in the full list to get complete data
+  const matchingCountry = fullCountriesList.find((country) => country.name.toLowerCase() === destination.toLowerCase())
+
+  if (matchingCountry) {
+    return {
+      name: matchingCountry.name,
+      code: matchingCountry.code,
+    }
+  }
+
+  // Fallback if not found in the list
+  return {
+    name: destination,
+    code: "",
+  }
+}
+
 const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, onSubmit, onDataChange }) => {
   // Store the selected client ID in a ref to ensure it's not lost
   const selectedClientIdRef = useRef<string>(initialData?.clientId || "")
+
+  // Convert string destination to Country object for the Autocomplete
+  const initialDestination = initialData.destination ? stringToCountry(initialData.destination) : null
+  console.log("Initial destination:", initialData.destination, "Converted to:", initialDestination)
 
   const [formData, setFormData] = useState<TripFormData>({
     tripName: initialData?.tripName || "",
@@ -67,6 +94,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     dayByDayItineraryNeeded: initialData?.dayByDayItineraryNeeded || false,
     itineraryTitle: initialData?.itineraryTitle || "",
     itineraryDescription: initialData?.itineraryDescription || "",
+    destination: initialData?.destination || null, // Initialize destination
   })
 
   // Update the global currentFormData whenever formData changes
@@ -85,7 +113,8 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       formData.adultsCount !== null ||
       formData.childrenCount !== null ||
       formData.price !== 0 ||
-      formData.dayByDayItineraryNeeded !== false
+      formData.dayByDayItineraryNeeded !== false ||
+      formData.destination !== null // Include destination in check
 
     // Notify parent component
     if (onDataChange) {
@@ -108,6 +137,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   const [warningDialogType, setWarningDialogType] = useState<"dayByDay" | "dateChange">("dayByDay")
   const [dateError, setDateError] = useState<string | null>(null)
   const [eventsOutsideRange, setEventsOutsideRange] = useState<any[]>([])
+  const [destination, setDestination] = useState<Country | null>(initialDestination)
 
   // Check if we're in edit mode by looking at the URL
   const isEditMode = window.location.pathname.includes("/edit")
@@ -159,6 +189,19 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       setDateError(null)
     }
   }, [startDate, endDate])
+
+  // Initialize the destination when initialData changes
+  useEffect(() => {
+    if (initialData.destination) {
+      const country = stringToCountry(initialData.destination)
+      console.log("Setting destination from initialData:", initialData.destination, "Converted to:", country)
+      setDestination(country)
+      setFormData((prev) => ({
+        ...prev,
+        destination: initialData.destination,
+      }))
+    }
+  }, [initialData.destination])
 
   async function fetchClients() {
     try {
@@ -245,6 +288,13 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     if (onDataChange) {
       onDataChange(true)
     }
+  }
+
+  // Handle destination change
+  function handleDestinationChange(newValue: Country | null) {
+    console.log("Setting destination to:", newValue)
+    setDestination(newValue)
+    handleInputChange("destination", newValue?.name || null)
   }
 
   function handleStartDateChange(newDate: dayjs.Dayjs | null) {
@@ -389,6 +439,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       clientId: clientId,
       startDate: newStart,
       endDate: newEnd,
+      destination: formData.destination, // Ensure destination is included
     }
 
     console.log("Submitting from Step1, clientId:", dataToSubmit.clientId, "Type:", typeof dataToSubmit.clientId)
@@ -477,8 +528,10 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           clients={clients}
           selectedClient={selectedClient}
           isEditMode={isEditMode}
+          destination={destination}
           onInputChange={handleInputChange}
           onClientChange={handleClientChange}
+          onDestinationChange={handleDestinationChange}
         />
 
         <TripDetails
@@ -531,4 +584,3 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
 }
 
 export default Step1TripInfo
-

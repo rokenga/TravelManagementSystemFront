@@ -30,6 +30,8 @@ import {
   Flag as FlagIcon,
   Delete as DeleteIcon,
   FlightTakeoff as FlightTakeoffIcon,
+  PictureAsPdf as PdfIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material"
 import { translateTripStatus, translateTripCategory } from "../Utils/translateEnums"
 import { TripStatus } from "../types/Enums"
@@ -37,6 +39,9 @@ import ImageGallery from "../components/ImageGallery"
 import ActionBar from "../components/ActionBar"
 import { useNavigation } from "../contexts/NavigationContext"
 import type { OfferEvent, SpecialOfferResponse, FileResponse } from "../types/OfferEvent"
+import ConfirmationDialog from "../components/ConfirmationDialog"
+import CustomSnackbar from "../components/CustomSnackBar"
+import PdfViewerModal from "../components/PdfViewerModal"
 
 const lithuanianMonths = [
   "", // index 0 unused for 1-based months
@@ -139,10 +144,21 @@ const ClientSpecialOffer: React.FC = () => {
   const [canEdit, setCanEdit] = useState(true)
   const [offerImages, setOfferImages] = useState<FileResponse[]>([])
   const [selectedTab, setSelectedTab] = useState(0)
+  const [pdfLoading, setPdfLoading] = useState(false)
+
+  // New state for delete confirmation
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
 
   const user = useContext(UserContext)
   const token = localStorage.getItem("accessToken")
   const { navigateBack } = useNavigation()
+
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchOffer = async () => {
@@ -188,7 +204,6 @@ const ClientSpecialOffer: React.FC = () => {
     }
   }, [tripId, token])
 
-
   const handleEditClick = () => {
     if (tripId) {
       navigate(`/special-offers/${tripId}/edit`)
@@ -196,8 +211,50 @@ const ClientSpecialOffer: React.FC = () => {
   }
 
   const handleDeleteClick = () => {
-    // This is a placeholder - no functionality for now
-    console.log("Delete button clicked")
+    setShowDeleteConfirmDialog(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!tripId) return
+
+    setDeleteLoading(true)
+    try {
+      await axios.delete(`${API_URL}/ClientTripOfferFacade/${tripId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      // Show success message
+      setSnackbarMessage("Pasiūlymas sėkmingai ištrintas!")
+      setSnackbarSeverity("success")
+      setSnackbarOpen(true)
+
+      // Close the dialog
+      setShowDeleteConfirmDialog(false)
+
+      // Add a small delay before navigation to ensure the snackbar is seen
+      setTimeout(() => {
+        navigate("/special-offers")
+      }, 1500) // 1.5 second delay
+    } catch (err: any) {
+      console.error("Failed to delete special offer:", err)
+
+      setSnackbarMessage(err.response?.data?.message || "Nepavyko ištrinti pasiūlymo.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+      setShowDeleteConfirmDialog(false)
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmDialog(false)
+  }
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false)
   }
 
   const handleConvertToTripClick = () => {
@@ -208,6 +265,125 @@ const ClientSpecialOffer: React.FC = () => {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue)
   }
+
+  // New function to handle PDF download
+  const handleDownloadPdf = async () => {
+    if (!tripId) return
+
+    setPdfLoading(true)
+    try {
+      // Make a request to the PDF generation endpoint
+      const response = await axios.get(`${API_URL}/Pdf/offer/${tripId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "blob", // Important: we need to receive the response as a blob
+      })
+
+      // Create a blob URL for the PDF
+      const blob = new Blob([response.data], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+
+      // Create a temporary link element to trigger the download
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `pasiulymas-${tripId}.pdf` // Set the filename
+      document.body.appendChild(link)
+      link.click()
+
+      // Clean up
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+
+      // Show success message
+      setSnackbarMessage("PDF dokumentas sėkmingai atsisiųstas!")
+      setSnackbarSeverity("success")
+      setSnackbarOpen(true)
+    } catch (err: any) {
+      console.error("Failed to download PDF:", err)
+      setSnackbarMessage("Nepavyko atsisiųsti PDF dokumento.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  // Function to preview PDF in a new tab
+  const handlePreviewPdf = async () => {
+    if (!tripId) return
+
+    setPdfLoading(true)
+    try {
+      // Make a request to the PDF generation endpoint
+      const response = await axios.get(`${API_URL}/Pdf/offer/${tripId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "blob", // Important: we need to receive the response as a blob
+      })
+
+      // Create a blob URL for the PDF
+      const blob = new Blob([response.data], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+
+      // Open the PDF in a new tab
+      window.open(url, "_blank")
+
+      // Show success message
+      setSnackbarMessage("PDF dokumentas sėkmingai sugeneruotas!")
+      setSnackbarSeverity("success")
+      setSnackbarOpen(true)
+    } catch (err: any) {
+      console.error("Failed to preview PDF:", err)
+      setSnackbarMessage("Nepavyko sugeneruoti PDF dokumento.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  // Function to open PDF in the embedded viewer
+  const handleOpenPdfViewer = async () => {
+    if (!tripId) return
+
+    setPdfLoading(true)
+    setPdfViewerOpen(true)
+    setPdfUrl(null) // Reset URL while loading
+
+    try {
+      // Make a request to the PDF generation endpoint
+      const response = await axios.get(`${API_URL}/Pdf/offer/${tripId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: "blob", // Important: we need to receive the response as a blob
+      })
+
+      // Create a blob URL for the PDF
+      const blob = new Blob([response.data], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+      setPdfUrl(url)
+    } catch (err: any) {
+      console.error("Failed to generate PDF for viewer:", err)
+      setSnackbarMessage("Nepavyko sugeneruoti PDF dokumento.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+      setPdfViewerOpen(false)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  // Clean up blob URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [pdfUrl])
 
   if (loading) {
     return (
@@ -278,6 +454,38 @@ const ClientSpecialOffer: React.FC = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Action Bar */}
       <ActionBar backUrl="/special-offers" showBackButton={true} onBackClick={navigateBack}>
+        {/* PDF Buttons */}
+        <Box sx={{ display: "flex" }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleOpenPdfViewer}
+            startIcon={<PdfIcon />}
+            disabled={pdfLoading}
+            sx={{
+              textTransform: "none",
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
+              borderRight: "none",
+            }}
+          >
+            {pdfLoading && pdfViewerOpen ? "Ruošiamas..." : "Peržiūrėti PDF"}
+          </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleDownloadPdf}
+            startIcon={<DownloadIcon />}
+            disabled={pdfLoading}
+            sx={{
+              textTransform: "none",
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+            }}
+          >
+            {pdfLoading && !pdfViewerOpen ? "Ruošiamas..." : "Atsisiųsti"}
+          </Button>
+        </Box>
         <Button
           variant="outlined"
           color="primary"
@@ -559,6 +767,36 @@ const ClientSpecialOffer: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      {/* PDF Viewer Modal */}
+      <PdfViewerModal
+        open={pdfViewerOpen}
+        onClose={() => {
+          setPdfViewerOpen(false)
+          if (pdfUrl) {
+            window.URL.revokeObjectURL(pdfUrl)
+            setPdfUrl(null)
+          }
+        }}
+        pdfUrl={pdfUrl}
+        loading={pdfLoading}
+        onDownload={handleDownloadPdf}
+      />
+      {/* Confirmation Dialog for Delete */}
+      <ConfirmationDialog
+        open={showDeleteConfirmDialog}
+        title="Ištrinti pasiūlymą"
+        message="Ar tikrai norite ištrinti šį pasiūlymą? Šis veiksmas yra negrįžtamas, bus ištrinta visa susijusi informacija."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+
+      {/* Snackbar for notifications */}
+      <CustomSnackbar
+        open={snackbarOpen}
+        message={snackbarMessage}
+        severity={snackbarSeverity}
+        onClose={handleCloseSnackbar}
+      />
     </Container>
   )
 }

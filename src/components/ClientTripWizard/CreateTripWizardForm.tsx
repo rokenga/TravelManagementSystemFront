@@ -278,6 +278,7 @@ const WizardForm: React.FC = () => {
       formData.append("status", "Draft")
       formData.append("paymentStatus", "Unpaid")
       formData.append("insuranceTaken", String(currentTripData.insuranceTaken || false))
+      formData.append("destination", currentTripData.destination || "")
 
       if (currentTripData.startDate) {
         formData.append("startDate", new Date(currentTripData.startDate).toISOString())
@@ -707,6 +708,7 @@ const WizardForm: React.FC = () => {
       formData.append("status", status)
       formData.append("paymentStatus", "Unpaid")
       formData.append("insuranceTaken", String(formState.tripData.insuranceTaken || false))
+      formData.append("destination", formState.tripData.destination || "")
 
       if (formState.tripData.startDate) {
         formData.append("startDate", new Date(formState.tripData.startDate).toISOString())

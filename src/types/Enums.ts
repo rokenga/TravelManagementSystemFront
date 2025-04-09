@@ -34,5 +34,12 @@ export enum TripCategory {
     AllInclusive = "AllInclusive",
     UltraAllInclusive = "UltraAllInclusive",
   }
+
+  export enum OfferStatus {
+    Active = "Active",
+    Expired = "Expired",
+    ManuallyDisabled = "ManuallyDisabled",
+  }
+
   
   

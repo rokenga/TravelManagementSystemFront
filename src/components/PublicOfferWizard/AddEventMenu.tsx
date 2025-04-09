@@ -1,24 +1,23 @@
 "use client"
 
-import React from "react"
-import { useRef } from "react"
+import React, { useRef } from "react"
 import { Box, Button, Menu, MenuItem, ListItemIcon } from "@mui/material"
 import { DirectionsCar, Hotel, Sailing, ExpandMore, Image } from "@mui/icons-material"
 
-interface OfferAddEventMenuProps {
+interface AddEventMenuProps {
   onAddTransport: () => void
   onAddAccommodation: () => void
   onAddCruise: () => void
-  onAddImages: () => void
-  hasImages: boolean
+  onAddImages?: () => void
+  hasImages?: boolean
 }
 
-const OfferAddEventMenu: React.FC<OfferAddEventMenuProps> = ({
+const AddEventMenu: React.FC<AddEventMenuProps> = ({
   onAddTransport,
   onAddAccommodation,
   onAddCruise,
   onAddImages,
-  hasImages,
+  hasImages = false,
 }) => {
   const addButtonRef = useRef<HTMLButtonElement>(null)
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
@@ -79,23 +78,25 @@ const OfferAddEventMenu: React.FC<OfferAddEventMenuProps> = ({
           </ListItemIcon>
           Kruizas
         </MenuItem>
-        <MenuItem
-          onClick={() => handleMenuItemClick(onAddImages)}
-          disabled={hasImages}
-          sx={{
-            opacity: hasImages ? 0.5 : 1,
-            pointerEvents: hasImages ? "none" : "auto",
-          }}
-        >
-          <ListItemIcon>
-            <Image fontSize="small" color={hasImages ? "disabled" : "primary"} />
-          </ListItemIcon>
-          Nuotraukos {hasImages ? "(jau pridėta)" : ""}
-        </MenuItem>
+        {onAddImages && (
+          <MenuItem
+            onClick={() => handleMenuItemClick(onAddImages)}
+            disabled={hasImages}
+            sx={{
+              opacity: hasImages ? 0.5 : 1,
+              pointerEvents: hasImages ? "none" : "auto",
+            }}
+          >
+            <ListItemIcon>
+              <Image fontSize="small" color={hasImages ? "disabled" : "primary"} />
+            </ListItemIcon>
+            Nuotraukos {hasImages ? "(jau pridėta)" : ""}
+          </MenuItem>
+        )}
       </Menu>
     </Box>
   )
 }
 
-export default OfferAddEventMenu
+export default AddEventMenu
 

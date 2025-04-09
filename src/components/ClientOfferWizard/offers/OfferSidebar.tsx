@@ -40,7 +40,12 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
 
   // Count total items in an offer
   const countOfferItems = (offer: OfferStep): number => {
-    return offer.accommodations.length + offer.transports.length + (offer.cruises ? offer.cruises.length : 0)
+    const accommodationsCount = offer.accommodations?.length || 0;
+    const transportsCount = offer.transports?.length || 0;
+    const cruisesCount = offer.cruises?.length || 0;
+    const imagesCount = offer.stepImages?.length || 0;
+    
+    return accommodationsCount + transportsCount + cruisesCount + (imagesCount > 0 ? 1 : 0);
   }
 
   // Function to truncate text to 100 characters
@@ -101,9 +106,7 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
         ) : (
           offers.map((offer, idx) => (
             <ListItem
-              button
               key={idx}
-              selected={selectedOfferIndex === idx}
               onClick={() => onSelectOffer(idx)}
               draggable
               onDragStart={(e) => onDragStart(e, idx)}
@@ -111,14 +114,13 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
               onDragEnd={onDragEnd}
               sx={{
                 py: 2,
+                cursor: 'pointer',
                 borderLeft:
                   selectedOfferIndex === idx ? `4px solid ${theme.palette.primary.main}` : "4px solid transparent",
                 border: draggedStepIndex === idx ? `2px dashed ${theme.palette.success.main}` : undefined,
-                "&.Mui-selected": {
-                  backgroundColor: theme.palette.action.selected,
-                  "&:hover": {
-                    backgroundColor: theme.palette.action.hover,
-                  },
+                backgroundColor: selectedOfferIndex === idx ? 'action.selected' : 'inherit',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
                 },
               }}
             >

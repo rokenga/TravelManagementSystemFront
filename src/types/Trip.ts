@@ -19,8 +19,9 @@ export interface TripFormData {
   childrenCount: number | null
   insuranceTaken: boolean
   dayByDayItineraryNeeded: boolean
-  itineraryTitle?: string
-  itineraryDescription?: string
+  itineraryTitle: string
+  itineraryDescription: string
+  destination: string | null
   images?: File[]
   documents?: File[]
 }
@@ -51,6 +52,7 @@ export interface TripRequest {
   itinerary?: Itinerary
   adultsCount?: number | null
   childrenCount?: number | null
+  destination?: string | null
   images?: File[]
   documents?: File[]
 }
@@ -75,6 +77,7 @@ export interface TripResponse {
   itinerary?: Itinerary
   images?: string[]
   documents?: string[]
+  destination?: string
 }
 
 // Import ValidationWarning

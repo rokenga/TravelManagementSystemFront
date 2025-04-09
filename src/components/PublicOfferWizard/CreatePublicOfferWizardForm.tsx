@@ -20,17 +20,15 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import type { Dayjs } from "dayjs"
 import axios from "axios"
-import Step1TripInfo from "./Step1TripInfo"
-import Step2Offers from "./Step2Offers"
+import Step1OfferDetails from "./Step1OfferDetails"
+import Step2ReviewConfirm from "./Step2ReviewConfirm"
 import { API_URL } from "../../Utils/Configuration"
 import { UserContext } from "../../contexts/UserContext"
-import { TransportType, TripStatus } from "../../types/Enums"
+import { TransportType, TripStatus, OfferStatus } from "../../types/Enums"
 import CustomSnackbar from "../CustomSnackBar"
-import Step3Review from "./Step3ReviewConfirm"
 import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
-import type { Country } from "../DestinationAutocomplete"
 
-const steps = ["Pagrindinė informacija", "Pasiūlymo variantai", "Peržiūra ir patvirtinimas"]
+const steps = ["Pasiūlymo informacija", "Peržiūra ir patvirtinimas"]
 
 export interface Accommodation {
   hotelName: string
@@ -71,41 +69,132 @@ export interface Cruise {
 }
 
 /**
- * Each step in the wizard (i.e. each "offer option" for the user).
+ * Main state shape for the entire form.
  */
-export interface OfferStep {
-  name: string
+export interface PublicOfferWizardData {
+  tripName: string
+  description: string
+  destination : string
+  startDate: Dayjs | null
+  endDate: Dayjs | null
+  validUntil: Dayjs | null
+  adultCount: number
+  childrenCount: number
+  category?: string
+  price?: number
+  status?: TripStatus
+  offerStatus?: OfferStatus
   accommodations: Accommodation[]
   transports: Transport[]
   cruises: Cruise[]
-  isExpanded: boolean
-  stepImages?: File[]
-  existingStepImages?: Array<{
-    id: string
-    url: string
-    altText?: string
-  }>
-  destination?: Country | null // New field for step-specific destination
+  images: File[]
 }
 
-/**
- * Main state shape for the entire form.
- */
-export interface OfferWizardData {
-  tripName: string
-  clientId: string
-  clientName: string | null
-  startDate: Dayjs | null
-  endDate: Dayjs | null
-  clientWishes: string
-  adultCount: number
-  childrenCount: number
-  offerSteps: OfferStep[]
-  category?: string
-  price?: string | number
-  description?: string
-  insuranceTaken?: boolean
-  destination?: Country | null // New field for trip-level destination
+interface ValidationResult {
+  isValid: boolean
+  errorMessage: string
+}
+
+const validateTransport = (transport: Transport): boolean => {
+  return !!(
+    transport.transportType &&
+    transport.departureTime &&
+    transport.arrivalTime &&
+    transport.departurePlace &&
+    transport.arrivalPlace
+  )
+}
+
+const validateCruise = (cruise: Cruise): boolean => {
+  return !!(
+    cruise.departureTime &&
+    cruise.arrivalTime &&
+    cruise.departurePlace &&
+    cruise.arrivalPlace &&
+    cruise.companyName &&
+    cruise.cabinType
+  )
+}
+
+const validateAccommodation = (accommodation: Accommodation): boolean => {
+  return !!(
+    accommodation.hotelName &&
+    accommodation.checkIn &&
+    accommodation.checkOut &&
+    accommodation.hotelLink &&
+    accommodation.description &&
+    accommodation.boardBasis &&
+    accommodation.roomType &&
+    accommodation.price
+  )
+}
+
+const validateOfferData = (data: PublicOfferWizardData): ValidationResult => {
+  // Check basic trip information
+  if (!data.tripName || !data.destination || !data.description || !data.startDate || !data.endDate || !data.validUntil) {
+    return {
+      isValid: false,
+      errorMessage: "Prašome užpildyti visą pagrindinę kelionės informaciją (pavadinimas, aprašymas, datos)",
+    }
+  }
+
+  // Check if at least one image is provided
+  if (!data.images || data.images.length === 0) {
+    return {
+      isValid: false,
+      errorMessage: "Būtina įkelti bent vieną nuotrauką",
+    }
+  }
+
+  // Check if either accommodation or transport is provided
+  const hasAccommodations = data.accommodations.length > 0
+  const hasTransports = data.transports.length > 0
+  const hasCruises = data.cruises.length > 0
+
+  if (!hasAccommodations && !hasTransports && !hasCruises) {
+    return {
+      isValid: false,
+      errorMessage: "Būtina pridėti bent vieną apgyvendinimą arba transportą",
+    }
+  }
+
+  // Validate all accommodations if any exist
+  if (hasAccommodations) {
+    const invalidAccommodation = data.accommodations.find((acc) => !validateAccommodation(acc))
+    if (invalidAccommodation) {
+      return {
+        isValid: false,
+        errorMessage: "Visi apgyvendinimo duomenys turi būti užpildyti",
+      }
+    }
+  }
+
+  // Validate all transports if any exist
+  if (hasTransports) {
+    const invalidTransport = data.transports.find((trans) => !validateTransport(trans))
+    if (invalidTransport) {
+      return {
+        isValid: false,
+        errorMessage: "Visi transporto duomenys turi būti užpildyti",
+      }
+    }
+  }
+
+  // Validate all cruises if any exist
+  if (hasCruises) {
+    const invalidCruise = data.cruises.find((cruise) => !validateCruise(cruise))
+    if (invalidCruise) {
+      return {
+        isValid: false,
+        errorMessage: "Visi kruizo duomenys turi būti užpildyti",
+      }
+    }
+  }
+
+  return {
+    isValid: true,
+    errorMessage: "",
+  }
 }
 
 /**
@@ -113,7 +202,7 @@ export interface OfferWizardData {
  * MAIN WIZARD COMPONENT
  * --------------------------------------------------
  */
-const CreateClientOfferWizardForm: React.FC = () => {
+const CreatePublicOfferWizardForm: React.FC = () => {
   const navigate = useNavigate()
   const [activeStep, setActiveStep] = useState(0)
   const [showNavigationDialog, setShowNavigationDialog] = useState(false)
@@ -129,36 +218,29 @@ const CreateClientOfferWizardForm: React.FC = () => {
   const user = useContext(UserContext)
   const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null
 
-  // Initialize form data with at least one empty offer step
-  const [formData, setFormData] = useState<OfferWizardData>({
+  // Initialize form data
+  const [formData, setFormData] = useState<PublicOfferWizardData>({
     tripName: "",
-    clientId: "",
-    clientName: null,
+    description: "",
+    destination: "",
     startDate: null,
     endDate: null,
-    clientWishes: "",
+    validUntil: null,
     adultCount: 2,
     childrenCount: 0,
-    offerSteps: [
-      {
-        name: "Pasiūlymas 1",
-        accommodations: [],
-        transports: [],
-        cruises: [],
-        isExpanded: true,
-        destination: null, // Initialize with null
-      },
-    ],
     category: "",
-    price: "",
-    description: "",
-    insuranceTaken: false,
-    destination: null, // Initialize with null
+    price: 0,
+    status: TripStatus.Confirmed,
+    offerStatus: OfferStatus.Active,
+    accommodations: [],
+    transports: [],
+    cruises: [],
+    images: [],
   })
 
   // Load localStorage data on mount
   useEffect(() => {
-    const savedData = localStorage.getItem("offerWizardData")
+    const savedData = localStorage.getItem("publicOfferWizardData")
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData)
@@ -171,7 +253,7 @@ const CreateClientOfferWizardForm: React.FC = () => {
 
   // Save changes to localStorage
   useEffect(() => {
-    localStorage.setItem("offerWizardData", JSON.stringify(formData))
+    localStorage.setItem("publicOfferWizardData", JSON.stringify(formData))
   }, [formData])
 
   /**
@@ -182,7 +264,7 @@ const CreateClientOfferWizardForm: React.FC = () => {
   }
 
   const handleBack = () => {
-    localStorage.setItem("offerWizardData", JSON.stringify(formData))
+    localStorage.setItem("publicOfferWizardData", JSON.stringify(formData))
     setActiveStep(activeStep - 1)
   }
 
@@ -206,57 +288,19 @@ const CreateClientOfferWizardForm: React.FC = () => {
   /**
    * STEPS SUBMISSION
    */
-  const handleStep1Submit = (updatedData: Partial<OfferWizardData>) => {
+  const handleStep1Submit = (updatedData: Partial<PublicOfferWizardData>) => {
     setFormData((prev) => ({ ...prev, ...updatedData }))
-
-    // If there's a main trip destination but no destinations on individual offers,
-    // add the main destination to all offers that don't have a specific destination
-    if (updatedData.destination && formData.offerSteps) {
-      const updatedSteps = formData.offerSteps.map((step) => {
-        if (!step.destination) {
-          return { ...step, destination: updatedData.destination }
-        }
-        return step
-      })
-
-      setFormData((prevData) => ({
-        ...prevData,
-        ...updatedData,
-        offerSteps: updatedSteps,
-      }))
-    } else {
-      setFormData((prevData) => ({ ...prevData, ...updatedData }))
-    }
-
     handleNext()
   }
 
   /**
-   * We call this after finishing Step 2
+   * Calculate total price for the offer
    */
-  const handleStep2Submit = (offerSteps: OfferStep[], shouldNavigate = false) => {
-    // Only update if changed
-    if (JSON.stringify(formData.offerSteps) !== JSON.stringify(offerSteps)) {
-      setFormData((prev) => ({
-        ...prev,
-        offerSteps,
-      }))
-    }
-    if (shouldNavigate) {
-      handleNext()
-    }
-  }
-
-  /**
-   * Calculate total price for all offers
-   */
-  const calculateTotalPrice = (steps: OfferStep[]): number => {
-    return steps.reduce((total, step) => {
-      const accommodationTotal = step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
-      const transportTotal = step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
-      const cruiseTotal = step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0
-      return total + accommodationTotal + transportTotal + cruiseTotal
-    }, 0)
+  const calculateTotalPrice = (): number => {
+    const accommodationTotal = formData.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
+    const transportTotal = formData.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
+    const cruiseTotal = formData.cruises ? formData.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0
+    return accommodationTotal + transportTotal + cruiseTotal
   }
 
   /**
@@ -265,121 +309,121 @@ const CreateClientOfferWizardForm: React.FC = () => {
    * ---------------------------------------------------
    */
   const handleSubmit = async (isDraft = false) => {
+    // If not a draft, validate the data
+    if (!isDraft) {
+      const validationResult = validateOfferData(formData)
+      if (!validationResult.isValid) {
+        setSnackbarMessage(validationResult.errorMessage)
+        setSnackbarSeverity("error")
+        setSnackbarOpen(true)
+        return
+      }
+    }
+
     setIsSaving(true)
 
-    // Map the steps to the format expected by the API
-    const mappedSteps = formData.offerSteps.map((step, index) => {
-      // Convert cruises to transport entries
-      const cruiseTransports = step.cruises.map((cruise) => ({
-        transportType: TransportType.Cruise,
-        departureTime: cruise.departureTime,
-        arrivalTime: cruise.arrivalTime,
-        departurePlace: cruise.departurePlace,
-        arrivalPlace: cruise.arrivalPlace,
-        description: cruise.description,
-        companyName: cruise.companyName,
-        transportName: cruise.transportName,
-        transportCode: cruise.transportCode,
-        cabinType: cruise.cabinType,
-        price: cruise.price,
-      }))
+    // Convert cruises to transport entries for the API
+    const cruiseTransports = formData.cruises.map((cruise) => ({
+      transportType: TransportType.Cruise,
+      departureTime: cruise.departureTime ? cruise.departureTime.toISOString() : null,
+      arrivalTime: cruise.arrivalTime ? cruise.arrivalTime.toISOString() : null,
+      departurePlace: cruise.departurePlace,
+      arrivalPlace: cruise.arrivalPlace,
+      description: cruise.description,
+      companyName: cruise.companyName,
+      transportName: cruise.transportName,
+      transportCode: cruise.transportCode,
+      cabinType: cruise.cabinType,
+      price: cruise.price,
+    }))
 
-      // Calculate total price for this step
-      const stepTotal =
-        step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0) +
-        step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0) +
-        (step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0)
+    // Map transports to the format expected by the API
+    const mappedTransports = formData.transports.map((transport) => ({
+      transportType: transport.transportType,
+      departureTime: transport.departureTime ? transport.departureTime.toISOString() : null,
+      arrivalTime: transport.arrivalTime ? transport.arrivalTime.toISOString() : null,
+      departurePlace: transport.departurePlace,
+      arrivalPlace: transport.arrivalPlace,
+      description: transport.description,
+      companyName: transport.companyName,
+      transportName: transport.transportName,
+      transportCode: transport.transportCode,
+      cabinType: transport.cabinType,
+      price: transport.price,
+    }))
 
-      // Include hasImages flag to indicate if this step has images
-      return {
-        dayNumber: index + 1,
-        description: step.name,
-        transports: [...step.transports, ...cruiseTransports],
-        accommodations: step.accommodations,
-        price: stepTotal, // Save the accumulated price for this step
-        hasImages: step.stepImages && step.stepImages.length > 0, // Add flag for images
-        destination: step.destination?.name || null, // Only send the country name string
-      }
-    })
+    // Map accommodations to the format expected by the API
+    const mappedAccommodations = formData.accommodations.map((accommodation) => ({
+      hotelName: accommodation.hotelName,
+      checkIn: accommodation.checkIn ? accommodation.checkIn.toISOString() : null,
+      checkOut: accommodation.checkOut ? accommodation.checkOut.toISOString() : null,
+      hotelLink: accommodation.hotelLink,
+      description: accommodation.description,
+      boardBasis: accommodation.boardBasis,
+      roomType: accommodation.roomType,
+      price: accommodation.price,
+    }))
+
+    // Calculate total price
+    const totalPrice = calculateTotalPrice()
 
     // Set the trip status based on whether it's a draft or not
     const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
+    const offerStatus = isDraft ? OfferStatus.Draft : OfferStatus.Active
 
     // Build a final request object
     const requestPayload = {
       agentId: user?.id || "", // or however you store your agent/user ID
-      clientId: formData.clientId || undefined,
       tripName: formData.tripName,
       description: formData.description,
-      clientWishes: formData.clientWishes,
-      tripType: 2, // 2 = ClientSpecialOffer
+      destination: formData.destination,
       category: formData.category || undefined,
-      startDate: formData.startDate ? formData.startDate.toDate() : null,
-      endDate: formData.endDate ? formData.endDate.toDate() : null,
-      // Remove price from the main payload - we'll use the accumulated prices from each step
-      status: tripStatus, // Set the status based on isDraft
-      destination: formData.destination?.name || null, // Only send the country name string
-      itinerary: {
-        title: "Multi-Option Itinerary", // or formData.whatever
-        description: "Choose your option",
-        itinerarySteps: mappedSteps,
-      },
+      startDate: formData.startDate ? formData.startDate.toISOString() : null,
+      endDate: formData.endDate ? formData.endDate.toISOString() : null,
+      validUntil: formData.validUntil ? formData.validUntil.toISOString() : null,
+      price: totalPrice,
+      status: tripStatus,
+      offerStatus: offerStatus,
       childrenCount: formData.childrenCount,
       adultsCount: formData.adultCount,
-      // We are ignoring images / documents for now
-      images: null,
-      documents: null,
+      itinerary: {
+        title: formData.tripName,
+        description: formData.description,
+        itinerarySteps: [
+          {
+            description: "Pasiūlymas",
+            price: totalPrice,
+            transports: [...mappedTransports, ...cruiseTransports],
+            accommodations: mappedAccommodations,
+          },
+        ],
+      },
     }
 
-    // For demonstration, we do a console log
-    console.log("Sending this offer to the backend:", requestPayload)
+    console.log("Sending this public offer to the backend:", requestPayload)
 
     try {
       // Create a FormData object for multipart/form-data submission
       const formDataPayload = new FormData()
 
-      // Append the core JSON data
-      const itinerarySteps = mappedSteps.map((step, index) => ({
-        dayNumber: step.dayNumber,
-        description: step.description,
-        transports: step.transports,
-        accommodations: step.accommodations,
-        price: step.price,
-        hasImages: step.hasImages, // Include the hasImages flag
-        destination: step.destination, // Include destination as string
-      }))
+      // FormData requires stringified JSON
+      formDataPayload.append("data", JSON.stringify(requestPayload))
 
-      const fullPayload = {
-        ...requestPayload,
-        itinerary: {
-          title: requestPayload.itinerary?.title,
-          description: requestPayload.itinerary?.description,
-          itinerarySteps: itinerarySteps,
-        },
+      // Append images
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach((file) => {
+          formDataPayload.append("images", file)
+        })
       }
 
-      // FormData requires stringified JSON
-      formDataPayload.append("data", JSON.stringify(fullPayload))
-
-      // Append step images
-      formData.offerSteps.forEach((step, i) => {
-        // Only append images if the step has actual image files
-        if (step.stepImages && step.stepImages.length > 0) {
-          step.stepImages.forEach((file) => {
-            formDataPayload.append(`StepImages_${i}`, file) // ⬅️ naming must match backend
-          })
-        }
-      })
-
       // Now send it
-      const response = await axios.post(`${API_URL}/ClientTripOfferFacade`, formDataPayload, {
+      const response = await axios.post(`${API_URL}/PublicTripOfferFacade/agent`, formDataPayload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          "Content-Type": "multipart/form-data",
         },
       })
 
-      console.log("Successfully created the offer:", response.data)
+      console.log("Successfully created the public offer:", response.data)
 
       // Show success message
       setSnackbarMessage(
@@ -389,41 +433,34 @@ const CreateClientOfferWizardForm: React.FC = () => {
       setSnackbarOpen(true)
 
       // Clear localStorage after success
-      localStorage.removeItem("offerWizardData")
+      localStorage.removeItem("publicOfferWizardData")
 
       // Reset form
       setFormData({
         tripName: "",
-        clientId: "",
-        clientName: null,
+        description: "",
+        destination: "",
         startDate: null,
         endDate: null,
-        clientWishes: "",
+        validUntil: null,
         adultCount: 2,
         childrenCount: 0,
-        offerSteps: [
-          {
-            name: "Pasiūlymas 1",
-            accommodations: [],
-            transports: [],
-            cruises: [],
-            isExpanded: true,
-            destination: null,
-          },
-        ],
         category: "",
-        price: "",
-        description: "",
-        insuranceTaken: false,
-        destination: null,
+        price: 0,
+        status: TripStatus.Confirmed,
+        offerStatus: OfferStatus.Active,
+        accommodations: [],
+        transports: [],
+        cruises: [],
+        images: [],
       })
 
       // Wait for 1 second after getting the response before redirecting
       setTimeout(() => {
-        navigate(`/special-offers/${response.data.id}`)
+        navigate(`/public-offers/${response.data.id}`)
       }, 1000)
     } catch (err: any) {
-      console.error("Failed to create the offer:", err)
+      console.error("Failed to create the public offer:", err)
 
       // Show error message
       setSnackbarMessage("Nepavyko sukurti pasiūlymo. Patikrinkite konsolę klaidos informacijai.")
@@ -461,21 +498,11 @@ const CreateClientOfferWizardForm: React.FC = () => {
         </Stepper>
 
         <Paper elevation={3} sx={{ p: 4 }}>
-          {activeStep === 0 && <Step1TripInfo initialData={formData} onSubmit={handleStep1Submit} />}
+          {activeStep === 0 && <Step1OfferDetails initialData={formData} onSubmit={handleStep1Submit} />}
 
           {activeStep === 1 && (
-            <Step2Offers
-              tripData={formData}
-              steps={formData.offerSteps}
-              onSubmit={handleStep2Submit}
-              onBack={handleBack}
-              formatDate={formatDate}
-            />
-          )}
-
-          {activeStep === 2 && (
             <>
-              <Step3Review tripData={formData} />
+              <Step2ReviewConfirm offerData={formData} />
               <Box sx={{ display: "flex", justifyContent: "center", mt: 4, gap: 2 }}>
                 <Button
                   variant="outlined"
@@ -550,4 +577,4 @@ const CreateClientOfferWizardForm: React.FC = () => {
   )
 }
 
-export default CreateClientOfferWizardForm
+export default CreatePublicOfferWizardForm

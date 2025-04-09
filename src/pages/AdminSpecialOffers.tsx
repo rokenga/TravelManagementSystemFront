@@ -2,9 +2,10 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Box, Tabs, Tab, Typography, useTheme, Paper, alpha } from "@mui/material"
+import { Box, Tabs, Tab, useTheme, Paper, alpha } from "@mui/material"
 import { PersonOutlined, PublicOutlined } from "@mui/icons-material"
 import ClientSpecialOffers from "../components/ClientSpecialOffers"
+import PublicSpecialOffers from "../components/PublicSpecialOffers"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -112,19 +113,7 @@ const AdminSpecialOffers: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <Paper
-          elevation={1}
-          sx={{
-            p: 4,
-            borderRadius: "12px",
-            backgroundColor: alpha(theme.palette.background.paper, 0.7),
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <Typography variant="body1" sx={{ textAlign: "center" }}>
-            Viešai skelbiami pasiūlymai bus įgyvendinti vėliau.
-          </Typography>
-        </Paper>
+        <PublicSpecialOffers />
       </TabPanel>
     </Box>
   )

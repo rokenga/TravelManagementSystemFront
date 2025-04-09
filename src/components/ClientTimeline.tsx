@@ -33,7 +33,8 @@ interface TimelineEvent {
   id: string
   title: string
   category?: TripCategory
-  date: string
+  date: string // This will be startDate for trips, createdAt for offers without dates
+  createdAt?: string // Store the creation date for offers
   type: "trip" | "offer"
   description: string
   endDate?: string
@@ -41,12 +42,7 @@ interface TimelineEvent {
 
 interface ClientTimelineProps {
   trips: TripResponse[]
-  offers: {
-    id: string
-    title: string
-    description: string
-    createdAt?: string
-  }[]
+  offers: TripResponse[] // Changed to TripResponse[] to match real data
 }
 
 // Time period options in months
@@ -75,13 +71,23 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
           endDate: endDate,
         }
       }),
-      ...offers.map((offer) => ({
-        id: offer.id,
-        title: offer.title,
-        date: offer.createdAt || new Date().toISOString().split("T")[0], // Use current date if createdAt is not available
-        type: "offer" as const,
-        description: offer.description,
-      })),
+      ...offers.map((offer) => {
+        // For offers, use createdAt for sorting if startDate is not available
+        const startDate = offer.startDate || "0000-00-00"
+        const endDate = offer.endDate || "0000-00-00"
+        const createdAt = offer.createdAt || new Date().toISOString() // Default to now if missing
+
+        return {
+          id: offer.id,
+          title: offer.tripName || "Pasiūlymas be pavadinimo",
+          category: offer.category as TripCategory,
+          date: offer.startDate ? startDate : createdAt, // Use createdAt if no startDate
+          createdAt: createdAt,
+          type: "offer" as const,
+          description: offer.description || "Nėra aprašymo",
+          endDate: endDate !== "0000-00-00" ? endDate : undefined,
+        }
+      }),
     ],
     [trips, offers],
   )
@@ -116,8 +122,12 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
     setTimePeriod(event.target.value as TimePeriod)
   }
 
-  const handleTripClick = (tripId: string) => {
-    navigate(`/trips/${tripId}`)
+  const handleItemClick = (event: TimelineEvent) => {
+    if (event.type === "trip") {
+      navigate(`/admin-trip-list/${event.id}`)
+    } else if (event.type === "offer") {
+      navigate(`/special-offers/${event.id}`)
+    }
   }
 
   return (
@@ -170,12 +180,24 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
             <TimelineItem key={event.id}>
               {!isMobile && (
                 <TimelineOppositeContent sx={{ m: "auto 0" }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {event.date !== "0000-00-00" ? new Date(event.date).toLocaleDateString("lt-LT") : "Nežinoma data"}
-                  </Typography>
-                  {event.type === "trip" && event.endDate && event.endDate !== "0000-00-00" && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      - {new Date(event.endDate).toLocaleDateString("lt-LT")}
+                  {event.type === "trip" || (event.date !== event.createdAt && event.date !== "0000-00-00") ? (
+                    // Show date range for trips or offers with actual dates
+                    <>
+                      <Typography variant="body2" color="text.secondary">
+                        {event.date !== "0000-00-00"
+                          ? new Date(event.date).toLocaleDateString("lt-LT")
+                          : "Nežinoma data"}
+                      </Typography>
+                      {event.endDate && event.endDate !== "0000-00-00" && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          - {new Date(event.endDate).toLocaleDateString("lt-LT")}
+                        </Typography>
+                      )}
+                    </>
+                  ) : (
+                    // Show creation date for offers without dates
+                    <Typography variant="body2" color="text.secondary">
+                      Sukurta: {new Date(event.createdAt || "").toLocaleDateString("lt-LT")}
                     </Typography>
                   )}
                 </TimelineOppositeContent>
@@ -198,13 +220,13 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                     marginRight: isMobile ? 0 : "auto",
                     borderLeft: `4px solid ${event.type === "trip" ? theme.palette.primary.main : theme.palette.secondary.main}`,
                     transition: "all 0.2s ease-in-out",
-                    cursor: event.type === "trip" ? "pointer" : "default",
+                    cursor: "pointer", // Make all items clickable
                     "&:hover": {
                       transform: "translateY(-4px)",
                       boxShadow: 4,
                     },
                   }}
-                  onClick={() => (event.type === "trip" ? handleTripClick(event.id) : null)}
+                  onClick={() => handleItemClick(event)}
                 >
                   <Typography variant="h6" component="div" sx={{ mb: 1 }}>
                     {event.title}
@@ -214,13 +236,20 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <CalendarMonth fontSize="small" sx={{ mr: 0.5, color: "text.secondary" }} />
                       <Typography variant="body2" color="text.secondary">
-                        {event.date !== "0000-00-00"
-                          ? new Date(event.date).toLocaleDateString("lt-LT")
-                          : "Nežinoma data"}
-                        {event.type === "trip" &&
-                          event.endDate &&
-                          event.endDate !== "0000-00-00" &&
-                          ` - ${new Date(event.endDate).toLocaleDateString("lt-LT")}`}
+                        {event.type === "trip" || (event.date !== event.createdAt && event.date !== "0000-00-00") ? (
+                          // Show date range for trips or offers with actual dates
+                          <>
+                            {event.date !== "0000-00-00"
+                              ? new Date(event.date).toLocaleDateString("lt-LT")
+                              : "Nežinoma data"}
+                            {event.endDate &&
+                              event.endDate !== "0000-00-00" &&
+                              ` - ${new Date(event.endDate).toLocaleDateString("lt-LT")}`}
+                          </>
+                        ) : (
+                          // Show creation date for offers without dates
+                          <>Sukurta: {new Date(event.createdAt || "").toLocaleDateString("lt-LT")}</>
+                        )}
                       </Typography>
                     </Box>
                   )}
@@ -236,7 +265,7 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                       color={event.type === "trip" ? "primary" : "secondary"}
                       variant="outlined"
                     />
-                    {event.type === "trip" && event.category && (
+                    {event.category && (
                       <Chip
                         size="small"
                         label={translateTripCategory(event.category)}

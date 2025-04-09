@@ -44,8 +44,9 @@ import WizardEditForm from "./components/ClientTripWizard/EditTripWizardForm"
 import ClientSpecialOfferCreation from "./pages/CreateClientOfferWizardPage"
 import ClientSpecialOffer from "./pages/ClientSpecialOffer"
 import { NavigationProvider } from "./contexts/NavigationContext"
-import EditClientOfferWizardForm from "./components/ClientOfferWizard/EditClientOfferWizardForm"
 import EditClientOfferWizardPage from "./pages/EditClientOfferWizardPage"
+import PublicOfferCreationForm from "./pages/CreatePublicOfferWizardPage"
+import PublicSpecialOffer from "./pages/PublicSpecialOffer"
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -118,8 +119,8 @@ function App() {
                     <Route path="/specialOffers" element={<SpecialOffers />} />
                     <Route path="/complete-profile" element={<CompleteProfile />} />
 
-                    <Route path="/specialOfferDetails/:offerId" element={<SpecialOfferDetails />} />
-                    <Route path="/reserve-special-offer" element={<SpecialOfferReservation />} />
+                    <Route path="/specialOfferDetails/:id" element={<SpecialOfferDetails />} />
+                    <Route path="/reserve-special-offer/:id" element={<SpecialOfferReservation />} />
 
                     {/* Admin and Agent Only */}
                     <Route element={<ProtectedRoute requiredRoles={["Admin", "Agent"]} />}>
@@ -149,6 +150,10 @@ function App() {
                       <Route path="/special-offers/create" element={<ClientSpecialOfferCreation />} />
                       <Route path="/special-offers/:tripId" element={<ClientSpecialOffer />} />
                       <Route path="/special-offers/:tripId/edit" element={<EditClientOfferWizardPage />} />
+
+                      <Route path="/public-offers/create" element={<PublicOfferCreationForm />} />
+                      
+                      <Route path="/public-offers" element={<PublicSpecialOffer />} />
                     </Route>
 
                     <Route element={<ProtectedRoute requiredRoles={["Admin"]} />}>

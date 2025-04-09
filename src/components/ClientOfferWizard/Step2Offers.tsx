@@ -12,6 +12,7 @@ import MobileOfferSelector from "./offers/MobileOfferSelector"
 import type { Dayjs } from "dayjs"
 import { Flight, Train, DirectionsBus, DirectionsCar, Sailing } from "@mui/icons-material"
 import CustomSnackbar from "../CustomSnackBar"
+import type { Country } from "../DestinationAutocomplete"
 
 interface Accommodation {
   hotelName: string
@@ -64,6 +65,7 @@ interface Step2Props {
 const SIDEBAR_WIDTH = 240
 
 const Step2Offers: React.FC<Step2Props> = ({
+  tripData,
   steps,
   onSubmit,
   onBack,
@@ -91,16 +93,10 @@ const Step2Offers: React.FC<Step2Props> = ({
   // Initialize with at least one step if none provided
   useEffect(() => {
     if (steps.length > 0) {
-      // Make sure to preserve existing images and stepImages
+      // Make a deep copy of the steps to avoid modifying the original
       const updatedSteps = steps.map((step) => {
-        // If the step has existingStepImages but no stepImages array, initialize it
-        if (step.existingStepImages && step.existingStepImages.length > 0 && !step.stepImages) {
-          return {
-            ...step,
-            stepImages: [], // Initialize with empty array to trigger the image section
-          }
-        }
-        return step
+        // Only preserve existing image sections, don't create new ones
+        return { ...step }
       })
       setLocalSteps(updatedSteps)
     } else {
@@ -112,6 +108,7 @@ const Step2Offers: React.FC<Step2Props> = ({
           transports: [],
           cruises: [],
           isExpanded: true,
+          destination: null,
           // Don't initialize stepImages at all
         },
       ])
@@ -170,6 +167,7 @@ const Step2Offers: React.FC<Step2Props> = ({
           transports: [],
           cruises: [],
           isExpanded: true, // New steps are expanded by default
+          destination: null,
           // Don't initialize stepImages
         },
       ]
@@ -208,6 +206,15 @@ const Step2Offers: React.FC<Step2Props> = ({
     setLocalSteps((prevSteps) => {
       const updatedSteps = [...prevSteps]
       updatedSteps[stepIndex].name = name
+      return updatedSteps
+    })
+  }
+
+  // Update step destination
+  const handleStepDestinationChange = (stepIndex: number, destination: Country | null) => {
+    setLocalSteps((prevSteps) => {
+      const updatedSteps = [...prevSteps]
+      updatedSteps[stepIndex].destination = destination
       return updatedSteps
     })
   }
@@ -377,10 +384,15 @@ const Step2Offers: React.FC<Step2Props> = ({
     // This function will be called when the user selects "Images" from the dropdown
     setLocalSteps((prevSteps) => {
       const updatedSteps = [...prevSteps]
-      // Initialize an empty array for stepImages
+      // Initialize an empty array for stepImages to indicate the section exists
       updatedSteps[stepIndex].stepImages = []
       return updatedSteps
     })
+
+    // Show a helpful message to the user
+    setSnackbarMessage("Nuotraukų sekcija pridėta. Prašome įkelti nuotraukas arba pašalinti sekciją.")
+    setSnackbarSeverity("info")
+    setSnackbarOpen(true)
   }
 
   // Handle image change
@@ -396,8 +408,9 @@ const Step2Offers: React.FC<Step2Props> = ({
   const handleRemoveImageSection = (stepIndex: number) => {
     setLocalSteps((prevSteps) => {
       const updatedSteps = [...prevSteps]
-      // Set stepImages to undefined to completely remove the section
-      updatedSteps[stepIndex].stepImages = undefined
+      // Completely remove both stepImages and existingStepImages
+      delete updatedSteps[stepIndex].stepImages
+      delete updatedSteps[stepIndex].existingStepImages
       return updatedSteps
     })
   }
@@ -479,15 +492,26 @@ const Step2Offers: React.FC<Step2Props> = ({
       }
     }
 
+    // Debug: Log all steps to see their structure
+    console.log("Validating steps:", JSON.stringify(localSteps, null, 2))
+
     // Then check for empty image sections
     for (let i = 0; i < localSteps.length; i++) {
       const step = localSteps[i]
-      // Only consider it empty if both stepImages is empty AND there are no existingStepImages
-      if (
-        step.stepImages !== undefined &&
-        step.stepImages.length === 0 &&
+
+      // Check if this step has an image section that was explicitly added
+      // An image section exists if stepImages is an array (even if empty)
+      const hasImageSection = Array.isArray(step.stepImages)
+
+      // Check if the image section is empty (no files and no existing images)
+      const isImageSectionEmpty =
+        hasImageSection &&
+        (!step.stepImages || step.stepImages.length === 0) &&
         (!step.existingStepImages || step.existingStepImages.length === 0)
-      ) {
+
+      // Only show error if there's an image section AND it's empty
+      if (isImageSectionEmpty) {
+        console.log(`Empty image section found in step ${i}:`, step.name)
         setSelectedOfferIndex(i) // Switch to the problematic offer
         return {
           valid: false,
@@ -637,6 +661,8 @@ const Step2Offers: React.FC<Step2Props> = ({
                 onStepImageDelete(stepIndex, imageId)
               }
             }}
+            onDestinationChange={handleStepDestinationChange}
+            tripDestination={tripData.destination}
           />
         )}
 
@@ -690,4 +716,3 @@ const Step2Offers: React.FC<Step2Props> = ({
 }
 
 export default Step2Offers
-

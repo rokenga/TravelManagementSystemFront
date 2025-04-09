@@ -96,3 +96,12 @@ export interface PaginatedResponse<T> {
   pageSize: number
 }
 
+export enum TransportType {
+  Flight = "Flight",
+  Train = "Train",
+  Bus = "Bus",
+  Car = "Car",
+  Ferry = "Ferry",
+  Cruise = "Cruise",
+}
+

@@ -10,6 +10,7 @@ import type { OfferWizardData } from "./CreateClientOfferWizardForm"
 import { validateDateTimeConstraints } from "../../Utils/validationUtils"
 import axios from "axios"
 import { API_URL } from "../../Utils/Configuration"
+import DestinationAutocomplete, { Country } from "../DestinationAutocomplete"
 
 interface Client {
   id: string
@@ -36,6 +37,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     category: initialData.category || "",
     description: initialData.description || "",
     insuranceTaken: initialData.insuranceTaken || false,
+    destination: initialData.destination || null,
   })
 
   const [clients, setClients] = useState<Client[]>([])
@@ -82,6 +84,10 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
 
     handleInputChange("clientId", clientIdValue)
     handleInputChange("clientName", newValue ? `${newValue.name} ${newValue.surname}` : null)
+  }
+
+  const handleDestinationChange = (newValue: Country | null) => {
+    handleInputChange("destination", newValue)
   }
 
   const handleCloseSnackbar = () => {
@@ -227,6 +233,14 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
           />
         </Grid>
 
+        {/* Add destination field */}
+        <Grid item xs={12}>
+          <DestinationAutocomplete 
+            value={formData.destination} 
+            onChange={handleDestinationChange}
+          />
+        </Grid>
+
         <Grid item xs={12}>
           <TextField
             label="Aprašymas"
@@ -348,4 +362,3 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
 }
 
 export default Step1TripInfo
-

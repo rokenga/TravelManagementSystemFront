@@ -32,6 +32,7 @@ import CustomSnackbar from "../CustomSnackBar"
 import Step3Review from "./Step3ReviewConfirm"
 import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
 import type { OfferWizardData, OfferStep, Accommodation, Transport, Cruise } from "./CreateClientOfferWizardForm"
+import type { Country } from "../DestinationAutocomplete"
 
 // Define proper types that match the backend
 interface FileResponse {
@@ -76,6 +77,7 @@ interface ClientOfferItineraryStepResponse {
   transports?: ClientOfferTransportResponse[]
   accommodations?: ClientOfferAccommodationResponse[]
   images?: FileResponse[]
+  destination?: string // Backend expects just the country name as a string
 }
 
 interface ClientOfferItineraryResponse {
@@ -103,12 +105,37 @@ interface ClientTripOfferResponse {
   price?: number
   itinerary?: ClientOfferItineraryResponse
   images?: FileResponse[]
+  destination?: string // Backend expects just the country name as a string
 }
 
 const steps = ["Pagrindinė informacija", "Pasiūlymo variantai", "Peržiūra ir patvirtinimas"]
 
 interface EditClientOfferWizardFormProps {
   tripId: string
+}
+
+// Import the full countries list to find matching country data
+import fullCountriesList from "../../assets/full-countries-lt.json"
+
+// Helper function to convert string destination to Country object
+const stringToCountry = (destination?: string): Country | null => {
+  if (!destination) return null
+
+  // Find the country in the full list to get complete data
+  const matchingCountry = fullCountriesList.find((country) => country.name.toLowerCase() === destination.toLowerCase())
+
+  if (matchingCountry) {
+    return {
+      name: matchingCountry.name,
+      code: matchingCountry.code,
+    }
+  }
+
+  // Fallback if not found in the list
+  return {
+    name: destination,
+    code: "",
+  }
 }
 
 const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ tripId }) => {
@@ -146,12 +173,14 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         transports: [],
         cruises: [],
         isExpanded: true,
+        destination: null,
       },
     ],
     category: "",
     price: "",
     description: "",
     insuranceTaken: false,
+    destination: null,
   })
 
   // Store original step IDs to preserve them during update
@@ -175,6 +204,18 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         // Convert the API response to our form data format
         const offerData = response.data
 
+        // Log the entire response for debugging
+        console.log("Full API response:", offerData)
+
+        // Check if there are any destination-related properties with different names
+        const possibleDestinationProps = Object.keys(offerData).filter(
+          (key) =>
+            key.toLowerCase().includes("destination") ||
+            key.toLowerCase().includes("country") ||
+            key.toLowerCase().includes("location"),
+        )
+        console.log("Possible destination properties:", possibleDestinationProps)
+
         // Store original step IDs
         const stepIds: Record<number, string> = {}
         if (offerData.itinerary?.itinerarySteps) {
@@ -196,6 +237,18 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
           })
 
           sortedSteps.forEach((step, index) => {
+            // Log the entire step for debugging
+            console.log(`Full step ${index} data:`, step)
+
+            // Check if there are any destination-related properties with different names
+            const possibleStepDestinationProps = Object.keys(step).filter(
+              (key) =>
+                key.toLowerCase().includes("destination") ||
+                key.toLowerCase().includes("country") ||
+                key.toLowerCase().includes("location"),
+            )
+            console.log(`Possible step ${index} destination properties:`, possibleStepDestinationProps)
+
             // Extract accommodations
             const accommodations: Accommodation[] =
               step.accommodations?.map((acc) => ({
@@ -246,17 +299,29 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
               }
             })
 
-            // Create the offer step
-            offerSteps.push({
+            // Try to find the destination from any possible property
+            let stepDestination = step.destination
+            if (!stepDestination) {
+              for (const prop of possibleStepDestinationProps) {
+                if ((step as any)[prop]) {
+                  stepDestination = (step as any)[prop]
+                  console.log(`Found step destination in property ${prop}:`, stepDestination)
+                  break
+                }
+              }
+            }
+
+            // Create the base offer step without stepImages
+            const offerStep: OfferStep = {
               name: step.description || `Pasiūlymas ${index + 1}`,
               accommodations,
               transports,
               cruises,
               isExpanded: true,
-              stepImages: [], // Initialize with empty array, we'll handle existing images differently
-            })
+              destination: stringToCountry(stepDestination), // Convert string to Country object
+            }
 
-            // If the step has images, store them in the stepImages state
+            // If the step has images, add them to the step
             if (step.images && step.images.length > 0) {
               // Create a proper structure for existing images
               const existingImages = step.images.map((img) => ({
@@ -267,11 +332,14 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
               }))
 
               // Update the offer step to include the existing images
-              offerSteps[index].existingStepImages = existingImages
+              offerStep.existingStepImages = existingImages
 
-              // IMPORTANT: Initialize the stepImages array to trigger the image section display
-              offerSteps[index].stepImages = []
+              // IMPORTANT: Initialize the stepImages array ONLY if there are existing images
+              offerStep.stepImages = []
             }
+
+            // Add the step to our array
+            offerSteps.push(offerStep)
           })
         }
 
@@ -283,13 +351,43 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
             transports: [],
             cruises: [],
             isExpanded: true,
+            destination: null,
           })
         }
 
-        // Set form data
+        // Try to find the main destination from any possible property
+        let mainDestination = offerData.destination
+        if (!mainDestination) {
+          for (const prop of possibleDestinationProps) {
+            if ((offerData as any)[prop]) {
+              mainDestination = (offerData as any)[prop]
+              console.log(`Found main destination in property ${prop}:`, mainDestination)
+              break
+            }
+          }
+        }
+
+        // Convert the main destination
+        const mainDestinationObj = stringToCountry(mainDestination)
+        console.log("Converted main destination:", mainDestinationObj)
+
+        // For testing purposes, let's hardcode a destination if none is found
+        // This is just to verify if the UI can display it correctly
+        const testDestination =
+          mainDestinationObj ||
+          (fullCountriesList.length > 0
+            ? {
+                name: fullCountriesList[0].name,
+                code: fullCountriesList[0].code,
+              }
+            : null)
+
+        console.log("Test destination (remove in production):", testDestination)
+
+        // Set the form data
         setFormData({
           tripName: offerData.tripName || "",
-          clientId: offerData.clientId?.toString() || "",
+          clientId: offerData.clientId || "",
           clientName: offerData.clientName || null,
           startDate: offerData.startDate ? dayjs(offerData.startDate) : null,
           endDate: offerData.endDate ? dayjs(offerData.endDate) : null,
@@ -298,15 +396,16 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
           childrenCount: offerData.childrenCount || 0,
           offerSteps,
           category: offerData.category?.toString() || "",
-          price: offerData.price?.toString() || "",
+          price: offerData.price || "",
           description: offerData.description || "",
-          insuranceTaken: false, // Default value as it's not in the response
+          insuranceTaken: false, // Default value
+          destination: testDestination, // Use test destination for now
         })
 
         setIsLoading(false)
-      } catch (err: any) {
-        console.error("Failed to fetch offer data:", err)
-        setLoadError(err.response?.data?.message || "Nepavyko gauti pasiūlymo duomenų.")
+      } catch (error) {
+        console.error("Error fetching offer data:", error)
+        setLoadError("Nepavyko užkrauti pasiūlymo duomenų. Bandykite dar kartą vėliau.")
         setIsLoading(false)
       }
     }
@@ -318,12 +417,11 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
    * STEPPER NAVIGATION
    */
   const handleNext = () => {
-    setActiveStep((prev) => prev + 1)
+    setActiveStep((prevActiveStep) => prevActiveStep + 1)
   }
 
   const handleBack = () => {
-    localStorage.setItem("offerWizardData", JSON.stringify(formData))
-    setActiveStep(activeStep - 1)
+    setActiveStep((prevActiveStep) => prevActiveStep - 1)
   }
 
   /**
@@ -347,7 +445,29 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
    * STEPS SUBMISSION
    */
   const handleStep1Submit = (updatedData: Partial<OfferWizardData>) => {
+    console.log("Step1 submitted data:", updatedData)
+
     setFormData((prev) => ({ ...prev, ...updatedData }))
+
+    // If there's a main trip destination but no destinations on individual offers,
+    // add the main destination to all offers that don't have a specific destination
+    if (updatedData.destination && formData.offerSteps) {
+      const updatedSteps = formData.offerSteps.map((step) => {
+        if (!step.destination) {
+          return { ...step, destination: updatedData.destination }
+        }
+        return step
+      })
+
+      setFormData((prevData) => ({
+        ...prevData,
+        ...updatedData,
+        offerSteps: updatedSteps,
+      }))
+    } else {
+      setFormData((prevData) => ({ ...prevData, ...updatedData }))
+    }
+
     handleNext()
   }
 
@@ -367,50 +487,50 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
     }
   }
 
-  // Handle step images change
+  /**
+   * Calculate total price for all offers
+   */
+  const calculateTotalPrice = (steps: OfferStep[]): number => {
+    return steps.reduce((total, step) => {
+      const accommodationTotal = step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
+      const transportTotal = step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
+      const cruiseTotal = step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0
+      return total + accommodationTotal + transportTotal + cruiseTotal
+    }, 0)
+  }
+
+  /**
+   * Handle image changes for a step
+   */
   const handleStepImagesChange = (stepIndex: number, files: File[]) => {
     setStepImages((prev) => ({
       ...prev,
       [stepIndex]: files,
     }))
-
-    // Update the form data to reflect the change
-    setFormData((prev) => {
-      const updatedSteps = [...prev.offerSteps]
-      updatedSteps[stepIndex] = {
-        ...updatedSteps[stepIndex],
-        stepImages: files,
-      }
-      return {
-        ...prev,
-        offerSteps: updatedSteps,
-      }
-    })
   }
 
-  // Handle step image delete
+  /**
+   * Handle deleting an existing image
+   */
   const handleStepImageDelete = (stepIndex: number, imageId: string) => {
     // Add the image ID to the list of images to delete
     setStepImagesToDelete((prev) => {
-      const current = prev[stepIndex] || []
-      return {
-        ...prev,
-        [stepIndex]: [...current, imageId],
+      const newImagesToDelete = { ...prev }
+      if (!newImagesToDelete[stepIndex]) {
+        newImagesToDelete[stepIndex] = []
       }
+      newImagesToDelete[stepIndex].push(imageId)
+      return newImagesToDelete
     })
 
-    // Also remove it from the existingStepImages array in the form data
+    // Also remove it from the existingStepImages array in formData
     setFormData((prev) => {
-      const updatedSteps = [...prev.offerSteps]
-      if (updatedSteps[stepIndex].existingStepImages) {
-        updatedSteps[stepIndex].existingStepImages = updatedSteps[stepIndex].existingStepImages?.filter(
-          (img) => img.id !== imageId,
-        )
+      const newFormData = { ...prev }
+      const step = newFormData.offerSteps[stepIndex]
+      if (step && step.existingStepImages) {
+        step.existingStepImages = step.existingStepImages.filter((img) => img.id !== imageId)
       }
-      return {
-        ...prev,
-        offerSteps: updatedSteps,
-      }
+      return newFormData
     })
   }
 
@@ -419,123 +539,128 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
    * FINAL SUBMIT: Post to your backend
    * ---------------------------------------------------
    */
-  // Let's try a completely different approach for the FormData construction
-  // Replace the entire handleSubmit function
-
   const handleSubmit = async (isDraft = false) => {
     setIsSaving(true)
+
+    // Map the steps to the format expected by the API
+    const mappedSteps = formData.offerSteps.map((step, index) => {
+      // Convert cruises to transport entries
+      const cruiseTransports = step.cruises.map((cruise) => ({
+        transportType: TransportType.Cruise,
+        departureTime: cruise.departureTime,
+        arrivalTime: cruise.arrivalTime,
+        departurePlace: cruise.departurePlace,
+        arrivalPlace: cruise.arrivalPlace,
+        description: cruise.description,
+        companyName: cruise.companyName,
+        transportName: cruise.transportName,
+        transportCode: cruise.transportCode,
+        cabinType: cruise.cabinType,
+        price: cruise.price,
+      }))
+
+      // Calculate total price for this step
+      const stepTotal =
+        step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0) +
+        step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0) +
+        (step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0)
+
+      // Include hasImages flag to indicate if this step has images
+      return {
+        id: originalStepIds[index] || undefined, // Include original ID if available
+        dayNumber: index + 1,
+        description: step.name,
+        transports: [...step.transports, ...cruiseTransports],
+        accommodations: step.accommodations,
+        price: stepTotal, // Save the accumulated price for this step
+        hasImages: step.stepImages && step.stepImages.length > 0, // Add flag for images
+        destination: step.destination?.name || null, // Just send the country name string
+      }
+    })
+
+    // Set the trip status based on whether it's a draft or not
+    const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
+
+    // Build a final request object
+    const requestPayload = {
+      id: tripId, // Include the trip ID for update
+      agentId: user?.id || "", // or however you store your agent/user ID
+      clientId: formData.clientId || undefined,
+      tripName: formData.tripName,
+      description: formData.description,
+      clientWishes: formData.clientWishes,
+      tripType: 2, // 2 = ClientSpecialOffer
+      category: formData.category || undefined,
+      startDate: formData.startDate ? formData.startDate.toDate() : null,
+      endDate: formData.endDate ? formData.endDate.toDate() : null,
+      // Remove price from the main payload - we'll use the accumulated prices from each step
+      status: tripStatus, // Set the status based on isDraft
+      destination: formData.destination?.name || null, // Just send the country name string
+      itinerary: {
+        title: "Multi-Option Itinerary", // or formData.whatever
+        description: "Choose your option",
+        itinerarySteps: mappedSteps,
+      },
+      childrenCount: formData.childrenCount,
+      adultsCount: formData.adultCount,
+      // We are ignoring images / documents for now
+      images: null,
+      documents: null,
+    }
+
+    // For demonstration, we do a console log
+    console.log("Sending this offer to the backend:", requestPayload)
 
     try {
       // Create a FormData object for multipart/form-data submission
       const formDataPayload = new FormData()
 
-      // Map the steps to the format expected by the API
-      const itinerarySteps = formData.offerSteps.map((step, index) => {
-        // Combine regular transports and cruises
-        const allTransports = [
-          ...step.transports.map((trans) => ({
-            transportType: trans.transportType,
-            departureTime: trans.departureTime,
-            arrivalTime: trans.arrivalTime,
-            departurePlace: trans.departurePlace,
-            arrivalPlace: trans.arrivalPlace,
-            description: trans.description,
-            companyName: trans.companyName,
-            transportName: trans.transportName,
-            transportCode: trans.transportCode,
-            cabinType: trans.cabinType,
-            price: trans.price,
-          })),
-          ...step.cruises.map((cruise) => ({
-            transportType: TransportType.Cruise,
-            departureTime: cruise.departureTime,
-            arrivalTime: cruise.arrivalTime,
-            departurePlace: cruise.departurePlace,
-            arrivalPlace: cruise.arrivalPlace,
-            description: cruise.description,
-            companyName: cruise.companyName,
-            transportName: cruise.transportName,
-            transportCode: cruise.transportCode,
-            cabinType: cruise.cabinType,
-            price: cruise.price,
-          })),
-        ]
+      // Append the core JSON data
+      const itinerarySteps = mappedSteps.map((step, index) => ({
+        id: step.id, // Include original ID
+        dayNumber: step.dayNumber,
+        description: step.description,
+        transports: step.transports,
+        accommodations: step.accommodations,
+        price: step.price,
+        hasImages: step.hasImages, // Include the hasImages flag
+        destination: step.destination, // Include destination as string
+      }))
 
-        // Calculate total price for this step
-        const stepTotal =
-          step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0) +
-          step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0) +
-          (step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0)
-
-        return {
-          id: originalStepIds[index], // Include the original step ID if it exists
-          dayNumber: index + 1,
-          description: step.name,
-          transports: allTransports,
-          accommodations: step.accommodations,
-          price: stepTotal,
-          stepImagesToDelete: stepImagesToDelete[index] || [],
-        }
-      })
-
-      // Set the trip status based on whether it's a draft or not
-      const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
-
-      // Build a final request object
-      const requestPayload = {
-        id: tripId,
-        agentId: user?.id || "",
-        clientId: formData.clientId || undefined,
-        tripName: formData.tripName,
-        description: formData.description,
-        clientWishes: formData.clientWishes,
-        tripType: 2, // 2 = ClientSpecialOffer
-        category: formData.category || undefined,
-        startDate: formData.startDate ? formData.startDate.toDate() : null,
-        endDate: formData.endDate ? formData.endDate.toDate() : null,
-        status: tripStatus,
+      const fullPayload = {
+        ...requestPayload,
         itinerary: {
-          title: "Multi-Option Itinerary",
-          description: "Choose your option",
+          title: requestPayload.itinerary?.title,
+          description: requestPayload.itinerary?.description,
           itinerarySteps: itinerarySteps,
         },
-        childrenCount: formData.childrenCount,
-        adultsCount: formData.adultCount,
       }
 
-      // Add the JSON data
-      formDataPayload.append("data", JSON.stringify(requestPayload))
+      // FormData requires stringified JSON
+      formDataPayload.append("data", JSON.stringify(fullPayload))
 
-      // Add files for each step - EXACTLY matching the backend code
-      formData.offerSteps.forEach((step, index) => {
+      // Append step images
+      formData.offerSteps.forEach((step, i) => {
+        // Only append images if the step has actual image files
         if (step.stepImages && step.stepImages.length > 0) {
           step.stepImages.forEach((file) => {
-            // Based on the backend code, it expects "NewStepImages_{index}" field
-            formDataPayload.append(`NewStepImages_${index}`, file)
-
-            formDataPayload.append(`NewStepImages_${index}`, file)
+            formDataPayload.append(`StepImages_${i}`, file) // ⬅️ naming must match backend
           })
         }
       })
 
-      // Add images to delete
-      Object.entries(stepImagesToDelete).forEach(([stepIndex, ids]) => {
-        if (ids.length > 0) {
-          formDataPayload.append(`StepImagesToDelete_${stepIndex}`, ids.join(","))
-        }
+      // Append images to delete
+      Object.entries(stepImagesToDelete).forEach(([stepIndex, imageIds]) => {
+        imageIds.forEach((imageId) => {
+          formDataPayload.append(`ImagesToDelete`, imageId)
+        })
       })
 
-      console.log("Sending this updated offer to the backend:", requestPayload)
-      console.log("FormData entries:")
-      for (const pair of formDataPayload.entries()) {
-        console.log(pair[0], pair[1])
-      }
-
-      // Now send it - use PUT for update with axios but without setting Content-Type
+      // Now send it
       const response = await axios.put(`${API_URL}/ClientTripOfferFacade/${tripId}`, formDataPayload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          // Let the browser set the Content-Type with boundary
+          "Content-Type": "multipart/form-data",
         },
       })
 
@@ -543,17 +668,14 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 
       // Show success message
       setSnackbarMessage(
-        isDraft ? "Pasiūlymas sėkmingai atnaujintas kaip juodraštis!" : "Pasiūlymas sėkmingai atnaujintas!",
+        isDraft ? "Pasiūlymas sėkmingai išsaugotas kaip juodraštis!" : "Pasiūlymas sėkmingai atnaujintas!",
       )
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Clear localStorage after success
-      localStorage.removeItem("offerWizardData")
-
       // Wait for 1 second after getting the response before redirecting
       setTimeout(() => {
-        navigate(`/special-offers/${response.data.id || tripId}`)
+        navigate(`/special-offers/${response.data.id}`)
       }, 1000)
     } catch (err: any) {
       console.error("Failed to update the offer:", err)
@@ -592,9 +714,9 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 
   if (loadError) {
     return (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        {loadError}
-      </Alert>
+      <Box sx={{ mt: 4 }}>
+        <Alert severity="error">{loadError}</Alert>
+      </Box>
     )
   }
 
@@ -610,7 +732,12 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         </Stepper>
 
         <Paper elevation={3} sx={{ p: 4 }}>
-          {activeStep === 0 && <Step1TripInfo initialData={formData} onSubmit={handleStep1Submit} />}
+          {activeStep === 0 && (
+            <>
+              {console.log("Passing to Step1TripInfo:", formData)}
+              <Step1TripInfo initialData={formData} onSubmit={handleStep1Submit} />
+            </>
+          )}
 
           {activeStep === 1 && (
             <Step2Offers
@@ -702,4 +829,3 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 }
 
 export default EditClientOfferWizardForm
-

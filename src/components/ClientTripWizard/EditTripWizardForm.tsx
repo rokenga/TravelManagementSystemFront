@@ -15,6 +15,7 @@ import Step2Itinerary from "./Step2Itinerary"
 import Step3ReviewConfirm from "./Step3ReviewConfirm"
 import CustomSnackbar from "../../components/CustomSnackBar"
 import UnifiedFileUploadStep from "../../components/UnifiedFileUploadStep"
+import fullCountriesList from "../../assets/full-countries-lt.json"
 
 // ---------- Types ----------
 import {
@@ -31,6 +32,7 @@ import {
   type PaymentStatus,
   type ItineraryStep,
 } from "../../types"
+import type { Country } from "../DestinationAutocomplete"
 
 // Example shape for an existing image from the server
 export interface ExistingFile {
@@ -54,6 +56,27 @@ interface ExtendedItineraryDay extends ItineraryDay {
 
 // The steps for the wizard
 const steps = ["Kelionės informacija", "Kelionės planas", "Nuotraukos ir dokumentai", "Peržiūrėti ir atnaujinti"]
+
+// Helper function to convert string destination to Country object
+const stringToCountry = (destination?: string): Country | null => {
+  if (!destination) return null
+
+  // Find the country in the full list to get complete data
+  const matchingCountry = fullCountriesList.find((country) => country.name.toLowerCase() === destination.toLowerCase())
+
+  if (matchingCountry) {
+    return {
+      name: matchingCountry.name,
+      code: matchingCountry.code,
+    }
+  }
+
+  // Fallback if not found in the list
+  return {
+    name: destination,
+    code: "",
+  }
+}
 
 function WizardEditForm() {
   const { tripId } = useParams()
@@ -211,7 +234,14 @@ function WizardEditForm() {
       price,
       itinerary,
       clientId,
+      destination,
     } = tripResponse
+
+    console.log("Mapping server response to wizard state, destination:", destination)
+
+    // Convert string destination to Country object
+    const destinationObj = stringToCountry(destination)
+    console.log("Converted destination to:", destinationObj)
 
     const tripData: TripFormData = {
       tripName: tripName || "",
@@ -230,6 +260,7 @@ function WizardEditForm() {
       itineraryDescription: itinerary?.description || "",
       clientId: clientId || "",
       clientName: null, // or fill if you have it
+      destination: destination || null, // Store the destination string
     }
 
     // Build wizard itinerary from steps
@@ -500,6 +531,12 @@ function WizardEditForm() {
       formData.append("paymentStatus", fd.paymentStatus || "Unpaid")
       formData.append("insuranceTaken", String(fd.insuranceTaken || false))
 
+      // Add destination to form data
+      if (fd.destination) {
+        formData.append("destination", fd.destination)
+        console.log("Adding destination to form data:", fd.destination)
+      }
+
       if (fd.startDate) {
         formData.append("startDate", new Date(fd.startDate).toISOString())
       }
@@ -564,6 +601,11 @@ function WizardEditForm() {
         }
       })
 
+      // Log all form data entries for debugging
+      for (const pair of formData.entries()) {
+        console.log(`Form data entry: ${pair[0]} = ${pair[1]}`)
+      }
+
       // 3) Send PUT
       const resp = await axios.put(`${API_URL}/client-trips/${tripId}`, formData, {
         headers: {
@@ -626,6 +668,7 @@ function WizardEditForm() {
       dayByDayItineraryNeeded: fd.dayByDayItineraryNeeded,
       adultsCount: fd.adultsCount || 0,
       childrenCount: fd.childrenCount || 0,
+      destination: fd.destination || null, // Include destination in the request
       itinerary: {
         title: fd.itineraryTitle || "",
         description: fd.itineraryDescription || "",
@@ -916,4 +959,3 @@ function WizardEditForm() {
 }
 
 export default WizardEditForm
-

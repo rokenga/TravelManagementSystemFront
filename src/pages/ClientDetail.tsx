@@ -33,6 +33,7 @@ import ActionBar from "../components/ActionBar"
 import ClientFormModal from "../components/ClientFormModal"
 import ConfirmationDialog from "../components/ConfirmationDialog"
 import CustomSnackbar from "../components/CustomSnackBar"
+import SpecialOfferCard from "../components/ClientSpecialOfferCard"
 
 enum TagCategory {
   DestinationInterest = "DestinationInterest",
@@ -121,6 +122,7 @@ const ClientDetail: React.FC = () => {
   const [isTagModalOpen, setIsTagModalOpen] = useState<boolean>(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false)
   const [clientTrips, setClientTrips] = useState<TripResponse[]>([])
+  const [clientSpecialOffers, setClientSpecialOffers] = useState<TripResponse[]>([])
   const [initialStateLoaded, setInitialStateLoaded] = useState<boolean>(false)
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -215,6 +217,19 @@ const ClientDetail: React.FC = () => {
     }
   }, [clientId])
 
+  const fetchClientSpecialOffers = useCallback(async () => {
+    if (!clientId) return
+
+    try {
+      const response = await axios.get<TripResponse[]>(`${API_URL}/ClientTripOfferFacade/client/${clientId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      })
+      setClientSpecialOffers(response.data)
+    } catch (error) {
+      console.error("Failed to fetch client special offers:", error)
+    }
+  }, [clientId])
+
   // Restore state only once when component mounts
   useEffect(() => {
     if (!clientId || initialStateLoaded) return
@@ -234,8 +249,9 @@ const ClientDetail: React.FC = () => {
       fetchClientData()
       fetchClientTags()
       fetchClientTrips()
+      fetchClientSpecialOffers()
     }
-  }, [clientId, fetchClientData, fetchClientTags, fetchClientTrips])
+  }, [clientId, fetchClientData, fetchClientTags, fetchClientTrips, fetchClientSpecialOffers])
 
   // Save state when component unmounts
   useEffect(() => {
@@ -313,6 +329,22 @@ const ClientDetail: React.FC = () => {
     navigate(`/admin-trip-list/${tripId}`)
   }
 
+  const handleSpecialOfferClick = (offerId: string) => {
+    // Save the current state before navigating
+    saveCurrentState()
+
+    // Set the navigation source to identify where we came from
+    setNavigationSource("client-details")
+
+    // Save the client ID as the source
+    if (clientId) {
+      setSourceClientId(clientId)
+    }
+
+    // Navigate to the special offer detail page
+    navigate(`/special-offers/${offerId}`)
+  }
+
   return (
     <Box sx={{ maxWidth: "xl", margin: "0 auto", padding: "20px" }}>
       {isLoading ? (
@@ -354,10 +386,7 @@ const ClientDetail: React.FC = () => {
                     height: 64,
                     fontSize: "1.5rem",
                   }}
-                >
-                  {client.name[0]}
-                  {client.surname[0]}
-                </Avatar>
+                />
 
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -465,31 +494,19 @@ const ClientDetail: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              <Grid container spacing={2}>
-                {mockOffers.map((offer) => (
-                  <Grid item xs={12} sm={6} key={offer.id}>
-                    <Card
-                      sx={{
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        transition: "transform 0.2s",
-                        "&:hover": {
-                          transform: "translateY(-4px)",
-                          boxShadow: 3,
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6">{offer.title}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {offer.description}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+              {clientSpecialOffers.length > 0 ? (
+                <Grid container spacing={2}>
+                  {clientSpecialOffers.map((offer) => (
+                    <Grid item xs={12} sm={6} key={offer.id}>
+                      <SpecialOfferCard offer={offer} onClick={handleSpecialOfferClick} />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Typography variant="body1" textAlign="center" sx={{ mt: 4 }}>
+                  Klientas dar neturi specialių pasiūlymų.
+                </Typography>
+              )}
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
@@ -497,7 +514,7 @@ const ClientDetail: React.FC = () => {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Kliento kelionių ir pasiūlymų istorija
                 </Typography>
-                <ClientTimeline trips={clientTrips} offers={mockOffers} />
+                <ClientTimeline trips={clientTrips} offers={clientSpecialOffers} />
               </Box>
             </TabPanel>
           </Paper>

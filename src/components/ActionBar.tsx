@@ -131,7 +131,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
             onClick={onTagManage}
             sx={{ textTransform: "none" }}
           >
-            Tvarkyti žymas
+            Tvarkyti žymeklius
           </Button>
         )}
         {showEditButton && (

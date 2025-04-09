@@ -36,6 +36,7 @@ import { Flight, Train, DirectionsBus, FlightTakeoff, FlightLand, Image, Upload 
 import type { Dayjs } from "dayjs"
 import CustomDateTimePicker from "../CustomDatePicker"
 import CustomSnackbar from "../CustomSnackBar"
+import DestinationAutocomplete, { Country } from "../DestinationAutocomplete"
 
 // Define TypeScript interfaces for our data structures
 export interface Accommodation {
@@ -88,6 +89,7 @@ export interface Step {
     url: string
     altText?: string
   }>
+  destination?: Country | null
 }
 
 export interface Option {
@@ -141,6 +143,8 @@ interface OfferOptionProps {
   onImageChange: (stepIndex: number, files: File[]) => void
   onRemoveImageSection: (stepIndex: number) => void
   onExistingImageDelete?: (stepIndex: number, imageId: string) => void
+  onDestinationChange?: (stepIndex: number, destination: Country | null) => void
+  tripDestination?: Country | null
 }
 
 export function OfferOption({
@@ -169,6 +173,8 @@ export function OfferOption({
   onImageChange,
   onRemoveImageSection,
   onExistingImageDelete,
+  onDestinationChange,
+  tripDestination,
 }: OfferOptionProps) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -198,9 +204,12 @@ export function OfferOption({
 
   // Calculate total price for a step
   const calculateStepTotal = (step: Step): number => {
-    const accommodationTotal = step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
-    const transportTotal = step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
-    const cruiseTotal = step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0
+    if (!step) return 0
+
+    const accommodationTotal = step.accommodations?.reduce((sum, acc) => sum + (acc.price || 0), 0) || 0
+    const transportTotal = step.transports?.reduce((sum, trans) => sum + (trans.price || 0), 0) || 0
+    const cruiseTotal = step.cruises?.reduce((sum, cruise) => sum + (cruise.price || 0), 0) || 0
+
     return accommodationTotal + transportTotal + cruiseTotal
   }
 
@@ -220,6 +229,13 @@ export function OfferOption({
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false)
+  }
+
+  // Handle destination change
+  const handleDestinationChange = (destination: Country | null) => {
+    if (onDestinationChange) {
+      onDestinationChange(stepIndex, destination)
+    }
   }
 
   // Validate time constraints and show error if needed
@@ -505,7 +521,7 @@ export function OfferOption({
 
   // Check if this step already has an image section
   const hasImageSection =
-    step.stepImages !== undefined || (step.existingStepImages && step.existingStepImages.length > 0)
+    Array.isArray(step.stepImages) || (step.existingStepImages && step.existingStepImages.length > 0)
 
   return (
     <Paper
@@ -570,6 +586,17 @@ export function OfferOption({
       </Box>
 
       <Box sx={{ p: 3 }}>
+        {/* Add Destination field for the offer */}
+        <Box sx={{ mb: 3 }}>
+          <DestinationAutocomplete
+            value={step.destination}
+            onChange={handleDestinationChange}
+            label="Pasiūlymo tikslas"
+            placeholder={tripDestination ? `Palikite tuščią kad naudotumėte: ${tripDestination.name}` : "Pasirinkite šalį arba kontinentą"}
+            size="small"
+          />
+        </Box>
+
         {/* Dropdown button */}
         <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
           <Button
@@ -1065,8 +1092,8 @@ export function OfferOption({
             </Accordion>
           ))}
 
-        {/* Images section - show if stepImages is defined OR there are existing images */}
-        {(step.stepImages !== undefined || (step.existingStepImages && step.existingStepImages.length > 0)) && (
+        {/* Images section - show if stepImages has items OR there are existing images */}
+        {(Array.isArray(step.stepImages) || (step.existingStepImages && step.existingStepImages.length > 0)) && (
           <Accordion key="images-section" sx={{ mb: 2 }}>
             <AccordionSummary
               expandIcon={<ExpandMoreIcon />}
@@ -1093,7 +1120,7 @@ export function OfferOption({
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Typography variant="body2" sx={{ mr: 2, color: "text.secondary" }}>
-                    {step.stepImages.length + (step.existingStepImages?.length || 0)} nuotraukos
+                    {(step.stepImages?.length || 0) + (step.existingStepImages?.length || 0)} nuotraukos
                   </Typography>
                   <IconButton
                     size="small"
@@ -1197,7 +1224,7 @@ export function OfferOption({
                 )}
 
                 {/* Display newly added images */}
-                {step.stepImages && step.stepImages.length > 0 ? (
+                {Array.isArray(step.stepImages) ? (
                   <>
                     <Typography variant="subtitle2" gutterBottom>
                       {step.existingStepImages && step.existingStepImages.length > 0
@@ -1278,4 +1305,3 @@ export function OfferOption({
     </Paper>
   )
 }
-

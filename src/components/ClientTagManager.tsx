@@ -39,6 +39,10 @@ const categoryColors: Record<TagCategory, string> = {
   [TagCategory.TravelPreference]: "#AB47BC",
 }
 
+// Constants for tag name validation
+const MIN_TAG_LENGTH = 2
+const MAX_TAG_LENGTH = 40
+
 const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => {
   const [tags, setTags] = useState<Record<string, ClientTagResponse[]>>({})
   const [newTagName, setNewTagName] = useState("")
@@ -48,12 +52,27 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [tagToDelete, setTagToDelete] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" })
+  const [nameError, setNameError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       fetchTags()
     }
   }, [open])
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      resetForm()
+    }
+  }, [open])
+
+  const resetForm = () => {
+    setNewTagName("")
+    setNewTagCategory("")
+    setEditingTag(null)
+    setNameError(null)
+  }
 
   const fetchTags = async () => {
     try {
@@ -67,8 +86,34 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
     }
   }
 
+  // Validate tag name length
+  const validateTagName = (name: string): boolean => {
+    if (name.length < MIN_TAG_LENGTH) {
+      setNameError(`Žymeklio pavadinimas turi būti bent ${MIN_TAG_LENGTH} simbolių ilgio.`)
+      showSnackbar(`Žymeklio pavadinimas turi būti bent ${MIN_TAG_LENGTH} simbolių ilgio.`, "error")
+      return false
+    }
+
+    if (name.length > MAX_TAG_LENGTH) {
+      setNameError(`Žymeklio pavadinimas negali viršyti ${MAX_TAG_LENGTH} simbolių.`)
+      showSnackbar(`Žymeklio pavadinimas negali viršyti ${MAX_TAG_LENGTH} simbolių.`, "error")
+      return false
+    }
+
+    setNameError(null)
+    return true
+  }
+
   const handleSaveTag = async () => {
-    if (!newTagName || !newTagCategory) return
+    if (!newTagName || !newTagCategory) {
+      showSnackbar("Užpildykite visus laukelius.", "error")
+      return
+    }
+
+    // Validate tag name length
+    if (!validateTagName(newTagName)) {
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -99,9 +144,7 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
         showSnackbar("Naujas žymeklis sėkmingai pridėtas!", "success")
       }
 
-      setNewTagName("")
-      setNewTagCategory("")
-      setEditingTag(null)
+      resetForm()
       fetchTags()
 
       // Call onTagsUpdated to refresh the filter panel
@@ -137,6 +180,17 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
     setNewTagName(tag.name)
     setNewTagCategory(tag.category)
     setEditingTag(tag)
+    setNameError(null) // Clear any previous errors
+  }
+
+  const handleTagNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setNewTagName(value)
+
+    // Clear error when user starts typing again
+    if (nameError) {
+      setNameError(null)
+    }
   }
 
   const showSnackbar = (message: string, severity: "success" | "error") => {
@@ -193,9 +247,11 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
             <TextField
               label="Žymeklio pavadinimas"
               value={newTagName}
-              onChange={(e) => setNewTagName(e.target.value)}
+              onChange={handleTagNameChange}
               fullWidth
               size="small"
+              error={!!nameError}
+              helperText={nameError}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "4px",
