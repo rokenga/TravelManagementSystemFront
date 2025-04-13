@@ -3,11 +3,10 @@
 import type React from "react"
 import { Card, CardContent, CardActionArea, Typography, Box, Chip } from "@mui/material"
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
-import LocalOfferIcon from "@mui/icons-material/LocalOffer"
 import AccessTimeIcon from "@mui/icons-material/AccessTime"
-import PaymentIcon from "@mui/icons-material/Payment"
-import { translateTripCategory, translateTripStatus } from "../Utils/translateEnums"
-import { type TripResponse, TripCategory, TripStatus } from "../types/ClientTrip"
+import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff"
+import { translateOfferStatus, translateTripCategory } from "../Utils/translateEnums"
+import { type TripResponse, TripCategory, OfferStatus } from "../types/ClientTrip"
 
 // Lithuanian date formatter (YYYY-MM-DD)
 const formatDate = (dateString?: string) => {
@@ -19,33 +18,36 @@ const formatDate = (dateString?: string) => {
   }).format(new Date(dateString))
 }
 
-const truncateText = (text = "", maxLength = 70) => {
+const truncateText = (text = "", maxLength = 60) => {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength) + "..."
 }
 
-const formatPrice = (price?: number) => {
-  if (price === undefined) return "Kaina nenurodyta"
-  return new Intl.NumberFormat("lt-LT", {
-    style: "currency",
-    currency: "EUR",
-  }).format(price)
+// Calculate trip duration in days
+const calculateDuration = (startDate?: string, endDate?: string) => {
+  if (!startDate || !endDate) return null
+
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const diffTime = Math.abs(end.getTime() - start.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays
 }
 
-// Using the same color scheme as the client card for consistency
+// More subtle category colors
 const categoryColors = {
-  [TripCategory.Tourist]: "#42A5F5", // Blue - like SpecialRequirements
-  [TripCategory.Group]: "#AB47BC", // Purple - like TravelPreference
-  [TripCategory.Relax]: "#FFA726", // Orange - like DestinationInterest
-  [TripCategory.Business]: "#66BB6A", // Green - like Other
-  [TripCategory.Cruise]: "#EC407A", // Pink - like TravelFrequency
+  [TripCategory.Tourist]: "#90CAF9", // Light Blue
+  [TripCategory.Group]: "#CE93D8", // Light Purple
+  [TripCategory.Relax]: "#FFCC80", // Light Orange
+  [TripCategory.Business]: "#A5D6A7", // Light Green
+  [TripCategory.Cruise]: "#F48FB1", // Light Pink
 }
 
 // Status colors
 const statusColors = {
-  [TripStatus.Draft]: "#FF9800", // Orange
-  [TripStatus.Confirmed]: "#4CAF50", // Green
-  [TripStatus.Cancelled]: "#F44336", // Red
+  [OfferStatus.Draft]: "#FFB74D", // Orange 300
+  [OfferStatus.Confirmed]: "#81C784", // Green 300
 }
 
 interface SpecialOfferCardProps {
@@ -54,42 +56,50 @@ interface SpecialOfferCardProps {
 }
 
 const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) => {
+  const duration = calculateDuration(offer.startDate, offer.endDate)
+
   return (
     <Card
       sx={{
         height: "100%",
-        position: "relative",
         transition: "transform 0.2s, box-shadow 0.2s",
         "&:hover": {
           transform: "translateY(-4px)",
-          boxShadow: 4,
+          boxShadow: 3,
         },
       }}
     >
       <CardActionArea onClick={() => onClick(offer.id)} sx={{ height: "100%" }}>
-        <CardContent sx={{ p: 3 }}>
-          {/* Header with title */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-              {truncateText(offer.tripName || "Pasiūlymas be pavadinimo")}
+        <CardContent sx={{ p: 2 }}>
+          {/* Header with title only */}
+          <Box sx={{ mb: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+              {truncateText(offer.tripName || "Specialus pasiūlymas")}
             </Typography>
           </Box>
 
-          {/* Status badges */}
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 1 }}>
+          {/* Destination if available */}
+          {offer.destination && (
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <FlightTakeoffIcon sx={{ fontSize: "0.9rem", mr: 0.75, color: "text.secondary" }} />
+              <Typography variant="body2" color="text.secondary">
+                {offer.destination}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Status badges - more compact */}
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, flexWrap: "wrap", gap: 0.5 }}>
             {/* Trip category */}
             {offer.category && (
               <Chip
-                icon={<LocalOfferIcon style={{ fontSize: "0.875rem", color: "white" }} />}
                 label={translateTripCategory(offer.category)}
                 size="small"
                 sx={{
-                  bgcolor: categoryColors[offer.category] || "#757575",
-                  color: "white",
-                  fontWeight: 500,
-                  "& .MuiChip-icon": {
-                    color: "white",
-                  },
+                  height: "20px",
+                  fontSize: "0.7rem",
+                  bgcolor: categoryColors[offer.category] || "#E0E0E0",
+                  color: "rgba(0,0,0,0.7)",
                 }}
               />
             )}
@@ -97,47 +107,43 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
             {/* Trip status */}
             {offer.status && (
               <Chip
-                icon={<AccessTimeIcon style={{ fontSize: "0.875rem", color: "white" }} />}
-                label={translateTripStatus(offer.status)}
+                label={translateOfferStatus(offer.status)}
                 size="small"
                 sx={{
-                  bgcolor: statusColors[offer.status] || "#757575",
-                  color: "white",
-                  fontWeight: 500,
-                  "& .MuiChip-icon": {
-                    color: "white",
-                  },
+                  height: "20px",
+                  fontSize: "0.7rem",
+                  bgcolor: statusColors[offer.status] || "#E0E0E0",
+                  color: "rgba(0,0,0,0.7)",
                 }}
               />
             )}
           </Box>
 
-          {/* Trip details */}
-          <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+          {/* Trip details - more compact */}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             {/* Date range */}
             {(offer.startDate || offer.endDate) && (
-              <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
-                <CalendarTodayIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
-                <Typography variant="body2" color="text.secondary">
-                  {formatDate(offer.startDate)} – {formatDate(offer.endDate)}
+              <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary" }}>
+                <CalendarTodayIcon sx={{ fontSize: "0.9rem", mr: 0.5, opacity: 0.7 }} />
+                <Typography variant="caption">
+                  {formatDate(offer.startDate)}
+                  {offer.startDate && offer.endDate && " – "}
+                  {offer.endDate &&
+                    formatDate(offer.endDate) !== formatDate(offer.startDate) &&
+                    formatDate(offer.endDate)}
                 </Typography>
               </Box>
             )}
 
-            {/* Price with icon */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                mt: 1.5,
-              }}
-            >
-              <PaymentIcon sx={{ fontSize: "1.1rem", mr: 0.75, color: "primary.main" }} />
-              <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
-                {formatPrice(offer.price)}
-              </Typography>
-            </Box>
+            {/* Duration if available */}
+            {duration && (
+              <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary" }}>
+                <AccessTimeIcon sx={{ fontSize: "0.9rem", mr: 0.5, opacity: 0.7 }} />
+                <Typography variant="caption">
+                  {duration} {duration === 1 ? "diena" : duration > 1 && duration < 10 ? "dienos" : "dienų"}
+                </Typography>
+              </Box>
+            )}
           </Box>
         </CardContent>
       </CardActionArea>
@@ -146,4 +152,3 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
 }
 
 export default SpecialOfferCard
-

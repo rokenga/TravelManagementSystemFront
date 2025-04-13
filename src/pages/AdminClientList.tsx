@@ -149,7 +149,7 @@ const AdminClientList: React.FC = () => {
     if (!isInitialMount.current) {
       fetchClients(currentPage, pageSize, searchTerm, selectedFilters)
     }
-  }, [refreshTrigger])
+  }, [sortOption, currentPage, pageSize, searchTerm, selectedFilters])
 
   const fetchClients = async (page: number, size: number, search: string, filters: ClientFilters) => {
     try {

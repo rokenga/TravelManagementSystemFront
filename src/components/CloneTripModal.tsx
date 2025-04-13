@@ -124,7 +124,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
       <DialogContent dividers>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
           <Box>
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Pasirinkite naujos kelionės datas:
             </Typography>
             <Grid container spacing={2}>
@@ -151,7 +151,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
           </Box>
 
           <Box>
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Pasirinkite, ką norite kopijuoti:
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1, ml: 1 }}>
@@ -208,7 +208,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2, justifyContent: "space-between" }}>
+      <DialogActions sx={{ px: 3, py: 2, justifyContent: "center" }}>
         <Button
           onClick={handleConfirm}
           variant="contained"
@@ -219,19 +219,9 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
         >
           {loading ? "Vykdoma..." : "Klonuoti kelionę"}
         </Button>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="secondary"
-          disabled={loading}
-          sx={{ textTransform: "none" }}
-        >
-          Atšaukti
-        </Button>
       </DialogActions>
     </Dialog>
   )
 }
 
 export default CloneTripModal
-

@@ -85,7 +85,6 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
       { text: "Karšti kelionių pasiūlymai", path: "/specialOffers", icon: <StarIcon /> },
       { text: "Karšti kruizų pasiūlymai", path: "/specialOffers", icon: <ShipIcon /> },
-      { text: "Tinklaraštis", path: "/records", icon: <ArticleIcon /> },
     ],
     Client: [
       { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
@@ -97,15 +96,15 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       { text: "Agentai", path: "/agents", icon: <AgentsIcon /> },
       { text: "Klientai", path: "/admin-client-list", icon: <ProfileIcon /> },
       { text: "Kelionės", path: "/admin-trip-list", icon: <PlaneIcon /> },
-      { text: "Spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
-      { text: "Tinklaraštis", path: "/records", icon: <ArticleIcon /> },
+      { text: "Klientų spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
+      { text: "Vieši spec. pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
     ],
     Agent: [
       { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
       { text: "Klientai", path: "/admin-client-list", icon: <ProfileIcon /> },
       { text: "Kelionės", path: "/admin-trip-list", icon: <PlaneIcon /> },
-      { text: "Spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
-      { text: "Tinklaraštis", path: "/records", icon: <ArticleIcon /> },
+      { text: "Klientų spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
+      { text: "Vieši spec. pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
     ],
   }
 

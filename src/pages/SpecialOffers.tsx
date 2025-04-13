@@ -33,7 +33,7 @@ const SpecialOffers: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
       <Typography variant="h4" align="center" gutterBottom>
-        Specialūs Pasiūlymai
+        Specialūs pasiūlymai
       </Typography>
       <Grid container spacing={4}>
         {offers.map((offer) => (

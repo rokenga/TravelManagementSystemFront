@@ -32,6 +32,7 @@ import {
 // File types
 export interface FileWithPreview extends File {
   preview?: string
+  size: number // Ensure size is always defined
 }
 
 export interface ExistingFile {
@@ -66,9 +67,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   allowedExtensions,
 }) => {
   const [error, setError] = useState<string | null>(null)
-  const [/*previewDialogOpen*/ /*setPreviewDialogOpen*/ ,] = useState(false)
-  const [/*previewUrl*/ /*setPreviewUrl*/ ,] = useState<string | null>(null)
-
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Determine allowed extensions based on file type
@@ -82,7 +80,10 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
       newFiles.forEach((file) => {
         if (!file.preview) {
           const objectUrl = URL.createObjectURL(file)
-          file.preview = objectUrl
+          Object.defineProperty(file, "preview", {
+            value: objectUrl,
+            writable: true,
+          })
         }
       })
     }
@@ -90,7 +91,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     // Cleanup function to revoke object URLs
     return () => {
       newFiles.forEach((file) => {
-        if (file.preview && !file.preview.startsWith("http")) {
+        if (file.preview && typeof file.preview === "string" && !file.preview.startsWith("http")) {
           URL.revokeObjectURL(file.preview)
         }
       })
@@ -111,19 +112,23 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
 
     fileArray.forEach((file) => {
       // Check file extension
-      const extension = `.${file.name.split(".").pop()?.toLowerCase()}`
-      if (!extensions.includes(extension)) {
-        invalidFiles.push(`${file.name} (netinkamas formatas)`)
+      const fileName = file.name || ""
+      const extension = fileName.includes(".") ? `.${fileName.split(".").pop()?.toLowerCase()}` : ""
+
+      if (!extension || !extensions.includes(extension)) {
+        invalidFiles.push(`${fileName} (netinkamas formatas)`)
         return
       }
 
       // Check file size
       if (file.size > maxSize) {
-        invalidFiles.push(`${file.name} (per didelis failas, max ${maxSize / 1024 / 1024}MB)`)
+        invalidFiles.push(`${fileName} (per didelis failas, max ${maxSize / 1024 / 1024}MB)`)
         return
       }
 
-      validFiles.push(file)
+      // Ensure file has size property
+      const fileWithSize = file as FileWithPreview
+      validFiles.push(fileWithSize)
     })
 
     // Show error if there are invalid files
@@ -143,37 +148,38 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   // Remove a new file
   const removeNewFile = (index: number) => {
     const updatedFiles = [...newFiles]
+    // Clean up preview URL before removing
+    const file = updatedFiles[index]
+    if (file && file.preview && typeof file.preview === "string" && !file.preview.startsWith("http")) {
+      URL.revokeObjectURL(file.preview)
+    }
     updatedFiles.splice(index, 1)
     setNewFiles(updatedFiles)
   }
 
   // Get icon for document type
-  const getDocumentIcon = (fileName: string) => {
-    const extension = `.${fileName.split(".").pop()?.toLowerCase()}`
+  const getDocumentIcon = (fileName: string | undefined) => {
+    // Add null check to prevent the error
+    if (!fileName) {
+      return <Description />
+    }
+
+    const extension = fileName.includes(".") ? `.${fileName.split(".").pop()?.toLowerCase()}` : ""
 
     switch (extension) {
       case ".pdf":
         return <PictureAsPdf color="error" />
       case ".docx":
+      case ".doc":
         return <Article color="primary" />
       case ".txt":
         return <InsertDriveFile color="action" />
       case ".xlsx":
+      case ".xls":
         return <TableChart color="success" />
       default:
         return <Description />
     }
-  }
-
-  // Open preview dialog
-  /*const openPreview = (url: string) => {
-    setPreviewUrl(url)
-    setPreviewDialogOpen(true)
-  }*/
-
-  // Get the appropriate icon based on file type
-  const getFileIcon = (fileName: string) => {
-    return fileType === "image" ? <Image /> : getDocumentIcon(fileName)
   }
 
   // Get the appropriate label for the file type
@@ -184,6 +190,14 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   // Get the allowed extensions as a string
   const getAllowedExtensionsString = () => {
     return extensions.join(", ").replace(/\./g, "").toUpperCase()
+  }
+
+  // Format file size to KB with proper handling
+  const formatFileSize = (size: number | undefined) => {
+    if (typeof size !== "number" || isNaN(size)) {
+      return "0 KB"
+    }
+    return `${(size / 1024).toFixed(1)} KB`
   }
 
   return (
@@ -228,7 +242,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
 
       <Divider sx={{ mb: 2 }} />
 
-
       {fileType === "image" ? (
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
           {/* Display existing images */}
@@ -246,11 +259,17 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
             >
               <img
                 src={file.url || "/placeholder.svg"}
-                alt={file.fileName}
+                alt={file.fileName || "Image"}
                 style={{
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
+                }}
+                onError={(e) => {
+                  // Handle image loading errors
+                  const target = e.target as HTMLImageElement
+                  target.src = "/placeholder.svg"
+                  target.onerror = null // Prevent infinite error loop
                 }}
               />
               {onDeleteExisting && (
@@ -286,11 +305,17 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
             >
               <img
                 src={file.preview || "/placeholder.svg"}
-                alt={file.name}
+                alt={file.name || "New image"}
                 style={{
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
+                }}
+                onError={(e) => {
+                  // Handle image loading errors
+                  const target = e.target as HTMLImageElement
+                  target.src = "/placeholder.svg"
+                  target.onerror = null // Prevent infinite error loop
                 }}
               />
               <IconButton
@@ -322,7 +347,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
             <ListItem key={file.id}>
               <ListItemIcon>{getDocumentIcon(file.fileName)}</ListItemIcon>
               <ListItemText
-                primary={file.fileName}
+                primary={file.fileName || "Document"}
                 secondary={
                   <a href={file.url} target="_blank" rel="noreferrer">
                     Peržiūrėti
@@ -343,7 +368,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
           {newFiles.map((file, index) => (
             <ListItem key={`new-doc-${index}`}>
               <ListItemIcon>{getDocumentIcon(file.name)}</ListItemIcon>
-              <ListItemText primary={file.name} secondary={`${(file.size / 1024).toFixed(1)} KB`} />
+              <ListItemText primary={file.name || "Document"} secondary={formatFileSize(file.size)} />
               <ListItemSecondaryAction>
                 <IconButton edge="end" onClick={() => removeNewFile(index)}>
                   <Delete />
@@ -369,7 +394,13 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
           />
           {newFiles.length > 0 && (
             <Typography variant="body2" color="text.secondary">
-              Nauji failai: {(newFiles.reduce((acc, file) => acc + file.size, 0) / 1024 / 1024).toFixed(2)} MB
+              Nauji failai:{" "}
+              {(
+                newFiles.reduce((acc, file) => acc + (typeof file.size === "number" ? file.size : 0), 0) /
+                1024 /
+                1024
+              ).toFixed(2)}{" "}
+              MB
             </Typography>
           )}
         </Box>
@@ -377,4 +408,3 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     </Paper>
   )
 }
-

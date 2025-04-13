@@ -12,6 +12,11 @@ export enum TripStatus {
   Cancelled = "Cancelled",
 }
 
+export enum OfferStatus {
+  Draft = "Draft",
+  Confirmed = "Confirmed"
+}
+
 export enum PaymentStatus {
   Unpaid = "Unpaid",
   PartiallyPaid = "PartiallyPaid",
@@ -68,6 +73,7 @@ export interface TripResponse {
   adultsCount?: number
   childrenCount?: number
   dayByDayItineraryNeeded: boolean
+  destination?: string
 }
 
 /** ======= Pagination & Filtering Types ======= **/

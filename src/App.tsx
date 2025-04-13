@@ -47,6 +47,8 @@ import { NavigationProvider } from "./contexts/NavigationContext"
 import EditClientOfferWizardPage from "./pages/EditClientOfferWizardPage"
 import PublicOfferCreationForm from "./pages/CreatePublicOfferWizardPage"
 import PublicSpecialOffer from "./pages/PublicSpecialOffer"
+import AdminClientSpecialOffers from "./pages/AdminClientSpecialOffers"
+import AdminPublicSpecialOffers from "./pages/AdminPublicSpecialOffers"
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -146,7 +148,8 @@ function App() {
                       <Route path="/trips/cruise" element={<CruiseTripCreate />} />
 
                       <Route path="/clients/create" element={<CreateClient />} />
-                      <Route path="/special-offers" element={<AdminSpecialOffers />} />
+                      <Route path="/special-offers" element={<AdminClientSpecialOffers />} />
+                      <Route path="/public-offers" element={<AdminPublicSpecialOffers />} />
                       <Route path="/special-offers/create" element={<ClientSpecialOfferCreation />} />
                       <Route path="/special-offers/:tripId" element={<ClientSpecialOffer />} />
                       <Route path="/special-offers/:tripId/edit" element={<EditClientOfferWizardPage />} />

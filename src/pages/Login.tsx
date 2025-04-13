@@ -205,14 +205,6 @@ export default function SignIn() {
       <CssBaseline />
       <Container component="main" maxWidth="sm">
         <Box
-          sx={{
-            // Reduce the spacing between navbar and login card
-            // Changed from minHeight: "100vh" and justifyContent: "center"
-            mt: 4, // Add margin-top instead of centering vertically
-            display: "flex",
-            flexDirection: "column",
-            py: 2, // Reduced padding
-          }}
         >
           <Paper
             elevation={3}

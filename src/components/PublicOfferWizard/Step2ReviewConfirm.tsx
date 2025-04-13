@@ -13,6 +13,7 @@ import {
   ListItemText,
   useTheme,
   useMediaQuery,
+  Rating,
 } from "@mui/material"
 import {
   CalendarMonth,
@@ -26,10 +27,12 @@ import {
   Train,
   Sailing,
   AccessTime,
+  Star,
 } from "@mui/icons-material"
 import type { PublicOfferWizardData, Accommodation, Transport, Cruise } from "./CreatePublicOfferWizardForm"
 import type { Dayjs } from "dayjs"
 import dayjs from "dayjs"
+import StarRating from "../StarRating"
 
 interface Step2ReviewProps {
   offerData: PublicOfferWizardData
@@ -44,7 +47,7 @@ type OfferElement = {
   startPlace?: string
   endPlace?: string
   price: number
-  details: string[]
+  details: (string | React.ReactNode)[]
   originalData: Accommodation | Transport | Cruise
 }
 
@@ -127,10 +130,47 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
 
     // Add accommodations
     offerData.accommodations.forEach((acc) => {
-      const details = []
-      if (acc.roomType) details.push(`Kambario tipas: ${acc.roomType}`)
-      if (acc.boardBasis) details.push(`Maitinimas: ${getBoardBasisLabel(acc.boardBasis)}`)
-      if (acc.description) details.push(`Aprašymas: ${acc.description}`)
+      const details: (string | React.ReactNode)[] = []
+      const detailsBox = (
+        <Box key="details" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {/* First row with room type, board basis, star rating, and hotel link */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {acc.roomType && (
+              <Typography variant="body2" color="text.secondary">
+                Kambario tipas: {acc.roomType}
+              </Typography>
+            )}
+            {acc.boardBasis && (
+              <Typography variant="body2" color="text.secondary">
+                Maitinimas: {getBoardBasisLabel(acc.boardBasis)}
+              </Typography>
+            )}
+            {acc.starRating && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Žvaigždučių reitingas:
+                </Typography>
+                <StarRating value={acc.starRating} readOnly size="small" />
+              </Box>
+            )}
+            {acc.hotelLink && (
+              <Typography variant="body2" color="text.secondary">
+                Adresas: {acc.hotelLink}
+              </Typography>
+            )}
+          </Box>
+          
+          {/* Second row with description */}
+          {acc.description && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Aprašymas: {acc.description}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )
+      details.push(detailsBox)
 
       elements.push({
         type: "accommodation",
@@ -145,11 +185,39 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
 
     // Add transports
     offerData.transports.forEach((trans) => {
-      const details = []
-      if (trans.companyName) details.push(`Kompanija: ${trans.companyName}`)
-      if (trans.transportCode) details.push(`Kodas: ${trans.transportCode}`)
-      if (trans.cabinType) details.push(`Klasė: ${trans.cabinType}`)
-      if (trans.description) details.push(`Aprašymas: ${trans.description}`)
+      const details: (string | React.ReactNode)[] = []
+      const detailsBox = (
+        <Box key="details" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {/* First row with company, transport code, and cabin type */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {trans.companyName && (
+              <Typography variant="body2" color="text.secondary">
+                Kompanija: {trans.companyName}
+              </Typography>
+            )}
+            {trans.transportCode && (
+              <Typography variant="body2" color="text.secondary">
+                Kodas: {trans.transportCode}
+              </Typography>
+            )}
+            {trans.cabinType && (
+              <Typography variant="body2" color="text.secondary">
+                Klasė: {trans.cabinType}
+              </Typography>
+            )}
+          </Box>
+          
+          {/* Second row with description */}
+          {trans.description && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Aprašymas: {trans.description}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )
+      details.push(detailsBox)
 
       elements.push({
         type: "transport",
@@ -167,11 +235,39 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     // Add cruises
     if (offerData.cruises) {
       offerData.cruises.forEach((cruise) => {
-        const details = []
-        if (cruise.companyName) details.push(`Kompanija: ${cruise.companyName}`)
-        if (cruise.transportCode) details.push(`Kodas: ${cruise.transportCode}`)
-        if (cruise.cabinType) details.push(`Kajutė: ${cruise.cabinType}`)
-        if (cruise.description) details.push(`Aprašymas: ${cruise.description}`)
+        const details: (string | React.ReactNode)[] = []
+        const detailsBox = (
+          <Box key="details" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {/* First row with company, cruise code, and cabin type */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {cruise.companyName && (
+                <Typography variant="body2" color="text.secondary">
+                  Kompanija: {cruise.companyName}
+                </Typography>
+              )}
+              {cruise.transportCode && (
+                <Typography variant="body2" color="text.secondary">
+                  Kodas: {cruise.transportCode}
+                </Typography>
+              )}
+              {cruise.cabinType && (
+                <Typography variant="body2" color="text.secondary">
+                  Kajutė: {cruise.cabinType}
+                </Typography>
+              )}
+            </Box>
+            
+            {/* Second row with description */}
+            {cruise.description && (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Aprašymas: {cruise.description}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )
+        details.push(detailsBox)
 
         elements.push({
           type: "cruise",
@@ -404,10 +500,18 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
 
                   {/* Second row: Additional details */}
                   {element.details.length > 0 && (
-                    <Box sx={{ display: "flex", pl: 4 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        {element.details.join(" | ")}
-                      </Typography>
+                    <Box sx={{ pl: 4 }}>
+                      {element.details.map((detail, index) => (
+                        <Box key={index} sx={{ mt: 1 }}>
+                          {typeof detail === 'string' ? (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                              {detail}
+                            </Typography>
+                          ) : (
+                            detail
+                          )}
+                        </Box>
+                      ))}
                     </Box>
                   )}
                 </Paper>
@@ -421,4 +525,3 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
 }
 
 export default Step2ReviewConfirm
-

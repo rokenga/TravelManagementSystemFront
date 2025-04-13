@@ -1,5 +1,5 @@
 import { TagCategory } from "../types/ClientTag"
-import { TripCategory, TripStatus, PaymentStatus } from "../types/ClientTrip"
+import { TripCategory, TripStatus, PaymentStatus, OfferStatus } from "../types/ClientTrip"
 import { TransportType } from "../types/Transport"
 import { BoardBasisType } from "../types/Accommodation"
 import { TripRequestStatus } from "../types/TripRequest"
@@ -42,6 +42,17 @@ export const translateTripStatus = (status: TripStatus): string => {
       return "Patvirtinta"
     case TripStatus.Cancelled:
       return "Atšaukta"
+    default:
+      return status
+  }
+}
+
+export const translateOfferStatus = (status: TripStatus): string => {
+  switch (status) {
+    case TripStatus.Draft:
+      return "Juodraštis"
+    case TripStatus.Confirmed:
+      return "Paruoštas"
     default:
       return status
   }

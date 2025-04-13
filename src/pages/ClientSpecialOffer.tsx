@@ -13,7 +13,6 @@ import {
   CardContent,
   CircularProgress,
   Paper,
-  Button,
   Grid,
   Chip,
   Container,
@@ -21,17 +20,12 @@ import {
   Tab,
 } from "@mui/material"
 import {
-  Edit as EditIcon,
   CalendarMonth as CalendarIcon,
   Person as PersonIcon,
   ChildCare as ChildIcon,
   Euro as EuroIcon,
   Category as CategoryIcon,
   Flag as FlagIcon,
-  Delete as DeleteIcon,
-  FlightTakeoff as FlightTakeoffIcon,
-  PictureAsPdf as PdfIcon,
-  Download as DownloadIcon,
 } from "@mui/icons-material"
 import { translateTripStatus, translateTripCategory } from "../Utils/translateEnums"
 import { TripStatus } from "../types/Enums"
@@ -42,6 +36,7 @@ import type { OfferEvent, SpecialOfferResponse, FileResponse } from "../types/Of
 import ConfirmationDialog from "../components/ConfirmationDialog"
 import CustomSnackbar from "../components/CustomSnackBar"
 import PdfViewerModal from "../components/PdfViewerModal"
+import ConvertOfferToTripPopup from "../components/ConvertOfferToTripPopup"
 
 const lithuanianMonths = [
   "", // index 0 unused for 1-based months
@@ -159,6 +154,7 @@ const ClientSpecialOffer: React.FC = () => {
 
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [showConvertPopup, setShowConvertPopup] = useState(false)
 
   useEffect(() => {
     const fetchOffer = async () => {
@@ -258,8 +254,7 @@ const ClientSpecialOffer: React.FC = () => {
   }
 
   const handleConvertToTripClick = () => {
-    // This is a placeholder - no functionality for now
-    console.log("Convert to trip button clicked")
+    setShowConvertPopup(true)
   }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -453,73 +448,25 @@ const ClientSpecialOffer: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Action Bar */}
-      <ActionBar backUrl="/special-offers" showBackButton={true} onBackClick={navigateBack}>
-        {/* PDF Buttons */}
-        <Box sx={{ display: "flex" }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleOpenPdfViewer}
-            startIcon={<PdfIcon />}
-            disabled={pdfLoading}
-            sx={{
-              textTransform: "none",
-              borderTopRightRadius: 0,
-              borderBottomRightRadius: 0,
-              borderRight: "none",
-            }}
-          >
-            {pdfLoading && pdfViewerOpen ? "Ruošiamas..." : "Peržiūrėti PDF"}
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleDownloadPdf}
-            startIcon={<DownloadIcon />}
-            disabled={pdfLoading}
-            sx={{
-              textTransform: "none",
-              borderTopLeftRadius: 0,
-              borderBottomLeftRadius: 0,
-            }}
-          >
-            {pdfLoading && !pdfViewerOpen ? "Ruošiamas..." : "Atsisiųsti"}
-          </Button>
-        </Box>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={handleConvertToTripClick}
-          startIcon={<FlightTakeoffIcon />}
-          sx={{
-            textTransform: "none",
-          }}
-        >
-          Paversti į kelionę
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleEditClick}
-          startIcon={<EditIcon />}
-          sx={{
-            textTransform: "none",
-          }}
-        >
-          Redaguoti
-        </Button>
-        <Button
-          variant="outlined"
-          color="error"
-          onClick={handleDeleteClick}
-          startIcon={<DeleteIcon />}
-          sx={{
-            textTransform: "none",
-          }}
-        >
-          Ištrinti
-        </Button>
-      </ActionBar>
+      <ActionBar
+        backUrl="/special-offers"
+        showBackButton={true}
+        showEditButton={true}
+        showDeleteButton={true}
+        showConvertToTripButton={true}
+        showChangeStatusButton={true}
+        showPdfButtons={true}
+        pdfLoading={pdfLoading}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClick}
+        onConvertToTrip={handleConvertToTripClick}
+        onChangeStatus={() => {
+          /* Non-functioning for now */
+        }}
+        onPreviewPdf={handleOpenPdfViewer}
+        onDownloadPdf={handleDownloadPdf}
+        onBackClick={navigateBack}
+      />
 
       <Card elevation={3} sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}>
         <CardContent sx={{ p: 0 }}>
@@ -781,6 +728,8 @@ const ClientSpecialOffer: React.FC = () => {
         loading={pdfLoading}
         onDownload={handleDownloadPdf}
       />
+      {/* Convert to Trip Popup */}
+      <ConvertOfferToTripPopup open={showConvertPopup} onClose={() => setShowConvertPopup(false)} offer={offer} />
       {/* Confirmation Dialog for Delete */}
       <ConfirmationDialog
         open={showDeleteConfirmDialog}
@@ -802,4 +751,3 @@ const ClientSpecialOffer: React.FC = () => {
 }
 
 export default ClientSpecialOffer
-

@@ -345,6 +345,18 @@ const ClientDetail: React.FC = () => {
     navigate(`/special-offers/${offerId}`)
   }
 
+  const handleCreateTrip = () => {
+    if (client) {
+      navigate(
+        `/admin-trip-list/create?clientId=${clientId}&clientName=${encodeURIComponent(`${client.name} ${client.surname}`)}`,
+      )
+    }
+  }
+
+  const handleCreateOffer = () => {
+    navigate("/special-offers/create")
+  }
+
   return (
     <Box sx={{ maxWidth: "xl", margin: "0 auto", padding: "20px" }}>
       {isLoading ? (
@@ -362,8 +374,8 @@ const ClientDetail: React.FC = () => {
             showEditButton={user?.role === "Admin" || user?.role === "Agent"}
             showDeleteButton={user?.role === "Admin" || user?.role === "Agent"}
             showTagButton={user?.role === "Admin" || user?.role === "Agent"}
-            showCreateTripButton={tabValue === 0 && (user?.role === "Admin" || user?.role === "Agent")}
-            showCreateOfferButton={tabValue === 1 && (user?.role === "Admin" || user?.role === "Agent")}
+            showCreateTripButton={user?.role === "Admin" || user?.role === "Agent"}
+            showCreateOfferButton={user?.role === "Admin" || user?.role === "Agent"}
             onEdit={handleEditClient}
             onDelete={openDeleteDialog}
             onTagManage={handleTagClick}
@@ -587,4 +599,3 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default ClientDetail
-

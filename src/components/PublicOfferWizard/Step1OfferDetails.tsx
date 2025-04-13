@@ -19,10 +19,16 @@ import {
   Divider,
   Paper,
   Alert,
-  Autocomplete,
 } from "@mui/material"
 import { DatePicker } from "@mui/x-date-pickers/DatePicker"
-import { ArrowForward, ExpandMore, Delete as DeleteIcon, Hotel, DirectionsCar, Sailing } from "@mui/icons-material"
+import {
+  ArrowForward,
+  ExpandMore,
+  Delete as DeleteIcon,
+  Hotel,
+  DirectionsCar,
+  Sailing,
+} from "@mui/icons-material"
 import CustomSnackbar from "../CustomSnackBar"
 import ConstrainedDateTimePicker from "../ConstrainedDateTimePicker"
 import type { PublicOfferWizardData, Accommodation, Transport, Cruise } from "./CreatePublicOfferWizardForm"
@@ -30,8 +36,7 @@ import { validateDateTimeConstraints } from "../../Utils/validationUtils"
 import OfferImageUpload from "../ClientOfferWizard/OfferImageUpload"
 import AddEventMenu from "./AddEventMenu"
 import DestinationAutocomplete from "../DestinationAutocomplete"
-import type { Country } from "../DestinationAutocomplete"
-import countries from "../../assets/full-countries-lt.json"
+import StarRating from "../StarRating"
 
 interface Step1Props {
   initialData: PublicOfferWizardData
@@ -290,6 +295,7 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
           boardBasis: "",
           roomType: "",
           price: 0,
+          starRating: null,
         },
       ],
     }))
@@ -543,7 +549,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
             name="tripName"
             value={formData.tripName}
             onChange={(e) => handleInputChange("tripName", e.target.value)}
-            required
           />
         </Grid>
         <Grid item xs={12}>
@@ -551,7 +556,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
             value={formData.destination ? { code: "", name: formData.destination } : null}
             onChange={(country) => handleInputChange("destination", country?.name || "")}
             label="Kelionės tikslas"
-            required
           />
         </Grid>
         <Grid item xs={12} md={3}>
@@ -778,6 +782,14 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
                     value={acc.roomType}
                     onChange={(e) => handleAccommodationChange(accIndex, "roomType", e.target.value)}
                     fullWidth
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <StarRating
+                    value={acc.starRating ?? null}
+                    onChange={(newValue) => handleAccommodationChange(accIndex, "starRating", newValue)}
+                    label="Žvaigždučių reitingas"
                     size="small"
                   />
                 </Grid>
@@ -1116,4 +1128,3 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
 }
 
 export default Step1OfferDetails
-

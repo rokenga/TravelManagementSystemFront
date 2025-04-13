@@ -52,6 +52,7 @@ interface ClientOfferAccommodationResponse {
   boardBasis?: BoardBasisType
   roomType?: string
   price?: number
+  starRating?: number
 }
 
 interface ClientOfferTransportResponse {
@@ -116,6 +117,12 @@ interface EditClientOfferWizardFormProps {
 
 // Import the full countries list to find matching country data
 import fullCountriesList from "../../assets/full-countries-lt.json"
+
+// Import the utility function
+import { starRatingEnumToNumber } from "../../Utils/starRatingUtils"
+
+// Import the utility function
+import { numberToStarRatingEnum } from "../../Utils/starRatingUtils"
 
 // Helper function to convert string destination to Country object
 const stringToCountry = (destination?: string): Country | null => {
@@ -260,6 +267,8 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
                 boardBasis: acc.boardBasis?.toString() || "",
                 roomType: acc.roomType || "",
                 price: acc.price || 0,
+                starRating:
+                  typeof acc.starRating === "string" ? starRatingEnumToNumber(acc.starRating) : acc.starRating || null,
               })) || []
 
             // Extract regular transports and cruises separately
@@ -544,6 +553,12 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 
     // Map the steps to the format expected by the API
     const mappedSteps = formData.offerSteps.map((step, index) => {
+      // Map accommodations with converted star ratings
+      const mappedAccommodations = step.accommodations.map((acc) => ({
+        ...acc,
+        starRating: typeof acc.starRating === "number" ? numberToStarRatingEnum(acc.starRating) : acc.starRating,
+      }))
+
       // Convert cruises to transport entries
       const cruiseTransports = step.cruises.map((cruise) => ({
         transportType: TransportType.Cruise,
@@ -571,7 +586,7 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         dayNumber: index + 1,
         description: step.name,
         transports: [...step.transports, ...cruiseTransports],
-        accommodations: step.accommodations,
+        accommodations: mappedAccommodations,
         price: stepTotal, // Save the accumulated price for this step
         hasImages: step.stepImages && step.stepImages.length > 0, // Add flag for images
         destination: step.destination?.name || null, // Just send the country name string
@@ -639,12 +654,11 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
       // FormData requires stringified JSON
       formDataPayload.append("data", JSON.stringify(fullPayload))
 
-      // Append step images
-      formData.offerSteps.forEach((step, i) => {
-        // Only append images if the step has actual image files
+      // Append step images from formData.offerSteps directly
+      formData.offerSteps.forEach((step, index) => {
         if (step.stepImages && step.stepImages.length > 0) {
           step.stepImages.forEach((file) => {
-            formDataPayload.append(`StepImages_${i}`, file) // ⬅️ naming must match backend
+            formDataPayload.append(`NewStepImages_${index}`, file)
           })
         }
       })
@@ -652,7 +666,7 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
       // Append images to delete
       Object.entries(stepImagesToDelete).forEach(([stepIndex, imageIds]) => {
         imageIds.forEach((imageId) => {
-          formDataPayload.append(`ImagesToDelete`, imageId)
+          formDataPayload.append(`StepImagesToDelete_${stepIndex}`, imageId)
         })
       })
 

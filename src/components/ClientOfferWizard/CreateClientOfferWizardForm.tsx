@@ -29,6 +29,8 @@ import CustomSnackbar from "../CustomSnackBar"
 import Step3Review from "./Step3ReviewConfirm"
 import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
 import type { Country } from "../DestinationAutocomplete"
+// Import the utility function
+import { numberToStarRatingEnum } from "../../Utils/starRatingUtils"
 
 const steps = ["Pagrindinė informacija", "Pasiūlymo variantai", "Peržiūra ir patvirtinimas"]
 
@@ -41,6 +43,7 @@ export interface Accommodation {
   boardBasis: string
   roomType: string
   price: number
+  starRating?: number | null
 }
 
 export interface Transport {
@@ -269,6 +272,12 @@ const CreateClientOfferWizardForm: React.FC = () => {
 
     // Map the steps to the format expected by the API
     const mappedSteps = formData.offerSteps.map((step, index) => {
+      // Map accommodations with converted star ratings
+      const mappedAccommodations = step.accommodations.map((acc) => ({
+        ...acc,
+        starRating: typeof acc.starRating === "number" ? numberToStarRatingEnum(acc.starRating) : acc.starRating,
+      }))
+
       // Convert cruises to transport entries
       const cruiseTransports = step.cruises.map((cruise) => ({
         transportType: TransportType.Cruise,
@@ -295,7 +304,7 @@ const CreateClientOfferWizardForm: React.FC = () => {
         dayNumber: index + 1,
         description: step.name,
         transports: [...step.transports, ...cruiseTransports],
-        accommodations: step.accommodations,
+        accommodations: mappedAccommodations,
         price: stepTotal, // Save the accumulated price for this step
         hasImages: step.stepImages && step.stepImages.length > 0, // Add flag for images
         destination: step.destination?.name || null, // Only send the country name string

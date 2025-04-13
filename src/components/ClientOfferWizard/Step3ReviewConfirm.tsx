@@ -27,6 +27,7 @@ import {
   DirectionsBus,
   Train,
   Sailing,
+  Star,
 } from "@mui/icons-material"
 import type { OfferWizardData, OfferStep, Accommodation, Transport, Cruise } from "./CreateClientOfferWizardForm"
 import type { Dayjs } from "dayjs"
@@ -208,6 +209,18 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
     }
   }
 
+  // Helper function to render stars
+  const renderStars = (rating: number | undefined | null) => {
+    if (!rating) return null
+    return (
+      <Box sx={{ display: "inline-flex", ml: 1, verticalAlign: "middle" }}>
+        {Array.from({ length: rating }).map((_, i) => (
+          <Star key={i} fontSize="small" sx={{ color: "gold" }} />
+        ))}
+      </Box>
+    )
+  }
+
   return (
     <Box sx={{ width: "100%" }}>
       {/* Main Trip Information */}
@@ -381,6 +394,8 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
                           <Box sx={{ mr: 1 }}>{getElementIcon(element)}</Box>
                           <Typography variant="subtitle2" fontWeight="medium">
                             {element.name}
+                            {element.type === "accommodation" &&
+                              renderStars((element.originalData as Accommodation).starRating)}
                           </Typography>
                           <Box sx={{ ml: 2 }}>
                             {element.type === "accommodation" ? (
@@ -427,4 +442,3 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
 }
 
 export default Step3Review
-

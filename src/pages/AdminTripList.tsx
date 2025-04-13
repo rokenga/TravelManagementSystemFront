@@ -25,6 +25,7 @@ const defaultFilters: TripFilters = {
   startDate: null,
   endDate: null,
   priceRange: [0, 20000],
+  destinations: [], // Added destinations with default empty array
 }
 
 const AdminTripList: React.FC = () => {
@@ -128,6 +129,13 @@ const AdminTripList: React.FC = () => {
       if (selectedFilters.paymentStatuses.length > 0) {
         selectedFilters.paymentStatuses.forEach((status) => {
           searchParams.append("Payments", status)
+        })
+      }
+
+      // Add destinations
+      if (selectedFilters.destinations.length > 0) {
+        selectedFilters.destinations.forEach((destination) => {
+          searchParams.append("Destinations", destination)
         })
       }
 

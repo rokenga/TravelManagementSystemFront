@@ -39,6 +39,7 @@ export interface Accommodation {
   boardBasis: string
   roomType: string
   price: number
+  starRating?: number
 }
 
 export interface Transport {
@@ -74,7 +75,7 @@ export interface Cruise {
 export interface PublicOfferWizardData {
   tripName: string
   description: string
-  destination : string
+  destination: string
   startDate: Dayjs | null
   endDate: Dayjs | null
   validUntil: Dayjs | null
@@ -131,7 +132,14 @@ const validateAccommodation = (accommodation: Accommodation): boolean => {
 
 const validateOfferData = (data: PublicOfferWizardData): ValidationResult => {
   // Check basic trip information
-  if (!data.tripName || !data.destination || !data.description || !data.startDate || !data.endDate || !data.validUntil) {
+  if (
+    !data.tripName ||
+    !data.destination ||
+    !data.description ||
+    !data.startDate ||
+    !data.endDate ||
+    !data.validUntil
+  ) {
     return {
       isValid: false,
       errorMessage: "Prašome užpildyti visą pagrindinę kelionės informaciją (pavadinimas, aprašymas, datos)",
@@ -362,6 +370,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
       boardBasis: accommodation.boardBasis,
       roomType: accommodation.roomType,
       price: accommodation.price,
+      starRating: accommodation.starRating,
     }))
 
     // Calculate total price

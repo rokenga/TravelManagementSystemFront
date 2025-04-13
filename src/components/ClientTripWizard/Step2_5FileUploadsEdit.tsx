@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
+import type React from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   Typography,
   Box,
@@ -15,7 +16,6 @@ import {
   ListItemSecondaryAction,
   IconButton,
   Alert,
-  Chip,
 } from "@mui/material"
 import {
   ArrowBack,
@@ -30,7 +30,7 @@ import {
   TableChart,
 } from "@mui/icons-material"
 
-import { ExistingFile } from "./EditTripWizardForm"  // The interface we declared there
+import type { ExistingFile } from "./EditTripWizardForm" // The interface we declared there
 
 interface Step2_5Props {
   existingImages: ExistingFile[]
@@ -38,8 +38,8 @@ interface Step2_5Props {
   onSubmit: (payload: {
     newImages: File[]
     newDocuments: File[]
-    imagesToDelete: string[]   // array of existing file IDs
-    documentsToDelete: string[] 
+    imagesToDelete: string[] // array of existing file IDs
+    documentsToDelete: string[]
   }) => void
   onBack: () => void
 }
@@ -48,20 +48,41 @@ const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
 const ALLOWED_DOCUMENT_EXTENSIONS = [".pdf", ".docx", ".txt", ".xlsx"]
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
+// Global variables to store the current files and deletion lists
+let globalNewImages: File[] = []
+let globalNewDocuments: File[] = []
+let globalImagesToDelete: string[] = []
+let globalDocumentsToDelete: string[] = []
+
+// Export a function to get the current files
+export function getCurrentFilesData(): {
+  newImages: File[]
+  newDocuments: File[]
+  imagesToDelete: string[]
+  documentsToDelete: string[]
+} {
+  return {
+    newImages: globalNewImages ? [...globalNewImages] : [],
+    newDocuments: globalNewDocuments ? [...globalNewDocuments] : [],
+    imagesToDelete: globalImagesToDelete ? [...globalImagesToDelete] : [],
+    documentsToDelete: globalDocumentsToDelete ? [...globalDocumentsToDelete] : [],
+  }
+}
+
 /**
  * A specialized component for editing (vs creation).
  * We show "existing" images/documents so user can remove them,
  * and also allow them to pick brand-new files.
  */
-const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
-  existingImages,
-  existingDocuments,
-  onSubmit,
-  onBack
-}) => {
+const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existingDocuments, onSubmit, onBack }) => {
   // 1) Keep track of existing items the user *wants to delete*:
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
-  const [documentsToDelete, setDocumentsToDelete] = useState<string[]>([])
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>(
+    globalImagesToDelete.length > 0 ? [...globalImagesToDelete] : [],
+  )
+
+  const [documentsToDelete, setDocumentsToDelete] = useState<string[]>(
+    globalDocumentsToDelete.length > 0 ? [...globalDocumentsToDelete] : [],
+  )
 
   // 2) Show the existing items that are *still active* (not deleted yet)
   //    We'll remove them from these arrays if the user decides to delete.
@@ -69,17 +90,38 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
   const [activeExistingDocuments, setActiveExistingDocuments] = useState<ExistingFile[]>([])
 
   // 3) For brand-new uploads
-  const [newImages, setNewImages] = useState<File[]>([])
-  const [newDocuments, setNewDocuments] = useState<File[]>([])
+  const [newImages, setNewImages] = useState<File[]>(globalNewImages.length > 0 ? [...globalNewImages] : [])
+
+  const [newDocuments, setNewDocuments] = useState<File[]>(globalNewDocuments.length > 0 ? [...globalNewDocuments] : [])
+
   const [error, setError] = useState<string | null>(null)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
 
+  // Update global variables when state changes
   useEffect(() => {
-    setActiveExistingImages(existingImages)
-    setActiveExistingDocuments(existingDocuments)
-  }, [existingImages, existingDocuments])
+    globalNewImages = [...newImages]
+    globalNewDocuments = [...newDocuments]
+    globalImagesToDelete = [...imagesToDelete]
+    globalDocumentsToDelete = [...documentsToDelete]
+
+    console.log("Step2_5FileUploadsEdit - Updated globals:", {
+      newImages: globalNewImages.length,
+      newDocuments: globalNewDocuments.length,
+      imagesToDelete: globalImagesToDelete.length,
+      documentsToDelete: globalDocumentsToDelete.length,
+    })
+  }, [newImages, newDocuments, imagesToDelete, documentsToDelete])
+
+  useEffect(() => {
+    // Filter out the images that are marked for deletion
+    const filteredImages = existingImages.filter((img) => !imagesToDelete.includes(img.id))
+    const filteredDocuments = existingDocuments.filter((doc) => !documentsToDelete.includes(doc.id))
+
+    setActiveExistingImages(filteredImages || [])
+    setActiveExistingDocuments(filteredDocuments || [])
+  }, [existingImages, existingDocuments, imagesToDelete, documentsToDelete])
 
   // Handle selecting brand-new files
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, fileType: "image" | "document") => {
@@ -93,15 +135,19 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
     const validFiles: File[] = []
 
     fileArray.forEach((file) => {
-      const extension = `.${file.name.split(".").pop()?.toLowerCase()}`
-      if (!allowedExtensions.includes(extension)) {
-        invalidFiles.push(`${file.name} (netinkamas formatas)`)
+      const fileName = file.name || ""
+      const extension = fileName.includes(".") ? `.${fileName.split(".").pop()?.toLowerCase()}` : ""
+
+      if (!extension || !allowedExtensions.includes(extension)) {
+        invalidFiles.push(`${fileName} (netinkamas formatas)`)
         return
       }
+
       if (file.size > MAX_FILE_SIZE) {
-        invalidFiles.push(`${file.name} (per didelis failas, max 5MB)`)
+        invalidFiles.push(`${fileName} (per didelis failas, max 5MB)`)
         return
       }
+
       validFiles.push(file)
     })
 
@@ -113,57 +159,124 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
 
     if (fileType === "image") {
       setNewImages((prev) => [...prev, ...validFiles])
+      globalNewImages = [...globalNewImages, ...validFiles]
     } else {
       setNewDocuments((prev) => [...prev, ...validFiles])
+      globalNewDocuments = [...globalNewDocuments, ...validFiles]
     }
+
     event.target.value = ""
   }
 
   // Remove a brand-new file from the local array
   const removeNewFile = (index: number, fileType: "image" | "document") => {
     if (fileType === "image") {
-      setNewImages((prev) => prev.filter((_, i) => i !== index))
+      setNewImages((prev) => {
+        const updated = prev.filter((_, i) => i !== index)
+        globalNewImages = [...updated]
+        return updated
+      })
     } else {
-      setNewDocuments((prev) => prev.filter((_, i) => i !== index))
+      setNewDocuments((prev) => {
+        const updated = prev.filter((_, i) => i !== index)
+        globalNewDocuments = [...updated]
+        return updated
+      })
     }
   }
 
   // "Delete" an existing image: add it to imagesToDelete + remove from activeExistingImages
   const deleteExistingImage = (fileId: string) => {
-    setImagesToDelete((prev) => [...prev, fileId])
+    setImagesToDelete((prev) => {
+      const updated = [...prev, fileId]
+      globalImagesToDelete = [...updated]
+      return updated
+    })
+
     setActiveExistingImages((prev) => prev.filter((img) => img.id !== fileId))
   }
 
   // "Delete" an existing doc
   const deleteExistingDocument = (fileId: string) => {
-    setDocumentsToDelete((prev) => [...prev, fileId])
+    setDocumentsToDelete((prev) => {
+      const updated = [...prev, fileId]
+      globalDocumentsToDelete = [...updated]
+      return updated
+    })
+
     setActiveExistingDocuments((prev) => prev.filter((doc) => doc.id !== fileId))
   }
 
-  // Document icon for existing doc
-  const getDocumentIcon = (fileName: string) => {
-    const extension = `.${fileName.split(".").pop()?.toLowerCase()}`
+  // Document icon for existing doc - FIX: Add null/undefined check
+  const getDocumentIcon = (fileName: string | undefined) => {
+    // If fileName is undefined or null, return default icon
+    if (!fileName) {
+      return <Description />
+    }
+
+    const extension = fileName.includes(".") ? `.${fileName.split(".").pop()?.toLowerCase()}` : ""
+
     switch (extension) {
       case ".pdf":
         return <PictureAsPdf color="error" />
       case ".docx":
+      case ".doc":
         return <Article color="primary" />
       case ".txt":
         return <InsertDriveFile color="action" />
       case ".xlsx":
+      case ".xls":
         return <TableChart color="success" />
       default:
         return <Description />
     }
   }
 
+  // Format file size to KB with proper handling
+  const formatFileSize = (size: number | undefined) => {
+    if (typeof size !== "number" || isNaN(size)) {
+      return "0 KB"
+    }
+    return `${(size / 1024).toFixed(1)} KB`
+  }
+
   const handleNext = () => {
-    onSubmit({
-      newImages,
-      newDocuments,
-      imagesToDelete,
-      documentsToDelete,
+    // Update global variables before submitting
+    globalNewImages = [...newImages]
+    globalNewDocuments = [...newDocuments]
+    globalImagesToDelete = [...imagesToDelete]
+    globalDocumentsToDelete = [...documentsToDelete]
+
+    console.log("Step2_5FileUploadsEdit - Submitting:", {
+      newImages: newImages.length,
+      newDocuments: newDocuments.length,
+      imagesToDelete: imagesToDelete.length,
+      documentsToDelete: documentsToDelete.length,
     })
+
+    onSubmit({
+      newImages: newImages || [],
+      newDocuments: newDocuments || [],
+      imagesToDelete: imagesToDelete || [],
+      documentsToDelete: documentsToDelete || [],
+    })
+  }
+
+  const handleBackClick = () => {
+    // Update global variables before going back
+    globalNewImages = [...newImages]
+    globalNewDocuments = [...newDocuments]
+    globalImagesToDelete = [...imagesToDelete]
+    globalDocumentsToDelete = [...documentsToDelete]
+
+    console.log("Step2_5FileUploadsEdit - Going back with:", {
+      newImages: newImages.length,
+      newDocuments: newDocuments.length,
+      imagesToDelete: imagesToDelete.length,
+      documentsToDelete: documentsToDelete.length,
+    })
+
+    onBack()
   }
 
   return (
@@ -207,14 +320,16 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
                         <Image />
                       </ListItemIcon>
                       <ListItemText
-                        primary={file.fileName}
+                        primary={file.fileName || "Image"}
                         secondary={
-                          file.url
-                            ? // Link to actual image
-                              <a href={file.url} target="_blank" rel="noopener noreferrer">
-                                Peržiūrėti
-                              </a>
-                            : ""
+                          file.url ? (
+                            // Link to actual image
+                            <a href={file.url} target="_blank" rel="noopener noreferrer">
+                              Peržiūrėti
+                            </a>
+                          ) : (
+                            ""
+                          )
                         }
                       />
                       <ListItemSecondaryAction>
@@ -264,10 +379,7 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
                         <ListItemIcon>
                           <Image />
                         </ListItemIcon>
-                        <ListItemText
-                          primary={file.name}
-                          secondary={`${(file.size / 1024).toFixed(1)} KB`}
-                        />
+                        <ListItemText primary={file.name || "New image"} secondary={formatFileSize(file.size)} />
                         <ListItemSecondaryAction>
                           <IconButton edge="end" onClick={() => removeNewFile(idx, "image")}>
                             <Delete />
@@ -301,7 +413,7 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
                     <ListItem key={file.id}>
                       <ListItemIcon>{getDocumentIcon(file.fileName)}</ListItemIcon>
                       <ListItemText
-                        primary={file.fileName}
+                        primary={file.fileName || "Document"}
                         secondary={
                           file.url ? (
                             <a href={file.url} target="_blank" rel="noopener noreferrer">
@@ -355,10 +467,7 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
                     {newDocuments.map((file, idx) => (
                       <ListItem key={`newdoc-${idx}`}>
                         <ListItemIcon>{getDocumentIcon(file.name)}</ListItemIcon>
-                        <ListItemText
-                          primary={file.name}
-                          secondary={`${(file.size / 1024).toFixed(1)} KB`}
-                        />
+                        <ListItemText primary={file.name || "Document"} secondary={formatFileSize(file.size)} />
                         <ListItemSecondaryAction>
                           <IconButton edge="end" onClick={() => removeNewFile(idx, "document")}>
                             <Delete />
@@ -375,7 +484,7 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({
       </Paper>
 
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 6 }}>
-        <Button variant="outlined" onClick={onBack} sx={{ mr: 2 }} size="large" startIcon={<ArrowBack />}>
+        <Button variant="outlined" onClick={handleBackClick} sx={{ mr: 2 }} size="large" startIcon={<ArrowBack />}>
           Atgal
         </Button>
         <Button variant="contained" onClick={handleNext} size="large" endIcon={<ArrowForward />}>

@@ -2,26 +2,45 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Box, Dialog, DialogContent, IconButton, Typography, Paper, useTheme, useMediaQuery } from "@mui/material"
+import {
+  Box,
+  Dialog,
+  DialogContent,
+  IconButton,
+  Typography,
+  Paper,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
+} from "@mui/material"
 import {
   ArrowBackIos as ArrowBackIcon,
   ArrowForwardIos as ArrowForwardIcon,
   Close as CloseIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material"
 
 export interface ImageItem {
   id: string
-  url: string
+  url?: string // Attachment SAS URL (forces browser to download)
+  urlInline?: string // Inline SAS URL (for <img> or <iframe>)
   altText?: string
+  fileName?: string
 }
 
 interface ImageGalleryProps {
   images: ImageItem[]
   title?: string
   thumbnailSize?: number
+  showTitle?: boolean
 }
 
-const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title = "Nuotraukos", thumbnailSize = 100 }) => {
+const ImageGallery: React.FC<ImageGalleryProps> = ({
+  images,
+  title = "Nuotraukos",
+  thumbnailSize = 100,
+  showTitle = false,
+}) => {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const theme = useTheme()
@@ -44,6 +63,16 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title = "Nuotraukos
     setCurrentImageIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1))
   }
 
+  const handleDownload = (image: ImageItem) => {
+    // Use the download URL (Url) if available, otherwise fall back to urlInline
+    const downloadUrl = image.url || image.urlInline
+
+    if (downloadUrl) {
+      // Open in a new tab to force download
+      window.open(downloadUrl, "_blank")
+    }
+  }
+
   // Handle keyboard navigation
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "ArrowLeft") {
@@ -55,14 +84,26 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title = "Nuotraukos
     }
   }
 
+  // Get the appropriate URL for display
+  const getDisplayUrl = (image: ImageItem): string => {
+    // Use urlInline for display if available, otherwise fall back to url
+    return image.urlInline || image.url || "/placeholder.svg"
+  }
+
   if (images.length === 0) {
-    return <Typography variant="body1">Nėra nuotraukų.</Typography>
+    return (
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <Typography variant="body1" color="text.secondary">
+          Nėra įkeltų nuotraukų
+        </Typography>
+      </Box>
+    )
   }
 
   return (
-    <Box>
-      {title && (
-        <Typography variant="h5" gutterBottom>
+    <Box sx={{ p: 2 }}>
+      {showTitle && title && (
+        <Typography variant="h6" gutterBottom>
           {title}
         </Typography>
       )}
@@ -72,25 +113,27 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title = "Nuotraukos
           display: "flex",
           flexWrap: "wrap",
           gap: 2,
-          mb: 2,
+          justifyContent: "flex-start",
         }}
       >
         {images.map((image, index) => (
           <Paper
             key={image.id}
-            elevation={3}
+            elevation={2}
             sx={{
               overflow: "hidden",
-              transition: "transform 0.2s",
+              borderRadius: 2,
+              transition: "transform 0.2s, box-shadow 0.2s",
               "&:hover": {
                 transform: "scale(1.05)",
                 cursor: "pointer",
+                boxShadow: 4,
               },
             }}
             onClick={() => handleOpenPreview(index)}
           >
             <img
-              src={image.url || "/placeholder.svg"}
+              src={getDisplayUrl(image) || "/placeholder.svg"}
               alt={image.altText || "Nuotrauka"}
               style={{
                 width: thumbnailSize,
@@ -133,15 +176,35 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title = "Nuotraukos
               "&:hover": {
                 bgcolor: "rgba(0, 0, 0, 0.5)",
               },
+              zIndex: 2,
             }}
           >
             <CloseIcon />
           </IconButton>
 
+          <Tooltip title="Atsisiųsti">
+            <IconButton
+              onClick={() => handleDownload(images[currentImageIndex])}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 56,
+                color: "white",
+                bgcolor: "rgba(0, 0, 0, 0.3)",
+                "&:hover": {
+                  bgcolor: "rgba(0, 0, 0, 0.5)",
+                },
+                zIndex: 2,
+              }}
+            >
+              <DownloadIcon />
+            </IconButton>
+          </Tooltip>
+
           <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
             {images.length > 0 && (
               <img
-                src={images[currentImageIndex].url || "/placeholder.svg"}
+                src={getDisplayUrl(images[currentImageIndex]) || "/placeholder.svg"}
                 alt={images[currentImageIndex].altText || "Nuotrauka"}
                 style={{
                   maxWidth: "100%",
@@ -211,4 +274,3 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title = "Nuotraukos
 }
 
 export default ImageGallery
-

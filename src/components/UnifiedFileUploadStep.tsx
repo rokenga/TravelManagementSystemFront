@@ -21,10 +21,10 @@ interface UnifiedFileUploadStepProps {
 }
 
 // Global variables to store the current files
-let currentImages: FileWithPreview[] = []
-let currentDocuments: FileWithPreview[] = []
-let currentImagesToDelete: string[] = []
-let currentDocumentsToDelete: string[] = []
+let globalImages: FileWithPreview[] = []
+let globalDocuments: FileWithPreview[] = []
+let globalImagesToDelete: string[] = []
+let globalDocumentsToDelete: string[] = []
 
 // Export a function to get the current files data
 export function getCurrentFilesData(): {
@@ -34,10 +34,10 @@ export function getCurrentFilesData(): {
   documentsToDelete?: string[]
 } {
   return {
-    images: [...currentImages],
-    documents: [...currentDocuments],
-    imagesToDelete: currentImagesToDelete.length > 0 ? [...currentImagesToDelete] : undefined,
-    documentsToDelete: currentDocumentsToDelete.length > 0 ? [...currentDocumentsToDelete] : undefined,
+    images: globalImages || [],
+    documents: globalDocuments || [],
+    imagesToDelete: globalImagesToDelete?.length > 0 ? [...globalImagesToDelete] : undefined,
+    documentsToDelete: globalDocumentsToDelete?.length > 0 ? [...globalDocumentsToDelete] : undefined,
   }
 }
 
@@ -52,48 +52,78 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
 }) => {
   // Convert File[] to FileWithPreview[]
   const convertToFileWithPreview = (files: File[]): FileWithPreview[] => {
-    return files.map((file) => ({ ...file }))
+    if (!files || !Array.isArray(files)) return []
+    return files.map((file) => {
+      // Ensure file has size property
+      if (typeof file.size !== "number") {
+        Object.defineProperty(file, "size", {
+          value: 0,
+          writable: true,
+        })
+      }
+      return file as FileWithPreview
+    })
   }
 
-  const [newImages, setNewImages] = useState<FileWithPreview[]>(convertToFileWithPreview(initialImages))
-  const [newDocuments, setNewDocuments] = useState<FileWithPreview[]>(convertToFileWithPreview(initialDocuments))
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
-  const [documentsToDelete, setDocumentsToDelete] = useState<string[]>([])
+  // Initialize state with global values if they exist, otherwise use initialImages/initialDocuments
+  const [newImages, setNewImages] = useState<FileWithPreview[]>(
+    globalImages.length > 0 ? [...globalImages] : convertToFileWithPreview(initialImages || []),
+  )
+
+  const [newDocuments, setNewDocuments] = useState<FileWithPreview[]>(
+    globalDocuments.length > 0 ? [...globalDocuments] : convertToFileWithPreview(initialDocuments || []),
+  )
+
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>(
+    globalImagesToDelete.length > 0 ? [...globalImagesToDelete] : [],
+  )
+
+  const [documentsToDelete, setDocumentsToDelete] = useState<string[]>(
+    globalDocumentsToDelete.length > 0 ? [...globalDocumentsToDelete] : [],
+  )
+
   const [error, setError] = useState<string | null>(null)
 
   // Update the global variables whenever the state changes
   useEffect(() => {
-    currentImages = [...newImages]
-    currentDocuments = [...newDocuments]
-    currentImagesToDelete = [...imagesToDelete]
-    currentDocumentsToDelete = [...documentsToDelete]
+    globalImages = [...newImages]
+    globalDocuments = [...newDocuments]
+    globalImagesToDelete = [...imagesToDelete]
+    globalDocumentsToDelete = [...documentsToDelete]
+
+    // Log the current state for debugging
+    console.log("UnifiedFileUploadStep - Current state updated:", {
+      images: globalImages.length,
+      documents: globalDocuments.length,
+      imagesToDelete: globalImagesToDelete.length,
+      documentsToDelete: globalDocumentsToDelete.length,
+    })
   }, [newImages, newDocuments, imagesToDelete, documentsToDelete])
 
   // Handle deleting existing images
   const handleDeleteExistingImage = (id: string) => {
     setImagesToDelete((prev) => [...prev, id])
-    // Also remove from the displayed array if we're using the existingImages prop
-    if (existingImages) {
-      const updatedExistingImages = existingImages.filter((img) => img.id !== id)
-      // If we had a setter for existingImages, we would use it here
-    }
   }
 
   // Handle deleting existing documents
   const handleDeleteExistingDocument = (id: string) => {
     setDocumentsToDelete((prev) => [...prev, id])
-    // Also remove from the displayed array if we're using the existingDocuments prop
-    if (existingDocuments) {
-      const updatedExistingDocuments = existingDocuments.filter((doc) => doc.id !== id)
-      // If we had a setter for existingDocuments, we would use it here
-    }
   }
 
   // Handle next button click
   const handleNext = () => {
-    // Filter out existing images that are marked for deletion
-    const filteredExistingImages = existingImages.filter((img) => !imagesToDelete.includes(img.id))
-    const filteredExistingDocuments = existingDocuments.filter((doc) => !documentsToDelete.includes(doc.id))
+    // Save current state to globals before submitting
+    globalImages = [...newImages]
+    globalDocuments = [...newDocuments]
+    globalImagesToDelete = [...imagesToDelete]
+    globalDocumentsToDelete = [...documentsToDelete]
+
+    console.log("UnifiedFileUploadStep - Submitting:", {
+      images: newImages.length,
+      documents: newDocuments.length,
+      imagesToDelete: imagesToDelete.length,
+      documentsToDelete: documentsToDelete.length,
+    })
 
     onSubmit(
       newImages as File[],
@@ -101,6 +131,24 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
       imagesToDelete.length > 0 ? imagesToDelete : undefined,
       documentsToDelete.length > 0 ? documentsToDelete : undefined,
     )
+  }
+
+  // Handle back button click
+  const handleBackClick = () => {
+    // Save current state to globals before going back
+    globalImages = [...newImages]
+    globalDocuments = [...newDocuments]
+    globalImagesToDelete = [...imagesToDelete]
+    globalDocumentsToDelete = [...documentsToDelete]
+
+    console.log("UnifiedFileUploadStep - Going back with:", {
+      images: globalImages.length,
+      documents: globalDocuments.length,
+      imagesToDelete: globalImagesToDelete.length,
+      documentsToDelete: globalDocumentsToDelete.length,
+    })
+
+    onBack()
   }
 
   return (
@@ -149,7 +197,7 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
       </Paper>
 
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 6 }}>
-        <Button variant="outlined" onClick={onBack} sx={{ mr: 2 }} size="large" startIcon={<ArrowBack />}>
+        <Button variant="outlined" onClick={handleBackClick} sx={{ mr: 2 }} size="large" startIcon={<ArrowBack />}>
           Atgal
         </Button>
         <Button variant="contained" onClick={handleNext} size="large" endIcon={<ArrowForward />}>
@@ -161,4 +209,3 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
 }
 
 export default UnifiedFileUploadStep
-
