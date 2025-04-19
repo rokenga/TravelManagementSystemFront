@@ -3,6 +3,43 @@ import { TripCategory, TripStatus, PaymentStatus, OfferStatus } from "../types/C
 import { TransportType } from "../types/Transport"
 import { BoardBasisType } from "../types/Accommodation"
 import { TripRequestStatus } from "../types/TripRequest"
+import { PartnerType } from "../types/Partner"
+
+export const translatePartnerType = (type: PartnerType | string): string => {
+  // Handle if the type comes as a string
+  if (typeof type === "string") {
+    switch (type) {
+      case "HotelSystem":
+        return "Viešbučių sistema"
+      case "Guide":
+        return "Gidas"
+      case "DestinationPartner":
+        return "Kelionių partneris"
+      case "TransportCompany":
+        return "Transporto įmonė"
+      case "Other":
+        return "Kita"
+      default:
+        return "Nežinomas"
+    }
+  }
+  
+  // Handle if the type comes as an enum value
+  switch (type) {
+    case PartnerType.HotelSystem:
+      return "Viešbučių sistema"
+    case PartnerType.Guide:
+      return "Gidas"
+    case PartnerType.DestinationPartner:
+      return "Kelionių partneris"
+    case PartnerType.TransportCompany:
+      return "Transporto įmonė"
+    case PartnerType.Other:
+      return "Kita"
+    default:
+      return "Nežinomas"
+  }
+}
 
 export const translateTripRequestStatus = (status: TripRequestStatus): string => {
   switch (status) {
@@ -123,4 +160,3 @@ export const translateBoardBasisType = (boardBasis: BoardBasisType): string => {
       return boardBasis
   }
 }
-

@@ -67,13 +67,18 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
           transform: "translateY(-4px)",
           boxShadow: 3,
         },
+        position: "relative",
       }}
     >
       <CardActionArea onClick={() => onClick(offer.id)} sx={{ height: "100%" }}>
-        <CardContent sx={{ p: 2 }}>
+        <CardContent
+          sx={{
+            p: 2,
+          }}
+        >
           {/* Header with title only */}
-          <Box sx={{ mb: 1.5 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+          <Box sx={{ mb: 1.5, display: "flex", alignItems: "center" }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3, mr: 1 }}>
               {truncateText(offer.tripName || "Specialus pasiūlymas")}
             </Typography>
           </Box>
@@ -115,6 +120,20 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
                   bgcolor: statusColors[offer.status] || "#E0E0E0",
                   color: "rgba(0,0,0,0.7)",
                 }}
+              />
+            )}
+            {/* Transfer status if applicable */}
+            {offer.isTransferred && offer.transferredFromAgentName && (
+              <Chip
+                label="Perkeltas"
+                size="small"
+                sx={{
+                  height: "20px",
+                  fontSize: "0.7rem",
+                  bgcolor: "#2196F3", // Info blue
+                  color: "white",
+                }}
+                title={`Perkeltas nuo: ${offer.transferredFromAgentName}`}
               />
             )}
           </Box>

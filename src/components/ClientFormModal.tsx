@@ -41,15 +41,9 @@ interface ClientFormModalProps {
   initialData?: Partial<ClientFormData> // Initial data for edit mode
 }
 
-const ClientFormModal: React.FC<ClientFormModalProps> = ({ 
-  open, 
-  onClose, 
-  onSuccess, 
-  clientId,
-  initialData 
-}) => {
+const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSuccess, clientId, initialData }) => {
   const isEditMode = Boolean(clientId)
-  
+
   const [formData, setFormData] = useState<ClientFormData>({
     name: "",
     surname: "",
@@ -58,7 +52,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
     birthday: null,
     notes: "",
   })
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [fetchLoading, setFetchLoading] = useState(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
@@ -88,7 +82,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
               Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
             },
           })
-          
+
           const clientData = response.data
           setFormData({
             name: clientData.name || "",
@@ -118,10 +112,10 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
   // Apply initial data if provided (for edit mode)
   useEffect(() => {
     if (initialData && open) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         ...initialData,
-        birthday: initialData.birthday || null
+        birthday: initialData.birthday || null,
       }))
     }
   }, [initialData, open])
@@ -150,7 +144,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
     try {
       let response
-      
+
       if (isEditMode && clientId) {
         // Update existing client
         response = await axios.put(`${API_URL}/Client/${clientId}`, payload, {
@@ -171,17 +165,19 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
       // Wait a bit before closing the modal
       setTimeout(() => {
         onClose()
+        // Call onSuccess callback to refresh the client list
         if (onSuccess) {
+          console.log("Calling onSuccess callback to refresh client list")
           onSuccess()
         }
       }, 1500)
     } catch (error: any) {
-      console.error(`Error ${isEditMode ? 'updating' : 'creating'} client:`, error)
+      console.error(`Error ${isEditMode ? "updating" : "creating"} client:`, error)
 
       // Check if backend provided an error response
       if (error.response) {
         console.log("Server Response:", error.response.data)
-        setSnackbarMessage(error.response.data?.message || `Nepavyko ${isEditMode ? 'atnaujinti' : 'sukurti'} kliento.`)
+        setSnackbarMessage(error.response.data?.message || `Nepavyko ${isEditMode ? "atnaujinti" : "sukurti"} kliento.`)
       } else {
         setSnackbarMessage("Serverio klaida, bandykite dar kartą.")
       }
@@ -208,9 +204,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
         }}
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h5">
-            {isEditMode ? "Redaguoti klientą" : "Sukurti naują klientą"}
-          </Typography>
+          <Typography variant="h5">{isEditMode ? "Redaguoti klientą" : "Sukurti naują klientą"}</Typography>
           <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
             <CloseIcon />
           </IconButton>
@@ -282,11 +276,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({
             disabled={isLoading || fetchLoading}
             sx={{ textTransform: "none" }}
           >
-            {isLoading ? (
-              <CircularProgress size={24} />
-            ) : (
-              isEditMode ? "Išsaugoti pakeitimus" : "Sukurti klientą"
-            )}
+            {isLoading ? <CircularProgress size={24} /> : isEditMode ? "Išsaugoti pakeitimus" : "Sukurti klientą"}
           </Button>
           <Button variant="outlined" color="secondary" onClick={onClose} sx={{ textTransform: "none" }}>
             Atšaukti

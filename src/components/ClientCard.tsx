@@ -13,12 +13,14 @@ import {
   Chip,
   useMediaQuery,
   useTheme,
+  Tooltip,
 } from "@mui/material"
-import { Email, Phone, Notes, LocalOffer } from "@mui/icons-material"
+import { Email, Phone, Notes, LocalOffer, SwapHoriz } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import TagManagementModal from "./TagManagementModal"
 import { API_URL } from "../Utils/Configuration"
+import type { ClientResponse } from "../types/Client"
 
 enum TagCategory {
   DestinationInterest = "DestinationInterest",
@@ -26,16 +28,6 @@ enum TagCategory {
   SpecialRequirements = "SpecialRequirements",
   TravelFrequency = "TravelFrequency",
   TravelPreference = "TravelPreference",
-}
-
-interface Client {
-  id: string
-  name: string
-  surname: string
-  email: string
-  phoneNumber: string
-  createdAt: Date
-  notes?: string
 }
 
 interface ClientTagAssignmentResponse {
@@ -46,9 +38,9 @@ interface ClientTagAssignmentResponse {
   assignedByAgentId: string
 }
 
-// Update the component props to accept an onClick handler
+// Use ClientResponse instead of the custom Client interface
 interface ClientCardProps {
-  client: Client
+  client: ClientResponse
   onClick?: (clientId: string) => void
 }
 
@@ -134,8 +126,10 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
             transform: "translateY(-5px)",
             boxShadow: 6,
           },
+          position: "relative", // For positioning the transfer badge
         }}
       >
+
         {/* Update the CardActionArea onClick to use our new handler */}
         <CardActionArea onClick={handleCardClick}>
           <CardContent
@@ -145,6 +139,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
               py: 2,
               px: 2,
               position: "relative",
+              // Remove the conditional padding
             }}
           >
             <Avatar
@@ -159,9 +154,25 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
             </Avatar>
             <Box sx={{ display: "flex", flexDirection: "column", flex: 1, ml: 2 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  {client.name} {client.surname}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                  <Typography variant="h6">
+                    {client.name} {client.surname}
+                  </Typography>
+                  {client.isTransferred && client.transferredFromAgentName && (
+                    <Tooltip title={`Perkeltas nuo: ${client.transferredFromAgentName}`}>
+                      <Chip
+                        icon={<SwapHoriz />}
+                        label="Perkeltas"
+                        size="small"
+                        color="info"
+                        sx={{
+                          ml: 1,
+                          fontSize: "0.7rem",
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                </Box>
                 <Box sx={{ display: isHalfWidth ? "none" : "flex", gap: 1, mr: 4 }}>
                   {clientTags.slice(0, 3).map((tag) => (
                     <Chip
@@ -262,4 +273,3 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
 }
 
 export default ClientCard
-

@@ -140,9 +140,9 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Hotel name and link */}
+        {/* First row: Hotel name, link and star rating */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
               label="Viešbučio pavadinimas"
               value={accommodation.hotelName}
@@ -151,7 +151,7 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
               size="small"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
               label="Viešbučio nuoroda"
               placeholder="https://..."
@@ -160,6 +160,20 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
               fullWidth
               size="small"
             />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+              <StarRating
+                label="Žvaigždučių reitingas"
+                value={
+                  typeof accommodation.starRating === "string"
+                    ? starRatingEnumToNumber(accommodation.starRating as string)
+                    : accommodation.starRating
+                }
+                onChange={handleStarRatingChange}
+                size="medium"
+              />
+            </Box>
           </Grid>
         </Grid>
 
@@ -211,20 +225,7 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ mt: 1 }}>
-              <StarRating
-                label="Žvaigždučių reitingas"
-                value={
-                  typeof accommodation.starRating === "string"
-                    ? starRatingEnumToNumber(accommodation.starRating as string)
-                    : accommodation.starRating
-                }
-                onChange={handleStarRatingChange}
-                size="medium"
-              />
-            </Box>
-          </Grid>
+          {/* Removed Star Rating Grid Item */}
         </Grid>
 
         {/* Third row: Description */}

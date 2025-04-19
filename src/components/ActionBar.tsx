@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Box, Button, Paper, useTheme, useMediaQuery } from "@mui/material"
+import { useState } from "react"
+import { Box, Button, Paper, useTheme, useMediaQuery, Menu, MenuItem, IconButton } from "@mui/material"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 import EditIcon from "@mui/icons-material/Edit"
 import DeleteIcon from "@mui/icons-material/Delete"
@@ -11,8 +12,21 @@ import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff"
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf"
 import DownloadIcon from "@mui/icons-material/Download"
 import UpdateIcon from "@mui/icons-material/Update"
+import MoreVertIcon from "@mui/icons-material/MoreVert"
+import RateReviewIcon from "@mui/icons-material/RateReview"
+import VisibilityIcon from "@mui/icons-material/Visibility"
 import { useNavigate } from "react-router-dom"
 import { useNavigation } from "../contexts/NavigationContext"
+
+interface MenuItem {
+  key: string
+  label: string
+  icon: React.ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  color?: "primary" | "error"
+  variant?: "contained" | "outlined"
+}
 
 interface ActionBarProps {
   title?: string
@@ -40,6 +54,10 @@ interface ActionBarProps {
   showPdfButtons?: boolean
   pdfLoading?: boolean
   onBackClick?: () => void
+  showReviewButton?: boolean
+  hasReview?: boolean
+  onCreateReview?: () => void
+  onViewReview?: () => void
 }
 
 const ActionBar: React.FC<ActionBarProps> = ({
@@ -68,11 +86,29 @@ const ActionBar: React.FC<ActionBarProps> = ({
   showPdfButtons = false,
   pdfLoading = false,
   onBackClick,
+  showReviewButton = false,
+  hasReview = false,
+  onCreateReview,
+  onViewReview,
 }) => {
   const navigate = useNavigate()
   const { navigateBack, previousPath } = useNavigation()
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+
+  // Use 1200px as the breakpoint as specified
+  const isCompact = useMediaQuery("(max-width:1199px)")
+
+  // State for dropdown menu
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const open = Boolean(anchorEl)
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget)
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
+  }
 
   const handleBack = () => {
     if (onBackClick) {
@@ -86,170 +122,183 @@ const ActionBar: React.FC<ActionBarProps> = ({
     }
   }
 
-  // Helper function to render buttons in the correct order
-  const renderActionButtons = () => {
-    const buttons = []
+  // Helper function to create menu items
+  const getMenuItems = () => {
+    const items = []
 
-    // Client-specific buttons (furthest from right)
-    if (showCreateTripButton && onCreateTrip) {
-      buttons.push(
-        <Button
-          key="create-trip"
-          variant="outlined"
-          color="primary"
-          startIcon={<FlightTakeoffIcon />}
-          onClick={onCreateTrip}
-          sx={{ textTransform: "none" }}
-        >
-          Sukurti kelionę
-        </Button>,
-      )
+    // Secondary actions first
+    if (showReviewButton) {
+      if (hasReview && onViewReview) {
+        items.push({
+          key: "view-review",
+          label: "Peržiūrėti atsiliepimą",
+          icon: <VisibilityIcon fontSize="small" />,
+          onClick: onViewReview,
+        })
+      } else if (onCreateReview) {
+        items.push({
+          key: "create-review",
+          label: "Sukurti atsiliepimą",
+          icon: <RateReviewIcon fontSize="small" />,
+          onClick: onCreateReview,
+        })
+      }
     }
 
-    if (showCreateOfferButton && onCreateOffer) {
-      buttons.push(
-        <Button
-          key="create-offer"
-          variant="outlined"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={onCreateOffer}
-          sx={{ textTransform: "none" }}
-        >
-          Sukurti pasiūlymą
-        </Button>,
-      )
-    }
-
-    if (showTagButton && onTagManage) {
-      buttons.push(
-        <Button
-          key="tag-manage"
-          variant="outlined"
-          color="primary"
-          startIcon={<LocalOfferIcon />}
-          onClick={onTagManage}
-          sx={{ textTransform: "none" }}
-        >
-          Tvarkyti žymeklius
-        </Button>,
-      )
-    }
-
-    // Trip-specific buttons
     if (showPdfButtons) {
-      buttons.push(
-        <Box key="pdf-buttons" sx={{ display: "flex" }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={onPreviewPdf}
-            startIcon={<PictureAsPdfIcon />}
-            disabled={pdfLoading}
-            sx={{
-              textTransform: "none",
-              borderTopRightRadius: 0,
-              borderBottomRightRadius: 0,
-              borderRight: "none",
-            }}
-          >
-            {pdfLoading ? "Ruošiamas..." : "Peržiūrėti PDF"}
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={onDownloadPdf}
-            startIcon={<DownloadIcon />}
-            disabled={pdfLoading}
-            sx={{
-              textTransform: "none",
-              borderTopLeftRadius: 0,
-              borderBottomLeftRadius: 0,
-            }}
-          >
-            {pdfLoading ? "Ruošiamas..." : "Atsisiųsti"}
-          </Button>
-        </Box>,
-      )
+      items.push({
+        key: "preview-pdf",
+        label: "Peržiūrėti PDF",
+        icon: <PictureAsPdfIcon fontSize="small" />,
+        onClick: onPreviewPdf,
+        disabled: pdfLoading,
+      })
+      items.push({
+        key: "download-pdf",
+        label: "Atsisiųsti PDF",
+        icon: <DownloadIcon fontSize="small" />,
+        onClick: onDownloadPdf,
+        disabled: pdfLoading,
+      })
     }
 
     if (showCloneButton && onClone) {
-      buttons.push(
-        <Button
-          key="clone"
-          variant="outlined"
-          color="primary"
-          startIcon={<FlightTakeoffIcon />}
-          onClick={onClone}
-          sx={{ textTransform: "none" }}
-        >
-          Klonuoti
-        </Button>,
-      )
+      items.push({
+        key: "clone",
+        label: "Klonuoti",
+        icon: <FlightTakeoffIcon fontSize="small" />,
+        onClick: onClone,
+      })
     }
 
     if (showChangeStatusButton && onChangeStatus) {
-      buttons.push(
-        <Button
-          key="change-status"
-          variant="outlined"
-          color="primary"
-          startIcon={<UpdateIcon />}
-          onClick={onChangeStatus}
-          sx={{ textTransform: "none" }}
-        >
-          Keisti statusą
-        </Button>,
-      )
+      items.push({
+        key: "change-status",
+        label: "Keisti statusą",
+        icon: <UpdateIcon fontSize="small" />,
+        onClick: onChangeStatus,
+      })
     }
 
     if (showConvertToTripButton && onConvertToTrip) {
-      buttons.push(
-        <Button
-          key="convert-to-trip"
-          variant="outlined"
-          color="primary"
-          startIcon={<FlightTakeoffIcon />}
-          onClick={onConvertToTrip}
-          sx={{ textTransform: "none" }}
-        >
-          Paversti į kelionę
-        </Button>,
-      )
+      items.push({
+        key: "convert-to-trip",
+        label: "Paversti į kelionę",
+        icon: <FlightTakeoffIcon fontSize="small" />,
+        onClick: onConvertToTrip,
+      })
     }
 
-    // Common buttons (closest to right)
+    if (showTagButton && onTagManage) {
+      items.push({
+        key: "tag-manage",
+        label: "Tvarkyti žymeklius",
+        icon: <LocalOfferIcon fontSize="small" />,
+        onClick: onTagManage,
+      })
+    }
+
+    if (showCreateTripButton && onCreateTrip) {
+      items.push({
+        key: "create-trip",
+        label: "Sukurti kelionę",
+        icon: <FlightTakeoffIcon fontSize="small" />,
+        onClick: onCreateTrip,
+      })
+    }
+
+    if (showCreateOfferButton && onCreateOffer) {
+      items.push({
+        key: "create-offer",
+        label: "Sukurti pasiūlymą",
+        icon: <AddIcon fontSize="small" />,
+        onClick: onCreateOffer,
+      })
+    }
+
+    // Primary actions last - Edit before Delete
     if (showEditButton && onEdit) {
-      buttons.push(
-        <Button
-          key="edit"
-          variant="contained"
-          color="primary"
-          startIcon={<EditIcon />}
-          onClick={onEdit}
-          sx={{ textTransform: "none" }}
-        >
-          Redaguoti
-        </Button>,
-      )
+      items.push({
+        key: "edit",
+        label: "Redaguoti",
+        icon: <EditIcon fontSize="small" />,
+        onClick: onEdit,
+        color: "primary" as const,
+        variant: "contained" as const,
+      })
     }
 
     if (showDeleteButton && onDelete) {
-      buttons.push(
-        <Button
-          key="delete"
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteIcon />}
-          onClick={onDelete}
-          sx={{ textTransform: "none" }}
-        >
-          Ištrinti
-        </Button>,
-      )
+      items.push({
+        key: "delete",
+        label: "Ištrinti",
+        icon: <DeleteIcon fontSize="small" />,
+        onClick: onDelete,
+        color: "error" as const,
+        variant: "contained" as const,
+      })
     }
 
-    return buttons
+    return items
+  }
+
+  const menuItems = getMenuItems()
+
+  // Render buttons for desktop view (>= 1200px)
+  const renderDesktopButtons = () => {
+    const buttons: MenuItem[] = []
+    const primaryButtons: MenuItem[] = []
+
+    // Separate primary actions (Edit and Delete)
+    menuItems.forEach((item) => {
+      if (item.key === "edit" || item.key === "delete") {
+        primaryButtons.push(item)
+      } else {
+        buttons.push(item)
+      }
+    })
+
+    // Sort primary buttons to ensure Edit comes before Delete
+    primaryButtons.sort((a, b) => {
+      if (a.key === "edit") return -1
+      if (b.key === "edit") return 1
+      return 0
+    })
+
+    // Render secondary action buttons
+    const secondaryButtons = buttons.map((item) => (
+      <Button
+        key={item.key}
+        variant="outlined"
+        color="primary"
+        startIcon={item.icon}
+        onClick={item.onClick}
+        disabled={item.disabled}
+        sx={{ textTransform: "none" }}
+      >
+        {item.label}
+      </Button>
+    ))
+
+    // Render primary action buttons (Edit and Delete)
+    const primaryActionButtons = primaryButtons.map((item) => (
+      <Button
+        key={item.key}
+        variant={item.variant || "outlined"}
+        color={item.color || "primary"}
+        startIcon={item.icon}
+        onClick={item.onClick}
+        disabled={item.disabled}
+        sx={{ textTransform: "none" }}
+      >
+        {item.label}
+      </Button>
+    ))
+
+    return {
+      secondaryButtons,
+      primaryButtons: primaryActionButtons,
+    }
   }
 
   return (
@@ -262,10 +311,8 @@ const ActionBar: React.FC<ActionBarProps> = ({
         border: "1px solid",
         borderColor: "divider",
         display: "flex",
-        flexDirection: isMobile ? "column" : "row",
-        alignItems: isMobile ? "flex-start" : "center",
+        alignItems: "center",
         justifyContent: "space-between",
-        gap: 2,
         width: "100%",
         position: "sticky",
         top: 0,
@@ -273,28 +320,71 @@ const ActionBar: React.FC<ActionBarProps> = ({
         backgroundColor: "background.paper",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      {/* Left side with back button only */}
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        {/* Back button */}
         {showBackButton && (
           <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ textTransform: "none" }}>
-            Grįžti atgal
+            Atgal
           </Button>
         )}
-        {title && (
-          <Box component="h2" sx={{ m: 0, typography: "h6" }}>
-            {title}
-          </Box>
-        )}
       </Box>
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          justifyContent: isMobile ? "flex-start" : "flex-end",
-          flex: 1,
-        }}
-      >
-        {renderActionButtons()}
+
+      {/* Right side - All other buttons */}
+      <Box sx={{ display: "flex", gap: 1 }}>
+        {/* Secondary action buttons */}
+        {!isCompact && <Box sx={{ display: "flex", gap: 1, mr: 2 }}>{renderDesktopButtons().secondaryButtons}</Box>}
+
+        {/* Primary action buttons (Edit and Delete) */}
+        {!isCompact && renderDesktopButtons().primaryButtons}
+
+        {isCompact && menuItems.length > 0 && (
+          <>
+            <IconButton
+              onClick={handleMenuClick}
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 1,
+                width: 40,
+                height: 40,
+              }}
+            >
+              <MoreVertIcon />
+            </IconButton>
+            <Menu
+              id="action-menu"
+              anchorEl={anchorEl}
+              keepMounted
+              open={open}
+              onClose={handleMenuClose}
+              PaperProps={{
+                elevation: 3,
+                sx: { minWidth: 200 },
+              }}
+            >
+              {menuItems.map((item) => (
+                <MenuItem
+                  key={item.key}
+                  onClick={() => {
+                    handleMenuClose()
+                    item.onClick?.()
+                  }}
+                  disabled={item.disabled}
+                  sx={{
+                    color: item.color === "error" ? "error.main" : "inherit",
+                    fontWeight: item.variant === "contained" ? "bold" : "normal",
+                  }}
+                >
+                  <Box component="span" sx={{ mr: 1.5, display: "flex", alignItems: "center" }}>
+                    {item.icon}
+                  </Box>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Menu>
+          </>
+        )}
         {children}
       </Box>
     </Paper>

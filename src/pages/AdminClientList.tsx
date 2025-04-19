@@ -71,7 +71,7 @@ const AdminClientList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [sortOption, setSortOption] = useState<string>("Vardas A-Z")
   const [selectedFilters, setSelectedFilters] = useState<ClientFilters>(defaultFilters)
-  const [refreshTrigger, setRefreshTrigger] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // Changed to number for better control
 
   const navigate = useNavigate()
   const user = useContext(UserContext)
@@ -145,11 +145,12 @@ const AdminClientList: React.FC = () => {
     }
   }, [saveCurrentState])
 
+  // This effect will run when refreshTrigger changes
   useEffect(() => {
-    if (!isInitialMount.current) {
+    if (!isInitialMount.current || refreshTrigger > 0) {
       fetchClients(currentPage, pageSize, searchTerm, selectedFilters)
     }
-  }, [sortOption, currentPage, pageSize, searchTerm, selectedFilters])
+  }, [sortOption, currentPage, pageSize, searchTerm, selectedFilters, refreshTrigger])
 
   const fetchClients = async (page: number, size: number, search: string, filters: ClientFilters) => {
     try {
@@ -188,16 +189,12 @@ const AdminClientList: React.FC = () => {
       console.log("Sending request body:", params)
 
       // Make the POST request
-      const response = await axios.post<PaginatedResponse<Client>>(
-        `${API_URL}/Client/search`,
-        params,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      )
+      const response = await axios.post<PaginatedResponse<Client>>(`${API_URL}/Client/search`, params, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
 
       // Update state with data from the backend
       setClients(response.data.items)
@@ -262,11 +259,15 @@ const AdminClientList: React.FC = () => {
   }
 
   const refreshClientTags = () => {
-    setRefreshTrigger((prev) => !prev) // Toggle state to force refresh
+    setRefreshTrigger((prev) => prev + 1) // Increment to force refresh
   }
 
   const refreshClientList = () => {
-    setRefreshTrigger((prev) => !prev) // Force refresh client list
+    console.log("Refreshing client list after adding new client")
+    // Reset to first page to ensure new client is visible
+    setCurrentPage(1)
+    // Increment refresh trigger to force data refresh
+    setRefreshTrigger((prev) => prev + 1)
   }
 
   /**
@@ -418,4 +419,3 @@ const AdminClientList: React.FC = () => {
 }
 
 export default AdminClientList
-

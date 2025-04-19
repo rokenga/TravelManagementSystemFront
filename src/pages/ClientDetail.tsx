@@ -130,33 +130,6 @@ const ClientDetail: React.FC = () => {
     severity: "success" as "success" | "error" | "info" | "warning",
   })
 
-  const mockOffers: Offer[] = [
-    {
-      id: "1",
-      title: "Prabangus kruizas",
-      description: "Kelionė Karibų jūroje su nuolaida.",
-      createdAt: "2023-04-15",
-    },
-    {
-      id: "2",
-      title: "Poilsis Maldyvuose",
-      description: "Savaitės kelionė su įskaičiuotu maitinimu.",
-      createdAt: "2023-06-20",
-    },
-    {
-      id: "3",
-      title: "Slidinėjimas Alpėse",
-      description: "Žiemos atostogos Prancūzijos Alpėse.",
-      createdAt: "2023-11-10",
-    },
-    {
-      id: "4",
-      title: "Savaitgalis Prahoje",
-      description: "Trumpa kultūrinė kelionė į Prahą.",
-      createdAt: "2024-02-05",
-    },
-  ]
-
   // Save current state to be restored when coming back
   const saveCurrentState = useCallback(() => {
     if (!clientId) return
@@ -391,15 +364,6 @@ const ClientDetail: React.FC = () => {
           <StyledCard>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: "flex", alignItems: "flex-start", gap: 3 }}>
-                <Avatar
-                  sx={{
-                    bgcolor: getAvatarColor(`${client.name} ${client.surname}`),
-                    width: 64,
-                    height: 64,
-                    fontSize: "1.5rem",
-                  }}
-                />
-
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>

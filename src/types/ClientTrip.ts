@@ -74,6 +74,8 @@ export interface TripResponse {
   childrenCount?: number
   dayByDayItineraryNeeded: boolean
   destination?: string
+  isTransferred?: boolean
+  transferredFromAgentName?: string
 }
 
 /** ======= Pagination & Filtering Types ======= **/

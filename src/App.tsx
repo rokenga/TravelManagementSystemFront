@@ -30,7 +30,6 @@ import ProfilePage from "./pages/ProfilePage"
 import Workspace from "./pages/Workspace"
 import CreateClient from "./pages/CreateClient"
 import AdminEditClient from "./pages/AdminEditClient"
-import AdminSpecialOffers from "./pages/AdminSpecialOffers"
 
 import WizardForm from "./pages/CreateTripWizardPage"
 import ClientDetail from "./pages/ClientDetail"
@@ -49,6 +48,14 @@ import PublicOfferCreationForm from "./pages/CreatePublicOfferWizardPage"
 import PublicSpecialOffer from "./pages/PublicSpecialOffer"
 import AdminClientSpecialOffers from "./pages/AdminClientSpecialOffers"
 import AdminPublicSpecialOffers from "./pages/AdminPublicSpecialOffers"
+import PartnerList from "./pages/PartnerList"
+import PartnerDetails from "./pages/PartnerDetails"
+import AdminPublicSpecialOfferDetails from "./pages/AdminPublicSpecialOfferDetails"
+import TwoFactorAuth from "./pages/TwoFactorAuth"
+import TwoFactorSetup from "./pages/TwoFactorSetup"
+import AgentOnboarding from "./pages/AgentOnboarding"
+import ForgotPassword from "./pages/ForgotPassword"
+import ResetPassword from "./pages/ResetPassword"
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -115,6 +122,8 @@ function App() {
                       }
                     />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
                     <Route path="/records" element={<Records />} />
                     <Route path="/records/:recordId" element={<Record />} />
@@ -124,44 +133,43 @@ function App() {
                     <Route path="/specialOfferDetails/:id" element={<SpecialOfferDetails />} />
                     <Route path="/reserve-special-offer/:id" element={<SpecialOfferReservation />} />
 
+                    <Route path="/2fa-setup" element={<TwoFactorSetup />} />
+
                     {/* Admin and Agent Only */}
                     <Route element={<ProtectedRoute requiredRoles={["Admin", "Agent"]} />}>
                       <Route path="/profile-page" element={<ProfilePage />} />
                       <Route path="/change-password" element={<ChangePassword />} />
                       <Route path="/register" element={<Register />} />
-
                       <Route path="/records/create" element={<CreateRecord />} />
                       <Route path="/records/edit/:recordId" element={<EditRecord />} />
-
                       <Route path="/admin-client-list" element={<AdminClientList />} />
                       <Route path="/admin-client-list/:clientId" element={<ClientDetail />} />
-                      //<Route path="/clients/edit/:clientId" element={<AdminEditClient />} />
-
+                      //
+                      <Route path="/clients/edit/:clientId" element={<AdminEditClient />} />
                       <Route path="/admin-trip-list" element={<AdminTripList />} />
                       <Route path="/admin-trip-list/:tripId" element={<ClientTrip />} />
                       <Route path="/admin-trip-list/:tripId/edit" element={<WizardEditForm />} />
                       <Route path="/admin-trip-list/create" element={<WizardForm />} />
-                      
-                      
-
+                      <Route path="/partner-list" element={<PartnerList />} />
+                      <Route path="/partner-list/:partnerId" element={<PartnerDetails />} />
                       <Route path="/trips/special-offer" element={<SpecialOfferCreate />} />
                       <Route path="/trips/cruise" element={<CruiseTripCreate />} />
-
                       <Route path="/clients/create" element={<CreateClient />} />
                       <Route path="/special-offers" element={<AdminClientSpecialOffers />} />
                       <Route path="/public-offers" element={<AdminPublicSpecialOffers />} />
                       <Route path="/special-offers/create" element={<ClientSpecialOfferCreation />} />
                       <Route path="/special-offers/:tripId" element={<ClientSpecialOffer />} />
                       <Route path="/special-offers/:tripId/edit" element={<EditClientOfferWizardPage />} />
-
                       <Route path="/public-offers/create" element={<PublicOfferCreationForm />} />
-                      
+                      <Route path="/public-offers/:id" element={<AdminPublicSpecialOfferDetails />} />
                       <Route path="/public-offers" element={<PublicSpecialOffer />} />
+                      <Route path="/2fa-verify" element={<TwoFactorAuth />} />
+                      <Route path="/agent-onboarding" element={<AgentOnboarding />} />
                     </Route>
 
                     <Route element={<ProtectedRoute requiredRoles={["Admin"]} />}>
                       <Route path="/agents" element={<AdminAgentList />} />
-                      <Route path="/agents/:agentId" element={<AgentDetail />} />
+                      <Route path="/agents/:id" element={<AgentDetail />} />
                     </Route>
 
                     {/* Fallback */}
@@ -179,4 +187,3 @@ function App() {
 }
 
 export default App
-

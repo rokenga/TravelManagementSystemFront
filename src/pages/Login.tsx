@@ -14,9 +14,10 @@ import {
   InputAdornment,
   IconButton,
   useMediaQuery,
+  Link as MuiLink,
 } from "@mui/material"
 import { createTheme, ThemeProvider, responsiveFontSizes } from "@mui/material/styles"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { API_URL } from "../Utils/Configuration"
 import axios from "axios"
 import {
@@ -74,10 +75,6 @@ let travelTheme = createTheme({
             boxShadow: "0px 2px 4px rgba(0,0,0,0.2)",
           },
         },
-        // Remove the gradient background for primary button
-        // containedPrimary: {
-        //   background: "linear-gradient(45deg, #1976d2 30%, #2196f3 90%)",
-        // },
       },
     },
     MuiTextField: {
@@ -153,6 +150,24 @@ export default function SignIn() {
 
       console.log("Success:", response.data)
 
+      if (response.data.requires2FASetup) {
+        localStorage.setItem("accessToken", response.data.accessToken)
+        localStorage.setItem("refreshToken", response.data.refreshToken || "")
+        localStorage.setItem("2fa_user_id", response.data.userId)
+        setIsLoading(false)
+        navigate("/2fa-setup")
+        return
+      }
+
+      if (response.data.requires2FA) {
+        localStorage.setItem("accessToken", response.data.accessToken)
+        localStorage.setItem("refreshToken", response.data.refreshToken || "")
+        localStorage.setItem("2fa_user_id", response.data.userId)
+        setIsLoading(false)
+        navigate("/2fa-verify")
+        return
+      }
+
       if (response.data.accessToken) {
         localStorage.setItem("accessToken", response.data.accessToken)
         localStorage.setItem("refreshToken", response.data.refreshToken || "")
@@ -203,131 +218,146 @@ export default function SignIn() {
   return (
     <ThemeProvider theme={travelTheme}>
       <CssBaseline />
-      <Container component="main" maxWidth="sm">
-        <Box
+      <Container component="main" maxWidth="sm" sx={{ py: 4 }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            borderRadius: 2,
+            position: "relative",
+            overflow: "hidden",
+            borderTop: 3,
+            borderColor: "primary.main",
+            mt: 4, // Adjusted spacing
+          }}
         >
-          <Paper
-            elevation={3}
+          {/* Decorative travel icons at the top */}
+          <Box
             sx={{
-              p: 4,
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              borderRadius: 2,
-              position: "relative",
-              overflow: "hidden",
+              justifyContent: "space-around",
+              width: "100%",
+              mb: 3,
+              color: "primary.main", // Primary color
+              opacity: 0.8,
             }}
           >
-            {/* Decorative travel icons at the top */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-around",
-                width: "100%",
-                mb: 3,
-                color: "primary.light",
-                opacity: 0.7,
-              }}
-            >
-              {travelIcons.map((icon, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    transform: `rotate(${index % 2 === 0 ? -10 : 10}deg)`,
-                    fontSize: { xs: "1.5rem", sm: "1.8rem" },
-                  }}
-                >
-                  {icon}
-                </Box>
-              ))}
-            </Box>
-
-            <Avatar
-              sx={{
-                m: 1,
-                bgcolor: "primary.main",
-                width: 56,
-                height: 56,
-                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-              }}
-            >
-              <FlightTakeoff fontSize="large" />
-            </Avatar>
-
-            <Typography component="h1" variant="h4" sx={{ mb: 1, color: "primary.main" }}>
-              Sveiki sugrįžę!
-            </Typography>
-
-            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: "100%" }}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="El. paštas"
-                name="email"
-                autoComplete="email"
-                autoFocus
-                error={!!errors.email}
-                helperText={errors.email}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email color="primary" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ mb: 2 }}
-              />
-
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Slaptažodis"
-                type={showPassword ? "text" : "password"}
-                id="password"
-                autoComplete="current-password"
-                error={!!errors.password}
-                helperText={errors.password}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="primary" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword} edge="end">
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ mb: 3 }}
-              />
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary" // Use the standard primary color
-                disabled={isLoading}
+            {travelIcons.map((icon, index) => (
+              <Box
+                key={index}
                 sx={{
-                  mt: 2,
-                  mb: 3,
-                  py: 1.5,
-                  fontSize: "1rem",
+                  transform: `rotate(${index % 2 === 0 ? -10 : 10}deg)`,
+                  fontSize: { xs: "1.5rem", sm: "1.8rem" },
                 }}
               >
-                Prisijungti
-              </Button>
+                {icon}
+              </Box>
+            ))}
+          </Box>
+
+          <Avatar
+            sx={{
+              m: 1,
+              bgcolor: "primary.main", // Primary color
+              width: 56,
+              height: 56,
+              boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+            }}
+          >
+            <FlightTakeoff fontSize="large" />
+          </Avatar>
+
+          <Typography component="h1" variant="h4" sx={{ mb: 1, color: "primary.main", fontWeight: "bold" }}>
+            Sveiki sugrįžę!
+          </Typography>
+
+          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: "100%" }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="El. paštas"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              error={!!errors.email}
+              helperText={errors.email}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email color="primary" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Slaptažodis"
+              type={showPassword ? "text" : "password"}
+              id="password"
+              autoComplete="current-password"
+              error={!!errors.password}
+              helperText={errors.password}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleClickShowPassword}
+                      edge="end"
+                      color="primary" // Primary color
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ mb: 3 }}
+            />
+
+            {/* Forgot Password Link */}
+            <Box sx={{ textAlign: "right", mb: 2 }}>
+              <MuiLink component={Link} to="/forgot-password" variant="body2" color="primary">
+                Pamiršote slaptažodį?
+              </MuiLink>
             </Box>
-          </Paper>
-        </Box>
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary" // Primary color
+              disabled={isLoading}
+              sx={{
+                mt: 2,
+                mb: 3,
+                py: 1.5,
+                fontSize: "1rem",
+                bgcolor: "primary.main", // Explicitly set primary color
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                },
+              }}
+            >
+              {isLoading ? "Jungiamasi..." : "Prisijungti"}
+            </Button>
+          </Box>
+        </Paper>
       </Container>
     </ThemeProvider>
   )
 }
-

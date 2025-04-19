@@ -8,6 +8,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer"
 import AccessTimeIcon from "@mui/icons-material/AccessTime"
 import PaymentIcon from "@mui/icons-material/Payment"
 import PeopleIcon from "@mui/icons-material/People"
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz"
 import { translateTripCategory, translateTripStatus, translatePaymentStatus } from "../Utils/translateEnums"
 import type { TripResponse } from "../types/ClientTrip"
 import { TripStatus, PaymentStatus, TripCategory } from "../types/ClientTrip"
@@ -83,10 +84,14 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
       }}
     >
       <CardActionArea onClick={handleClick} sx={{ height: "100%" }}>
-        <CardContent sx={{ p: 3 }}>
+        <CardContent
+          sx={{
+            p: 3,
+          }}
+        >
           {/* Header with title */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+          <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mr: 1 }}>
               {truncateText(trip.tripName || "Kelionė be pavadinimo")}
             </Typography>
           </Box>
@@ -143,6 +148,23 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
                 }}
               />
             )}
+            {/* Transfer status if applicable */}
+            {trip.isTransferred && trip.transferredFromAgentName && (
+              <Chip
+                icon={<SwapHorizIcon style={{ fontSize: "0.875rem", color: "white" }} />}
+                label="Perkeltas"
+                size="small"
+                sx={{
+                  bgcolor: "black", // Info blue
+                  color: "white",
+                  fontWeight: 500,
+                  "& .MuiChip-icon": {
+                    color: "white",
+                  },
+                }}
+                title={`Perkeltas nuo: ${trip.transferredFromAgentName}`}
+              />
+            )}
           </Box>
 
           {/* Client name if available - moved after tags */}
@@ -194,4 +216,3 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
 }
 
 export default TripSummaryCard
-

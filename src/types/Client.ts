@@ -19,6 +19,8 @@ export interface ClientResponse {
     address: string;
     notes: string;
     createdAt: Date;
+    isTransferred: boolean;
+    transferredFromAgentName: string;
   }
 
   export interface Client {

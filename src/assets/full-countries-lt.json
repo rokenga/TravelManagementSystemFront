@@ -1,998 +1,1247 @@
 [
   {
     "code": "AF",
-    "name": "Afganistanas"
+    "name": "Afganistanas",
+    "continent": "Azija"
   },
   {
     "code": "IE",
-    "name": "Airija"
+    "name": "Airija",
+    "continent": "Europa"
   },
   {
     "code": "AX",
-    "name": "Alandų Salos"
+    "name": "Alandų Salos",
+    "continent": "Europa"
   },
   {
     "code": "AL",
-    "name": "Albanija"
+    "name": "Albanija",
+    "continent": "Europa"
   },
   {
     "code": "DZ",
-    "name": "Alžyras"
+    "name": "Alžyras",
+    "continent": "Afrika"
   },
   {
     "code": "AS",
-    "name": "Amerikos Samoa"
+    "name": "Amerikos Samoa",
+    "continent": "Okeanija"
   },
   {
     "code": "AD",
-    "name": "Andora"
+    "name": "Andora",
+    "continent": "Europa"
   },
   {
     "code": "AI",
-    "name": "Angilija"
+    "name": "Angilija",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "AO",
-    "name": "Angola"
+    "name": "Angola",
+    "continent": "Afrika"
   },
   {
     "code": "AQ",
-    "name": "Antarktida"
+    "name": "Antarktida",
+    "continent": "Antarktida"
   },
   {
     "code": "AG",
-    "name": "Antigva ir Barbuda"
+    "name": "Antigva ir Barbuda",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "AR",
-    "name": "Argentina"
+    "name": "Argentina",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "AM",
-    "name": "Armėnija"
+    "name": "Armėnija",
+    "continent": "Azija"
   },
   {
     "code": "AW",
-    "name": "Aruba"
+    "name": "Aruba",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "AU",
-    "name": "Australija"
+    "name": "Australija",
+    "continent": "Okeanija"
   },
   {
     "code": "AT",
-    "name": "Austrija"
+    "name": "Austrija",
+    "continent": "Europa"
   },
   {
     "code": "AZ",
-    "name": "Azerbaidžanas"
+    "name": "Azerbaidžanas",
+    "continent": "Azija"
   },
   {
     "code": "BS",
-    "name": "Bahamos"
+    "name": "Bahamos",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "BH",
-    "name": "Bahreinas"
+    "name": "Bahreinas",
+    "continent": "Azija"
   },
   {
     "code": "BY",
-    "name": "Baltarusija"
+    "name": "Baltarusija",
+    "continent": "Europa"
   },
   {
     "code": "BD",
-    "name": "Bangladešas"
+    "name": "Bangladešas",
+    "continent": "Azija"
   },
   {
     "code": "BB",
-    "name": "Barbadosas"
+    "name": "Barbadosas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "BE",
-    "name": "Belgija"
+    "name": "Belgija",
+    "continent": "Europa"
   },
   {
     "code": "BZ",
-    "name": "Belizas"
+    "name": "Belizas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "BJ",
-    "name": "Beninas"
+    "name": "Beninas",
+    "continent": "Afrika"
   },
   {
     "code": "BM",
-    "name": "Bermuda"
+    "name": "Bermuda",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GW",
-    "name": "Bisau Gvinėja"
+    "name": "Bisau Gvinėja",
+    "continent": "Afrika"
   },
   {
     "code": "BO",
-    "name": "Bolivija"
+    "name": "Bolivija",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "BA",
-    "name": "Bosnija ir Hercegovina"
+    "name": "Bosnija ir Hercegovina",
+    "continent": "Europa"
   },
   {
     "code": "BW",
-    "name": "Botsvana"
+    "name": "Botsvana",
+    "continent": "Afrika"
   },
   {
     "code": "BR",
-    "name": "Brazilija"
+    "name": "Brazilija",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "BN",
-    "name": "Brunėjus"
+    "name": "Brunėjus",
+    "continent": "Azija"
   },
   {
     "code": "BG",
-    "name": "Bulgarija"
+    "name": "Bulgarija",
+    "continent": "Europa"
   },
   {
     "code": "BF",
-    "name": "Burkina Fasas"
+    "name": "Burkina Fasas",
+    "continent": "Afrika"
   },
   {
     "code": "BI",
-    "name": "Burundis"
+    "name": "Burundis",
+    "continent": "Afrika"
   },
   {
     "code": "BT",
-    "name": "Butanas"
+    "name": "Butanas",
+    "continent": "Azija"
   },
   {
     "code": "BV",
-    "name": "Buvė Sala"
+    "name": "Buvė Sala",
+    "continent": "Antarktida"
   },
   {
     "code": "CF",
-    "name": "Centrinės Afrikos Respublika"
+    "name": "Centrinės Afrikos Respublika",
+    "continent": "Afrika"
   },
   {
     "code": "DK",
-    "name": "Danija"
+    "name": "Danija",
+    "continent": "Europa"
   },
   {
     "code": "VG",
-    "name": "Didžiosios Britanijos Mergelių Salos"
+    "name": "Didžiosios Britanijos Mergelių Salos",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "DM",
-    "name": "Dominika"
+    "name": "Dominika",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "DO",
-    "name": "Dominikos Respublika"
+    "name": "Dominikos Respublika",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "CI",
-    "name": "Dramblio Kaulo Krantas"
+    "name": "Dramblio Kaulo Krantas",
+    "continent": "Afrika"
   },
   {
     "code": "JE",
-    "name": "Džersis"
+    "name": "Džersis",
+    "continent": "Europa"
   },
   {
     "code": "DJ",
-    "name": "Džibutis"
+    "name": "Džibutis",
+    "continent": "Afrika"
   },
   {
     "code": "EG",
-    "name": "Egiptas"
+    "name": "Egiptas",
+    "continent": "Afrika"
   },
   {
     "code": "EC",
-    "name": "Ekvadoras"
+    "name": "Ekvadoras",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "ER",
-    "name": "Eritrėja"
+    "name": "Eritrėja",
+    "continent": "Afrika"
   },
   {
     "code": "EE",
-    "name": "Estija"
+    "name": "Estija",
+    "continent": "Europa"
   },
   {
     "code": "ET",
-    "name": "Etiopija"
+    "name": "Etiopija",
+    "continent": "Afrika"
   },
   {
     "code": "FO",
-    "name": "Farerų Salos"
+    "name": "Farerų Salos",
+    "continent": "Europa"
   },
   {
     "code": "FJ",
-    "name": "Fidžis"
+    "name": "Fidžis",
+    "continent": "Okeanija"
   },
   {
     "code": "PH",
-    "name": "Filipinai"
+    "name": "Filipinai",
+    "continent": "Azija"
   },
   {
     "code": "FK",
-    "name": "Folklando Salos"
+    "name": "Folklando Salos",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "GA",
-    "name": "Gabonas"
+    "name": "Gabonas",
+    "continent": "Afrika"
   },
   {
     "code": "GY",
-    "name": "Gajana"
+    "name": "Gajana",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "GM",
-    "name": "Gambija"
+    "name": "Gambija",
+    "continent": "Afrika"
   },
   {
     "code": "GH",
-    "name": "Gana"
+    "name": "Gana",
+    "continent": "Afrika"
   },
   {
     "code": "GG",
-    "name": "Gernsis"
+    "name": "Gernsis",
+    "continent": "Europa"
   },
   {
     "code": "GI",
-    "name": "Gibraltaras"
+    "name": "Gibraltaras",
+    "continent": "Europa"
   },
   {
     "code": "GR",
-    "name": "Graikija"
+    "name": "Graikija",
+    "continent": "Europa"
   },
   {
     "code": "GD",
-    "name": "Grenada"
+    "name": "Grenada",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GL",
-    "name": "Grenlandija"
+    "name": "Grenlandija",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GE",
-    "name": "Gruzija"
+    "name": "Gruzija",
+    "continent": "Azija"
   },
   {
     "code": "GU",
-    "name": "Guamas"
+    "name": "Guamas",
+    "continent": "Okeanija"
   },
   {
     "code": "GP",
-    "name": "Gvadelupa"
+    "name": "Gvadelupa",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GT",
-    "name": "Gvatemala"
+    "name": "Gvatemala",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GN",
-    "name": "Gvinėja"
+    "name": "Gvinėja",
+    "continent": "Afrika"
   },
   {
     "code": "HT",
-    "name": "Haitis"
+    "name": "Haitis",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "HM",
-    "name": "Herdo ir Makdonaldo Salos"
+    "name": "Herdo ir Makdonaldo Salos",
+    "continent": "Antarktida"
   },
   {
     "code": "HN",
-    "name": "Hondūras"
+    "name": "Hondūras",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "IN",
-    "name": "Indija"
+    "name": "Indija",
+    "continent": "Azija"
   },
   {
     "code": "IO",
-    "name": "Indijos Vandenyno Britų Sritis"
+    "name": "Indijos Vandenyno Britų Sritis",
+    "continent": "Azija"
   },
   {
     "code": "ID",
-    "name": "Indonezija"
+    "name": "Indonezija",
+    "continent": "Azija"
   },
   {
     "code": "IQ",
-    "name": "Irakas"
+    "name": "Irakas",
+    "continent": "Azija"
   },
   {
     "code": "IR",
-    "name": "Iranas"
+    "name": "Iranas",
+    "continent": "Azija"
   },
   {
     "code": "IS",
-    "name": "Islandija"
+    "name": "Islandija",
+    "continent": "Europa"
   },
   {
     "code": "ES",
-    "name": "Ispanija"
+    "name": "Ispanija",
+    "continent": "Europa"
   },
   {
     "code": "IT",
-    "name": "Italija"
+    "name": "Italija",
+    "continent": "Europa"
   },
   {
     "code": "IL",
-    "name": "Izraelis"
+    "name": "Izraelis",
+    "continent": "Azija"
   },
   {
     "code": "JM",
-    "name": "Jamaika"
+    "name": "Jamaika",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "JP",
-    "name": "Japonija"
+    "name": "Japonija",
+    "continent": "Azija"
   },
   {
     "code": "YE",
-    "name": "Jemenas"
+    "name": "Jemenas",
+    "continent": "Azija"
   },
   {
     "code": "JO",
-    "name": "Jordanija"
+    "name": "Jordanija",
+    "continent": "Azija"
   },
   {
     "code": "AE",
-    "name": "Jungtiniai Arabų Emyratai"
+    "name": "Jungtiniai Arabų Emyratai",
+    "continent": "Azija"
   },
   {
     "code": "UM",
-    "name": "Jungtinių Valstijų Mažosios Tolimosios Salos"
+    "name": "Jungtinių Valstijų Mažosios Tolimosios Salos",
+    "continent": "Okeanija"
   },
   {
     "code": "VI",
-    "name": "Jungtinių Valstijų Mergelių Salos"
+    "name": "Jungtinių Valstijų Mergelių Salos",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GB",
-    "name": "Jungtinė Karalystė"
+    "name": "Jungtinė Karalystė",
+    "continent": "Europa"
   },
   {
     "code": "US",
-    "name": "Jungtinės Valstijos"
+    "name": "Jungtinės Valstijos",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "ME",
-    "name": "Juodkalnija"
+    "name": "Juodkalnija",
+    "continent": "Europa"
   },
   {
     "code": "KY",
-    "name": "Kaimanų Salos"
+    "name": "Kaimanų Salos",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "CX",
-    "name": "Kalėdų Sala"
+    "name": "Kalėdų Sala",
+    "continent": "Azija"
   },
   {
     "code": "KH",
-    "name": "Kambodža"
+    "name": "Kambodža",
+    "continent": "Azija"
   },
   {
     "code": "CM",
-    "name": "Kamerūnas"
+    "name": "Kamerūnas",
+    "continent": "Afrika"
   },
   {
     "code": "CA",
-    "name": "Kanada"
+    "name": "Kanada",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "BQ",
-    "name": "Karibų Nyderlandai"
+    "name": "Karibų Nyderlandai",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "QA",
-    "name": "Kataras"
+    "name": "Kataras",
+    "continent": "Azija"
   },
   {
     "code": "KZ",
-    "name": "Kazachstanas"
+    "name": "Kazachstanas",
+    "continent": "Azija"
   },
   {
     "code": "KE",
-    "name": "Kenija"
+    "name": "Kenija",
+    "continent": "Afrika"
   },
   {
     "code": "CN",
-    "name": "Kinija"
+    "name": "Kinija",
+    "continent": "Azija"
   },
   {
     "code": "CY",
-    "name": "Kipras"
+    "name": "Kipras",
+    "continent": "Europa"
   },
   {
     "code": "KG",
-    "name": "Kirgizija"
+    "name": "Kirgizija",
+    "continent": "Azija"
   },
   {
     "code": "KI",
-    "name": "Kiribatis"
+    "name": "Kiribatis",
+    "continent": "Okeanija"
   },
   {
     "code": "CW",
-    "name": "Kiurasao"
+    "name": "Kiurasao",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "CC",
-    "name": "Kokosų (Kilingo) Salos"
+    "name": "Kokosų (Kilingo) Salos",
+    "continent": "Azija"
   },
   {
     "code": "CO",
-    "name": "Kolumbija"
+    "name": "Kolumbija",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "KM",
-    "name": "Komorai"
+    "name": "Komorai",
+    "continent": "Afrika"
   },
   {
     "code": "CG",
-    "name": "Kongas-Brazavilis"
+    "name": "Kongas-Brazavilis",
+    "continent": "Afrika"
   },
   {
     "code": "CD",
-    "name": "Kongas-Kinšasa"
+    "name": "Kongas-Kinšasa",
+    "continent": "Afrika"
   },
   {
     "code": "CR",
-    "name": "Kosta Rika"
+    "name": "Kosta Rika",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "HR",
-    "name": "Kroatija"
+    "name": "Kroatija",
+    "continent": "Europa"
   },
   {
     "code": "CU",
-    "name": "Kuba"
+    "name": "Kuba",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "CK",
-    "name": "Kuko Salos"
+    "name": "Kuko Salos",
+    "continent": "Okeanija"
   },
   {
     "code": "KW",
-    "name": "Kuveitas"
+    "name": "Kuveitas",
+    "continent": "Azija"
   },
   {
     "code": "LA",
-    "name": "Laosas"
+    "name": "Laosas",
+    "continent": "Azija"
   },
   {
     "code": "LV",
-    "name": "Latvija"
+    "name": "Latvija",
+    "continent": "Europa"
   },
   {
     "code": "PL",
-    "name": "Lenkija"
+    "name": "Lenkija",
+    "continent": "Europa"
   },
   {
     "code": "LS",
-    "name": "Lesotas"
+    "name": "Lesotas",
+    "continent": "Afrika"
   },
   {
     "code": "LB",
-    "name": "Libanas"
+    "name": "Libanas",
+    "continent": "Azija"
   },
   {
     "code": "LR",
-    "name": "Liberija"
+    "name": "Liberija",
+    "continent": "Afrika"
   },
   {
     "code": "LY",
-    "name": "Libija"
+    "name": "Libija",
+    "continent": "Afrika"
   },
   {
     "code": "LI",
-    "name": "Lichtenšteinas"
+    "name": "Lichtenšteinas",
+    "continent": "Europa"
   },
   {
     "code": "LT",
-    "name": "Lietuva"
+    "name": "Lietuva",
+    "continent": "Europa"
   },
   {
     "code": "LU",
-    "name": "Liuksemburgas"
+    "name": "Liuksemburgas",
+    "continent": "Europa"
   },
   {
     "code": "MG",
-    "name": "Madagaskaras"
+    "name": "Madagaskaras",
+    "continent": "Afrika"
   },
   {
     "code": "YT",
-    "name": "Majotas"
+    "name": "Majotas",
+    "continent": "Afrika"
   },
   {
     "code": "MY",
-    "name": "Malaizija"
+    "name": "Malaizija",
+    "continent": "Azija"
   },
   {
     "code": "MW",
-    "name": "Malavis"
+    "name": "Malavis",
+    "continent": "Afrika"
   },
   {
     "code": "MV",
-    "name": "Maldyvai"
+    "name": "Maldyvai",
+    "continent": "Azija"
   },
   {
     "code": "ML",
-    "name": "Malis"
+    "name": "Malis",
+    "continent": "Afrika"
   },
   {
     "code": "MT",
-    "name": "Malta"
+    "name": "Malta",
+    "continent": "Europa"
   },
   {
     "code": "MP",
-    "name": "Marianos Šiaurinės Salos"
+    "name": "Marianos Šiaurinės Salos",
+    "continent": "Okeanija"
   },
   {
     "code": "MA",
-    "name": "Marokas"
+    "name": "Marokas",
+    "continent": "Afrika"
   },
   {
     "code": "MQ",
-    "name": "Martinika"
+    "name": "Martinika",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "MH",
-    "name": "Maršalo Salos"
+    "name": "Maršalo Salos",
+    "continent": "Okeanija"
   },
   {
     "code": "MU",
-    "name": "Mauricijus"
+    "name": "Mauricijus",
+    "continent": "Afrika"
   },
   {
     "code": "MR",
-    "name": "Mauritanija"
+    "name": "Mauritanija",
+    "continent": "Afrika"
   },
   {
     "code": "MX",
-    "name": "Meksika"
+    "name": "Meksika",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "IM",
-    "name": "Meno Sala"
+    "name": "Meno Sala",
+    "continent": "Europa"
   },
   {
     "code": "MM",
-    "name": "Mianmaras (Birma)"
+    "name": "Mianmaras (Birma)",
+    "continent": "Azija"
   },
   {
     "code": "FM",
-    "name": "Mikronezija"
+    "name": "Mikronezija",
+    "continent": "Okeanija"
   },
   {
     "code": "MD",
-    "name": "Moldova"
+    "name": "Moldova",
+    "continent": "Europa"
   },
   {
     "code": "MC",
-    "name": "Monakas"
+    "name": "Monakas",
+    "continent": "Europa"
   },
   {
     "code": "MN",
-    "name": "Mongolija"
+    "name": "Mongolija",
+    "continent": "Azija"
   },
   {
     "code": "MS",
-    "name": "Montseratas"
+    "name": "Montseratas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "MZ",
-    "name": "Mozambikas"
+    "name": "Mozambikas",
+    "continent": "Afrika"
   },
   {
     "code": "NA",
-    "name": "Namibija"
+    "name": "Namibija",
+    "continent": "Afrika"
   },
   {
     "code": "NC",
-    "name": "Naujoji Kaledonija"
+    "name": "Naujoji Kaledonija",
+    "continent": "Okeanija"
   },
   {
     "code": "NZ",
-    "name": "Naujoji Zelandija"
+    "name": "Naujoji Zelandija",
+    "continent": "Okeanija"
   },
   {
     "code": "NR",
-    "name": "Nauru"
+    "name": "Nauru",
+    "continent": "Okeanija"
   },
   {
     "code": "NP",
-    "name": "Nepalas"
+    "name": "Nepalas",
+    "continent": "Azija"
   },
   {
     "code": "NG",
-    "name": "Nigerija"
+    "name": "Nigerija",
+    "continent": "Afrika"
   },
   {
     "code": "NE",
-    "name": "Nigeris"
+    "name": "Nigeris",
+    "continent": "Afrika"
   },
   {
     "code": "NI",
-    "name": "Nikaragva"
+    "name": "Nikaragva",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "NU",
-    "name": "Niujė"
+    "name": "Niujė",
+    "continent": "Okeanija"
   },
   {
     "code": "NF",
-    "name": "Norfolko sala"
+    "name": "Norfolko sala",
+    "continent": "Okeanija"
   },
   {
     "code": "NO",
-    "name": "Norvegija"
+    "name": "Norvegija",
+    "continent": "Europa"
   },
   {
     "code": "NL",
-    "name": "Nyderlandai"
+    "name": "Nyderlandai",
+    "continent": "Europa"
   },
   {
     "code": "OM",
-    "name": "Omanas"
+    "name": "Omanas",
+    "continent": "Azija"
   },
   {
     "code": "PK",
-    "name": "Pakistanas"
+    "name": "Pakistanas",
+    "continent": "Azija"
   },
   {
     "code": "PW",
-    "name": "Palau"
+    "name": "Palau",
+    "continent": "Okeanija"
   },
   {
     "code": "PS",
-    "name": "Palestinos teritorija"
+    "name": "Palestinos teritorija",
+    "continent": "Azija"
   },
   {
     "code": "PA",
-    "name": "Panama"
+    "name": "Panama",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "PG",
-    "name": "Papua Naujoji Gvinėja"
+    "name": "Papua Naujoji Gvinėja",
+    "continent": "Okeanija"
   },
   {
     "code": "PY",
-    "name": "Paragvajus"
+    "name": "Paragvajus",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "PE",
-    "name": "Peru"
+    "name": "Peru",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "ZA",
-    "name": "Pietų Afrika"
+    "name": "Pietų Afrika",
+    "continent": "Afrika"
   },
   {
     "code": "GS",
-    "name": "Pietų Džordžija ir Pietų Sandvičo salos"
+    "name": "Pietų Džordžija ir Pietų Sandvičo salos",
+    "continent": "Antarktida"
   },
   {
     "code": "KR",
-    "name": "Pietų Korėja"
+    "name": "Pietų Korėja",
+    "continent": "Azija"
   },
   {
     "code": "SS",
-    "name": "Pietų Sudanas"
+    "name": "Pietų Sudanas",
+    "continent": "Afrika"
   },
   {
     "code": "PN",
-    "name": "Pitkerno salos"
+    "name": "Pitkerno salos",
+    "continent": "Okeanija"
   },
   {
     "code": "PT",
-    "name": "Portugalija"
+    "name": "Portugalija",
+    "continent": "Europa"
   },
   {
     "code": "FR",
-    "name": "Prancūzija"
+    "name": "Prancūzija",
+    "continent": "Europa"
   },
   {
     "code": "GF",
-    "name": "Prancūzijos Gviana"
+    "name": "Prancūzijos Gviana",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "TF",
-    "name": "Prancūzijos Pietų sritys"
+    "name": "Prancūzijos Pietų sritys",
+    "continent": "Antarktida"
   },
   {
     "code": "PF",
-    "name": "Prancūzijos Polinezija"
+    "name": "Prancūzijos Polinezija",
+    "continent": "Okeanija"
   },
   {
     "code": "PR",
-    "name": "Puerto Rikas"
+    "name": "Puerto Rikas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "GQ",
-    "name": "Pusiaujo Gvinėja"
+    "name": "Pusiaujo Gvinėja",
+    "continent": "Afrika"
   },
   {
     "code": "RE",
-    "name": "Reunjonas"
+    "name": "Reunjonas",
+    "continent": "Afrika"
   },
   {
     "code": "RW",
-    "name": "Ruanda"
+    "name": "Ruanda",
+    "continent": "Afrika"
   },
   {
     "code": "RO",
-    "name": "Rumunija"
+    "name": "Rumunija",
+    "continent": "Europa"
   },
   {
     "code": "RU",
-    "name": "Rusija"
+    "name": "Rusija",
+    "continent": "Europa"
   },
   {
     "code": "TL",
-    "name": "Rytų Timoras"
+    "name": "Rytų Timoras",
+    "continent": "Okeanija"
   },
   {
     "code": "SB",
-    "name": "Saliamono Salos"
+    "name": "Saliamono Salos",
+    "continent": "Okeanija"
   },
   {
     "code": "SV",
-    "name": "Salvadoras"
+    "name": "Salvadoras",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "WS",
-    "name": "Samoa"
+    "name": "Samoa",
+    "continent": "Okeanija"
   },
   {
     "code": "SM",
-    "name": "San Marinas"
+    "name": "San Marinas",
+    "continent": "Europa"
   },
   {
     "code": "ST",
-    "name": "San Tomė ir Prinsipė"
+    "name": "San Tomė ir Prinsipė",
+    "continent": "Afrika"
   },
   {
     "code": "SA",
-    "name": "Saudo Arabija"
+    "name": "Saudo Arabija",
+    "continent": "Azija"
   },
   {
     "code": "SC",
-    "name": "Seišeliai"
+    "name": "Seišeliai",
+    "continent": "Afrika"
   },
   {
     "code": "BL",
-    "name": "Sen Bartelemi"
+    "name": "Sen Bartelemi",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "MF",
-    "name": "Sen Martenas"
+    "name": "Sen Martenas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "PM",
-    "name": "Sen Pjeras ir Mikelonas"
+    "name": "Sen Pjeras ir Mikelonas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "SN",
-    "name": "Senegalas"
+    "name": "Senegalas",
+    "continent": "Afrika"
   },
   {
     "code": "KN",
-    "name": "Sent Kitsas ir Nevis"
+    "name": "Sent Kitsas ir Nevis",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "LC",
-    "name": "Sent Lusija"
+    "name": "Sent Lusija",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "RS",
-    "name": "Serbija"
+    "name": "Serbija",
+    "continent": "Europa"
   },
   {
     "code": "SL",
-    "name": "Siera Leonė"
+    "name": "Siera Leonė",
+    "continent": "Afrika"
   },
   {
     "code": "SG",
-    "name": "Singapūras"
+    "name": "Singapūras",
+    "continent": "Azija"
   },
   {
     "code": "SX",
-    "name": "Sint Martenas"
+    "name": "Sint Martenas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "SY",
-    "name": "Sirija"
+    "name": "Sirija",
+    "continent": "Azija"
   },
   {
     "code": "SK",
-    "name": "Slovakija"
+    "name": "Slovakija",
+    "continent": "Europa"
   },
   {
     "code": "SI",
-    "name": "Slovėnija"
+    "name": "Slovėnija",
+    "continent": "Europa"
   },
   {
     "code": "SO",
-    "name": "Somalis"
+    "name": "Somalis",
+    "continent": "Afrika"
   },
   {
     "code": "SD",
-    "name": "Sudanas"
+    "name": "Sudanas",
+    "continent": "Afrika"
   },
   {
     "code": "FI",
-    "name": "Suomija"
+    "name": "Suomija",
+    "continent": "Europa"
   },
   {
     "code": "SR",
-    "name": "Surinamas"
+    "name": "Surinamas",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "SJ",
-    "name": "Svalbardas ir Janas Majenas"
+    "name": "Svalbardas ir Janas Majenas",
+    "continent": "Europa"
   },
   {
     "code": "SZ",
-    "name": "Svazilandas"
+    "name": "Svazilandas",
+    "continent": "Afrika"
   },
   {
     "code": "TJ",
-    "name": "Tadžikija"
+    "name": "Tadžikija",
+    "continent": "Azija"
   },
   {
     "code": "TH",
-    "name": "Tailandas"
+    "name": "Tailandas",
+    "continent": "Azija"
   },
   {
     "code": "TW",
-    "name": "Taivanas"
+    "name": "Taivanas",
+    "continent": "Azija"
   },
   {
     "code": "TZ",
-    "name": "Tanzanija"
+    "name": "Tanzanija",
+    "continent": "Afrika"
   },
   {
     "code": "TC",
-    "name": "Terkso ir Kaikoso Salos"
+    "name": "Terkso ir Kaikoso Salos",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "TG",
-    "name": "Togas"
+    "name": "Togas",
+    "continent": "Afrika"
   },
   {
     "code": "TK",
-    "name": "Tokelau"
+    "name": "Tokelau",
+    "continent": "Okeanija"
   },
   {
     "code": "TO",
-    "name": "Tonga"
+    "name": "Tonga",
+    "continent": "Okeanija"
   },
   {
     "code": "TT",
-    "name": "Trinidadas ir Tobagas"
+    "name": "Trinidadas ir Tobagas",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "TN",
-    "name": "Tunisas"
+    "name": "Tunisas",
+    "continent": "Afrika"
   },
   {
     "code": "TR",
-    "name": "Turkija"
+    "name": "Turkija",
+    "continent": "Azija"
   },
   {
     "code": "TM",
-    "name": "Turkmėnistanas"
+    "name": "Turkmėnistanas",
+    "continent": "Azija"
   },
   {
     "code": "TV",
-    "name": "Tuvalu"
+    "name": "Tuvalu",
+    "continent": "Okeanija"
   },
   {
     "code": "UG",
-    "name": "Uganda"
+    "name": "Uganda",
+    "continent": "Afrika"
   },
   {
     "code": "UA",
-    "name": "Ukraina"
+    "name": "Ukraina",
+    "continent": "Europa"
   },
   {
     "code": "UY",
-    "name": "Urugvajus"
+    "name": "Urugvajus",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "UZ",
-    "name": "Uzbekistanas"
+    "name": "Uzbekistanas",
+    "continent": "Azija"
   },
   {
     "code": "EH",
-    "name": "Vakarų Sachara"
+    "name": "Vakarų Sachara",
+    "continent": "Afrika"
   },
   {
     "code": "VU",
-    "name": "Vanuatu"
+    "name": "Vanuatu",
+    "continent": "Okeanija"
   },
   {
     "code": "VA",
-    "name": "Vatikano Miesto Valstybė"
+    "name": "Vatikano Miesto Valstybė",
+    "continent": "Europa"
   },
   {
     "code": "VE",
-    "name": "Venesuela"
+    "name": "Venesuela",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "HU",
-    "name": "Vengrija"
+    "name": "Vengrija",
+    "continent": "Europa"
   },
   {
     "code": "VN",
-    "name": "Vietnamas"
+    "name": "Vietnamas",
+    "continent": "Azija"
   },
   {
     "code": "DE",
-    "name": "Vokietija"
+    "name": "Vokietija",
+    "continent": "Europa"
   },
   {
     "code": "WF",
-    "name": "Volisas ir Futūna"
+    "name": "Volisas ir Futūna",
+    "continent": "Okeanija"
   },
   {
     "code": "HK",
-    "name": "Ypatingasis Administracinis Kinijos Regionas Honkongas"
+    "name": "Ypatingasis Administracinis Kinijos Regionas Honkongas",
+    "continent": "Azija"
   },
   {
     "code": "MO",
-    "name": "Ypatingasis Administracinis Kinijos Regionas Makao"
+    "name": "Ypatingasis Administracinis Kinijos Regionas Makao",
+    "continent": "Azija"
   },
   {
     "code": "ZM",
-    "name": "Zambija"
+    "name": "Zambija",
+    "continent": "Afrika"
   },
   {
     "code": "ZW",
-    "name": "Zimbabvė"
+    "name": "Zimbabvė",
+    "continent": "Afrika"
   },
   {
     "code": "TD",
-    "name": "Čadas"
+    "name": "Čadas",
+    "continent": "Afrika"
   },
   {
     "code": "CZ",
-    "name": "Čekija"
+    "name": "Čekija",
+    "continent": "Europa"
   },
   {
     "code": "CL",
-    "name": "Čilė"
+    "name": "Čilė",
+    "continent": "Pietų Amerika"
   },
   {
     "code": "KP",
-    "name": "Šiaurės Korėja"
+    "name": "Šiaurės Korėja",
+    "continent": "Azija"
   },
   {
     "code": "MK",
-    "name": "Šiaurės Makedonija"
+    "name": "Šiaurės Makedonija",
+    "continent": "Europa"
   },
   {
     "code": "LK",
-    "name": "Šri Lanka"
+    "name": "Šri Lanka",
+    "continent": "Azija"
   },
   {
     "code": "SH",
-    "name": "Šv. Elenos Sala"
+    "name": "Šv. Elenos Sala",
+    "continent": "Afrika"
   },
   {
     "code": "SE",
-    "name": "Švedija"
+    "name": "Švedija",
+    "continent": "Europa"
   },
   {
     "code": "CH",
-    "name": "Šveicarija"
+    "name": "Šveicarija",
+    "continent": "Europa"
   },
   {
     "code": "VC",
-    "name": "Šventasis Vincentas ir Grenadinai"
+    "name": "Šventasis Vincentas ir Grenadinai",
+    "continent": "Šiaurės Amerika"
   },
   {
     "code": "CV",
-    "name": "Žaliasis Kyšulys"
+    "name": "Žaliasis Kyšulys",
+    "continent": "Afrika"
   }
 ]

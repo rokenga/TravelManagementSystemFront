@@ -19,6 +19,8 @@ import TripDetailsCard from "../components/TripDetailsCard"
 import ItineraryDisplay from "../components/ItineraryDisplay"
 import DocumentGallery from "../components/DocumentGallery"
 import PdfViewerModal from "../components/PdfViewerModal"
+import TripReviewModal from "../components/TripReviewModal"
+import type { TripReviewResponse } from "../types/TripReview"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -85,6 +87,10 @@ const ClientTrip: React.FC = () => {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [hasReview, setHasReview] = useState(false)
+  const [reviewData, setReviewData] = useState<TripReviewResponse | null>(null)
 
   const user = useContext(UserContext)
   const token = localStorage.getItem("accessToken")
@@ -168,8 +174,31 @@ const ClientTrip: React.FC = () => {
       fetchTrip()
       fetchTripImages()
       fetchTripDocuments()
+      checkReviewExists()
     }
   }, [tripId, token])
+
+  const checkReviewExists = async () => {
+    if (!tripId) return
+
+    try {
+      const response = await axios.get<TripReviewResponse>(`${API_URL}/TripReview/trip/${tripId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      setHasReview(true)
+      setReviewData(response.data)
+    } catch (err: any) {
+      // If 404, there's no review yet - that's okay
+      if (err.response?.status !== 404) {
+        console.error("Failed to check review:", err)
+      }
+      setHasReview(false)
+      setReviewData(null)
+    }
+  }
 
   const handleEditClick = () => {
     if (tripStatus) {
@@ -385,6 +414,27 @@ const ClientTrip: React.FC = () => {
     }
   }
 
+  const handleCreateReview = () => {
+    setReviewModalOpen(true)
+  }
+
+  const handleViewReview = () => {
+    setReviewModalOpen(true)
+  }
+
+  const handleCloseReviewModal = () => {
+    setReviewModalOpen(false)
+  }
+
+  const handleReviewSuccess = () => {
+    checkReviewExists()
+    setSnackbar({
+      open: true,
+      message: "Atsiliepimas sėkmingai pateiktas!",
+      severity: "success",
+    })
+  }
+
   // Clean up blob URLs when component unmounts
   useEffect(() => {
     return () => {
@@ -423,6 +473,8 @@ const ClientTrip: React.FC = () => {
         showCloneButton={true}
         showChangeStatusButton={true}
         showPdfButtons={true}
+        showReviewButton={tripStatus === "ended"}
+        hasReview={hasReview}
         pdfLoading={pdfLoading}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
@@ -430,6 +482,8 @@ const ClientTrip: React.FC = () => {
         onChangeStatus={() => {
           /* Non-functioning for now */
         }}
+        onCreateReview={handleCreateReview}
+        onViewReview={handleViewReview}
         onPreviewPdf={handlePreviewPdf}
         onDownloadPdf={handleDownloadPdf}
         onBackClick={navigateBack}
@@ -548,6 +602,14 @@ const ClientTrip: React.FC = () => {
         pdfUrl={pdfUrl}
         loading={pdfLoading}
         onDownload={handleDownloadPdf}
+      />
+
+      {/* Review Modal */}
+      <TripReviewModal
+        open={reviewModalOpen}
+        onClose={handleCloseReviewModal}
+        tripId={tripId}
+        onSuccess={handleReviewSuccess}
       />
 
       {/* Snackbar for notifications */}

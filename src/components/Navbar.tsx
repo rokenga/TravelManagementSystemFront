@@ -30,6 +30,7 @@ import ProfileIcon from "@mui/icons-material/Person"
 import StarIcon from "@mui/icons-material/Star"
 import ArticleIcon from "@mui/icons-material/Article"
 import AgentsIcon from "@mui/icons-material/Group"
+import PartnerIcon from "@mui/icons-material/Business"
 
 import { UserContext } from "../contexts/UserContext"
 import Logo from "./Logo"
@@ -98,6 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       { text: "Kelionės", path: "/admin-trip-list", icon: <PlaneIcon /> },
       { text: "Klientų spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
       { text: "Vieši spec. pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
+      { text: "Partneriai", path: "/partner-list", icon: <PartnerIcon /> },
     ],
     Agent: [
       { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
@@ -105,6 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       { text: "Kelionės", path: "/admin-trip-list", icon: <PlaneIcon /> },
       { text: "Klientų spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
       { text: "Vieši spec. pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
+      { text: "Partneriai", path: "/partner-list", icon: <PartnerIcon /> },
     ],
   }
 

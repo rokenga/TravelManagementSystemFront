@@ -1,0 +1,10 @@
+[
+    { "code": "AF", "name": "Afrika" },
+    { "code": "AS", "name": "Azija" },
+    { "code": "EU", "name": "Europa" },
+    { "code": "NA", "name": "Šiaurės Amerika" },
+    { "code": "SA", "name": "Pietų Amerika" },
+    { "code": "OC", "name": "Okeanija" },
+    { "code": "AN", "name": "Antarktida" }
+  ]
+  

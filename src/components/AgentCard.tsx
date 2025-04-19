@@ -1,6 +1,8 @@
+"use client"
+
 import type React from "react"
-import { Box, Typography, Grid, Avatar, Divider, Card, CardContent, Chip } from "@mui/material"
-import { Email, Flight, TrendingUp, Euro, People, PersonAdd } from "@mui/icons-material";
+import { Box, Typography, Grid, Avatar, Divider, Card, CardContent } from "@mui/material"
+import { Email, Flight, TrendingUp, Euro, People, PersonAdd } from "@mui/icons-material"
 import type { Agent } from "../types/AdminsAgent"
 
 interface AgentCardProps {
@@ -14,45 +16,38 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
   const clientsPercentage =
     agent.totalClients > 0 ? Math.round((agent.newClientsThisMonth / agent.totalClients) * 100) : 0
 
-
-    return (
-        <Box>
-          {/* Agent Profile Section */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={4}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Avatar
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: "primary.main",
-                    fontSize: "2rem",
-                  }}
-                >
-                  {agent.email ? agent.email.charAt(0).toUpperCase() : "?"}
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                    Agentas {/* Could be agent's name, then email, then phone */}
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                    <Email sx={{ fontSize: 18, mr: 1, color: "text.secondary" }} />
-                    <Typography variant="body1" color="text.secondary">
-                      {agent.email}
-                    </Typography>
-                  </Box>
-                </Box>
+  return (
+    <Box>
+      {/* Agent Profile Section */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={4}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar
+              sx={{
+                width: 80,
+                height: 80,
+                bgcolor: "primary.main",
+                fontSize: "2rem",
+              }}
+            >
+              {agent.email ? agent.email.charAt(0).toUpperCase() : "?"}
+            </Avatar>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "left" }}>
+                {agent.firstName} {agent.lastName}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+                <Email sx={{ fontSize: 18, mr: 1, color: "text.secondary" }} />
+                <Typography variant="body1" color="text.secondary">
+                  {agent.email}
+                </Typography>
               </Box>
-            </Grid>
-          </Grid> {/* ✅ Correctly closed the Grid container */}
-
+            </Box>
+          </Box>
+        </Grid>
+      </Grid>{" "}
+      {/* ✅ Correctly closed the Grid container */}
       <Divider sx={{ mb: 4 }} />
-
-      {/* Performance Metrics */}
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-        Veiklos rodikliai
-      </Typography>
-
       <Grid container spacing={3}>
         {/* Trips Stats */}
         <Grid item xs={12} sm={6} md={3}>
@@ -155,4 +150,3 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
 }
 
 export default AgentCard
-
