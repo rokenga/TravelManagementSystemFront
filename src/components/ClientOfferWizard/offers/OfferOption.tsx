@@ -13,6 +13,7 @@ import {
   useTheme,
   useMediaQuery,
   Tooltip,
+  IconButton,
 } from "@mui/material"
 import {
   ExpandMore as ExpandMoreIcon,
@@ -29,28 +30,9 @@ import AccommodationItem, { type Accommodation } from "./AccommodationItem"
 import TransportItem, { type Transport } from "./TransportItem"
 import CruiseItem, { type Cruise } from "./CruiseItem"
 import ImageSection from "./ImageSection"
+import type { Step, Option } from "@/types"
 
-export interface Step {
-  name: string
-  accommodations: Accommodation[]
-  transports: Transport[]
-  cruises: Cruise[]
-  isExpanded: boolean
-  stepImages?: File[]
-  existingStepImages?: Array<{
-    id: string
-    url: string
-    altText?: string
-  }>
-  destination?: Country | null
-}
-
-export interface Option {
-  value: string
-  label: string
-}
-
-interface OfferOptionProps {
+export interface OfferOptionProps {
   step: Step
   stepIndex: number
   boardBasisOptions: Option[]
@@ -92,8 +74,13 @@ interface OfferOptionProps {
   onRemoveImageSection: (stepIndex: number) => void
   onExistingImageDelete?: (stepIndex: number, imageId: string) => void
   onDestinationChange?: (stepIndex: number, destination: Country | null) => void
-  tripDestination?: Country | null
+  tripDestination: Country | null
+  dateValidationErrors?: string[]
+  tripStartDate?: Dayjs | null
+  tripEndDate?: Dayjs | null
 }
+
+const MAX_OFFER_NAME_LENGTH = 200
 
 export function OfferOption({
   step,
@@ -123,6 +110,9 @@ export function OfferOption({
   onExistingImageDelete,
   onDestinationChange,
   tripDestination,
+  dateValidationErrors,
+  tripStartDate,
+  tripEndDate,
 }: OfferOptionProps) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -156,7 +146,7 @@ export function OfferOption({
 
     const accommodationTotal = step.accommodations?.reduce((sum, acc) => sum + (acc.price || 0), 0) || 0
     const transportTotal = step.transports?.reduce((sum, trans) => sum + (trans.price || 0), 0) || 0
-    const cruiseTotal = step.cruises?.reduce((sum, cruise) => sum + (cruise.price || 0), 0) || 0
+    const cruiseTotal = step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0
 
     return accommodationTotal + transportTotal + cruiseTotal
   }
@@ -184,6 +174,15 @@ export function OfferOption({
     if (onDestinationChange) {
       onDestinationChange(stepIndex, destination)
     }
+  }
+
+  // Handle step name change with character limit
+  const handleStepNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value
+    if (value.length > MAX_OFFER_NAME_LENGTH) {
+      value = value.slice(0, MAX_OFFER_NAME_LENGTH)
+    }
+    onStepNameChange(stepIndex, value)
   }
 
   // Validate time constraints and show error if needed
@@ -344,12 +343,15 @@ export function OfferOption({
         >
           <TextField
             value={step.name}
-            onChange={(e) => onStepNameChange(stepIndex, e.target.value)}
+            onChange={handleStepNameChange}
             variant="outlined"
             size="small"
             sx={{ width: "100%", maxWidth: 600, mr: 2 }}
             placeholder="Pasiūlymo pavadinimas"
             onClick={(e) => e.stopPropagation()}
+            inputProps={{ maxLength: MAX_OFFER_NAME_LENGTH }}
+            helperText={`${step.name.length}/${MAX_OFFER_NAME_LENGTH}`}
+            FormHelperTextProps={{ sx: { textAlign: "right", m: 0, mt: 0.5 } }}
           />
         </Box>
         <Box
@@ -363,22 +365,25 @@ export function OfferOption({
           <Typography variant="subtitle1" sx={{ fontWeight: "bold", mr: 2 }}>
             Viso: {calculateStepTotal(step).toFixed(2)} €
           </Typography>
-          <Button
+          <IconButton
             color="error"
-            variant="outlined"
             size="small"
-            startIcon={<DeleteIcon />}
             onClick={(e) => {
               e.stopPropagation()
               onRemoveStep(stepIndex)
             }}
+            aria-label="Ištrinti pasiūlymą"
+            data-delete-offer-button="true"
           >
-            Ištrinti
-          </Button>
+            <DeleteIcon />
+          </IconButton>
         </Box>
       </Box>
 
       <Box sx={{ p: 3 }}>
+        {dateValidationErrors && dateValidationErrors.length > 0 && (
+          <Box sx={{ mb: 3 }}>{/* No visible error box, but we still track errors for validation */}</Box>
+        )}
         {/* Add Destination field for the offer */}
         <Box sx={{ mb: 3 }}>
           <DestinationAutocomplete
@@ -483,6 +488,8 @@ export function OfferOption({
             timeError={timeErrors[`acc-${stepIndex}-${accIndex}`]}
             onTimeChange={handleAccommodationDateChange}
             isSmall={isSmall}
+            tripStartDate={tripStartDate}
+            tripEndDate={tripEndDate}
           />
         ))}
 
@@ -500,6 +507,8 @@ export function OfferOption({
             timeError={timeErrors[`trans-${stepIndex}-${transIndex}`]}
             onTimeChange={handleTransportTimeChange}
             isSmall={isSmall}
+            tripStartDate={tripStartDate}
+            tripEndDate={tripEndDate}
           />
         ))}
 
@@ -517,6 +526,8 @@ export function OfferOption({
               timeError={timeErrors[`cruise-${stepIndex}-${cruiseIndex}`]}
               onTimeChange={handleCruiseTimeChange}
               isSmall={isSmall}
+              tripStartDate={tripStartDate}
+              tripEndDate={tripEndDate}
             />
           ))}
 

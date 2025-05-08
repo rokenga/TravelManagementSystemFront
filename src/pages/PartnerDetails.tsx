@@ -150,7 +150,7 @@ const PartnerDetailsPage: React.FC = () => {
   const handleEditSuccess = (updatedPartner: PartnerResponse) => {
     console.log("Edit success called with:", updatedPartner)
 
-    // Update the partner state with the new data
+    // Immediately update the partner state with the new data
     setPartner(updatedPartner)
 
     // Show success message in the snackbar
@@ -160,11 +160,11 @@ const PartnerDetailsPage: React.FC = () => {
       severity: "success",
     })
 
-    // Refresh the partner data from the server
-    // Add a small delay to ensure the API has time to update
+    // Refresh the partner data from the server to ensure we have the latest data
+    // Use a slightly longer delay to ensure the API has time to update
     setTimeout(() => {
       fetchPartner()
-    }, 300)
+    }, 500)
   }
 
   const cancelDelete = () => {

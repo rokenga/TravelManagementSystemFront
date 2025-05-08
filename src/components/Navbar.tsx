@@ -22,10 +22,8 @@ import {
 } from "@mui/material"
 import MenuIcon from "@mui/icons-material/Menu"
 import HomeIcon from "@mui/icons-material/Home"
-import ApartmentIcon from "@mui/icons-material/Airlines"
 import LogoutIcon from "@mui/icons-material/Logout"
 import PlaneIcon from "@mui/icons-material/Hotel"
-import ShipIcon from "@mui/icons-material/Water"
 import ProfileIcon from "@mui/icons-material/Person"
 import StarIcon from "@mui/icons-material/Star"
 import ArticleIcon from "@mui/icons-material/Article"
@@ -83,30 +81,24 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
 
   const roleBasedMenu = {
     Guest: [
-      { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
+      { text: "Pagrindinis", path: "/", icon: <HomeIcon /> },
       { text: "Karšti kelionių pasiūlymai", path: "/specialOffers", icon: <StarIcon /> },
-      { text: "Karšti kruizų pasiūlymai", path: "/specialOffers", icon: <ShipIcon /> },
-    ],
-    Client: [
-      { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
-      { text: "Kryptys", path: "/destinations", icon: <ApartmentIcon /> },
-      { text: "Karšti pasiūlymai", path: "/specialOffers", icon: <StarIcon /> },
     ],
     Admin: [
-      { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
+      { text: "Pagrindinis", path: "/", icon: <HomeIcon /> },
       { text: "Agentai", path: "/agents", icon: <AgentsIcon /> },
       { text: "Klientai", path: "/admin-client-list", icon: <ProfileIcon /> },
       { text: "Kelionės", path: "/admin-trip-list", icon: <PlaneIcon /> },
-      { text: "Klientų spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
-      { text: "Vieši spec. pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
+      { text: "Klientų pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
+      { text: "Vieši pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
       { text: "Partneriai", path: "/partner-list", icon: <PartnerIcon /> },
     ],
     Agent: [
-      { text: "Į pradžią", path: "/", icon: <HomeIcon /> },
+      { text: "Pagrindinis", path: "/", icon: <HomeIcon /> },
       { text: "Klientai", path: "/admin-client-list", icon: <ProfileIcon /> },
       { text: "Kelionės", path: "/admin-trip-list", icon: <PlaneIcon /> },
-      { text: "Klientų spec. pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
-      { text: "Vieši spec. pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
+      { text: "Klientų pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
+      { text: "Vieši pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
       { text: "Partneriai", path: "/partner-list", icon: <PartnerIcon /> },
     ],
   }
@@ -172,7 +164,11 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
               display: "flex",
               alignItems: "center",
               padding: "10px",
+              cursor: "pointer",
             }}
+            onClick={() => navigateTo("/")}
+            role="button"
+            aria-label="Go to home page"
           >
             <Logo />
           </div>

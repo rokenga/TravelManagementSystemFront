@@ -21,6 +21,8 @@ export enum TripRequestStatus {
     createdAt: string 
     agentId?: string
     confirmedByAgentId?: string
+    agentFirstName?: string
+    agentLastName?: string
   }
   
   

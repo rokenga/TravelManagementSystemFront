@@ -32,18 +32,18 @@ import {
   DirectionsBoatOutlined,
 } from "@mui/icons-material"
 
-// Create a custom theme with travel-inspired colors
+// Create a custom theme with primary and secondary colors
 let travelTheme = createTheme({
   palette: {
     primary: {
-      main: "#1976d2", // Ocean blue
-      light: "#4791db",
-      dark: "#115293",
+      main: "#004785", // Primary color (deep blue)
+      light: "#1a5e9c", // Lighter shade of primary
+      dark: "#003366", // Darker shade of primary
     },
     secondary: {
-      main: "#009688", // Teal green (like tropical waters)
-      light: "#33ab9f",
-      dark: "#00695f",
+      main: "#F58220", // Secondary color (orange)
+      light: "#ff9a47", // Lighter shade of secondary
+      dark: "#d06a0c", // Darker shade of secondary
     },
     background: {
       default: "#f5f7fa",
@@ -82,7 +82,7 @@ let travelTheme = createTheme({
         root: {
           "& .MuiOutlinedInput-root": {
             "&:hover fieldset": {
-              borderColor: "#1976d2",
+              borderColor: "#004785", // Primary color
             },
           },
         },
@@ -319,7 +319,7 @@ export default function SignIn() {
                       aria-label="toggle password visibility"
                       onClick={handleClickShowPassword}
                       edge="end"
-                      color="primary" // Primary color
+                      color="primary" // Change to secondary color
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -340,14 +340,14 @@ export default function SignIn() {
               type="submit"
               fullWidth
               variant="contained"
-              color="primary" // Primary color
+              color="primary" // This is already using primary color
               disabled={isLoading}
               sx={{
                 mt: 2,
                 mb: 3,
                 py: 1.5,
                 fontSize: "1rem",
-                bgcolor: "primary.main", // Explicitly set primary color
+                bgcolor: "primary.main", // This is already using primary color
                 "&:hover": {
                   bgcolor: "primary.dark",
                 },

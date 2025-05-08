@@ -1,44 +1,106 @@
 "use client"
 
 import type React from "react"
-import { Box, Grid } from "@mui/material"
-import StatsCard from "../components/StatCard"
+import { useState, useEffect } from "react"
+import { Box, Grid, Paper, Typography, Collapse, IconButton, CircularProgress, Alert } from "@mui/material"
 import Calendar from "../components/Calendar"
 import TripRequestList from "../components/TripRequestList"
-
-export const mockStats = {
-  currentlyTraveling: 2,
-  pendingReviews: 3,
-  upcomingTrips: 5,
-  completedTrips: 8,
-}
+import SpecialOffersWithReservations from "../components/SpecialOffersWithReservations"
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
+import ExpandLessIcon from "@mui/icons-material/ExpandLess"
+import axios from "axios"
+import { API_URL } from "../Utils/Configuration"
 
 const Workspace: React.FC = () => {
+  const [expandedOffers, setExpandedOffers] = useState(false)
+  const [hasReservations, setHasReservations] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const checkForReservations = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get(`${API_URL}/PublicTripOfferFacade/agent/reservations`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        })
+
+        // Check if there are any offers with at least one reservation
+        const offersWithReservations = response.data.filter((offer: any) => offer.reservationCount > 0)
+        setHasReservations(offersWithReservations.length > 0)
+
+        // If there are reservations, auto-expand the section
+        if (offersWithReservations.length > 0) {
+          setExpandedOffers(true)
+        }
+      } catch (err) {
+        console.error("Failed to check for reservations:", err)
+        setError("Nepavyko patikrinti rezervacijų.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkForReservations()
+  }, [])
+
+  const toggleExpandedOffers = () => {
+    setExpandedOffers(!expandedOffers)
+  }
+
   return (
     <Box sx={{ p: 3 }}>
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard title="Šiuo metu keliauja" value={mockStats.currentlyTraveling} color="#2196f3" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard title="Laukia peržiūros" value={mockStats.pendingReviews} color="#f44336" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard title="Būsimos kelionės" value={mockStats.upcomingTrips} color="#4caf50" />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard title="Užbaigtos kelionės" value={mockStats.completedTrips} color="#ff9800" />
-        </Grid>
-      </Grid>
-
       <Grid container spacing={3} alignItems="flex-start">
         <Grid item xs={12} md={8}>
-          <Box sx={{ height: '100%' }}>
+          <Box sx={{ height: "100%" }}>
+            {/* Special Offers with Reservations section - now above Trip Requests */}
+            {hasReservations && (
+              <Paper sx={{ mb: 3, overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    p: 2,
+                    cursor: "pointer",
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    borderRadius: (theme) => `${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0`,
+                  }}
+                  onClick={toggleExpandedOffers}
+                >
+                  <Typography sx={{ fontSize: "1rem", fontWeight: 400 }}>Pasiūlymai su rezervacijomis</Typography>
+                  <IconButton size="small" sx={{ color: "inherit" }}>
+                    {expandedOffers ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Box>
+
+                <Collapse in={expandedOffers}>
+                  <Box sx={{ p: 2 }}>
+                    {loading ? (
+                      <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    ) : error ? (
+                      <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                      </Alert>
+                    ) : (
+                      <SpecialOffersWithReservations />
+                    )}
+                  </Box>
+                </Collapse>
+              </Paper>
+            )}
+
+            {/* Trip Requests section - now below Special Offers */}
             <TripRequestList />
           </Box>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Box sx={{ height: '100%', mt: { xs: 2, md: 0 } }}>
+          <Box sx={{ height: "100%", mt: { xs: 2, md: 0 } }}>
             <Calendar />
           </Box>
         </Grid>
@@ -48,4 +110,3 @@ const Workspace: React.FC = () => {
 }
 
 export default Workspace
-

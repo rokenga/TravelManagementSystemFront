@@ -53,7 +53,6 @@ export interface PublicSpecialOfferFilters {
   startDate: string | null
   endDate: string | null
   priceRange: [number, number]
-  isPromoted: boolean
   onlyMine: boolean
 }
 
@@ -84,7 +83,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
     initialFilters.endDate ? dayjs(initialFilters.endDate) : null,
   )
   const [priceRange, setPriceRange] = useState<[number, number]>(initialFilters.priceRange || [0, 10000])
-  const [isPromoted, setIsPromoted] = useState<boolean>(initialFilters.isPromoted || false)
   const [onlyMine, setOnlyMine] = useState<boolean>(initialFilters.onlyMine || false)
   const [countries, setCountries] = useState<Country[]>([])
 
@@ -103,7 +101,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
     setStartDate(initialFilters.startDate ? dayjs(initialFilters.startDate) : null)
     setEndDate(initialFilters.endDate ? dayjs(initialFilters.endDate) : null)
     setPriceRange(initialFilters.priceRange || [0, 10000])
-    setIsPromoted(initialFilters.isPromoted || false)
     setOnlyMine(initialFilters.onlyMine || false)
   }, [initialFilters])
 
@@ -121,10 +118,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
     setPriceRange(newValue as [number, number])
   }
 
-  const handlePromotedChange = () => {
-    setIsPromoted(!isPromoted)
-  }
-
   const handleOnlyMineChange = () => {
     setOnlyMine(!onlyMine)
   }
@@ -137,7 +130,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
       startDate: startDate ? startDate.format("YYYY-MM-DD") : null,
       endDate: endDate ? endDate.format("YYYY-MM-DD") : null,
       priceRange,
-      isPromoted,
       onlyMine,
     })
     if (isMobile) {
@@ -152,7 +144,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
     setStartDate(null)
     setEndDate(null)
     setPriceRange([0, 10000])
-    setIsPromoted(false)
     setOnlyMine(false)
   }
 
@@ -231,10 +222,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
         Papildomi filtrai
       </Typography>
       <FormGroup sx={{ mb: 2 }}>
-        <FormControlLabel
-          control={<Checkbox checked={isPromoted} onChange={handlePromotedChange} />}
-          label="Tik reklamuojami pasiūlymai"
-        />
         <FormControlLabel
           control={<Checkbox checked={onlyMine} onChange={handleOnlyMineChange} />}
           label="Tik mano pasiūlymai"

@@ -1,12 +1,12 @@
 export type UserRole = 'Admin' | 'Agent'; // Extend as needed
 
 export interface User {
-  id: string;
-  email: string;
-  role: UserRole | null;
-  firstName: string;
-  lastName: string;
-  birthDate: string;
+  id: string
+  email: string
+  role: UserRole | null
+  firstName: string
+  lastName: string
+  birthday: string 
 }
 
 export interface UserContextType {

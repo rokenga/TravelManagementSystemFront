@@ -13,7 +13,7 @@ import {
   ListItemText,
   useTheme,
   useMediaQuery,
-  Rating,
+  Tooltip,
 } from "@mui/material"
 import {
   CalendarMonth,
@@ -27,7 +27,7 @@ import {
   Train,
   Sailing,
   AccessTime,
-  Star,
+  LocationOn,
 } from "@mui/icons-material"
 import type { PublicOfferWizardData, Accommodation, Transport, Cruise } from "./CreatePublicOfferWizardForm"
 import type { Dayjs } from "dayjs"
@@ -104,6 +104,19 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     }
   }
 
+  // Get transport type label in Lithuanian
+  const getTransportTypeLabel = (type: string): string => {
+    const transportTypes: Record<string, string> = {
+      Flight: "Skrydis",
+      Train: "Traukinys",
+      Bus: "Autobusas",
+      Car: "Automobilis",
+      Ferry: "Keltas",
+      Cruise: "Kruizas",
+    }
+    return transportTypes[type] || type || "Transportas"
+  }
+
   // Get board basis label
   const getBoardBasisLabel = (basis: string): string => {
     const options: Record<string, string> = {
@@ -132,9 +145,9 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     offerData.accommodations.forEach((acc) => {
       const details: (string | React.ReactNode)[] = []
       const detailsBox = (
-        <Box key="details" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box key="details" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {/* First row with room type, board basis, star rating, and hotel link */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {acc.roomType && (
               <Typography variant="body2" color="text.secondary">
                 Kambario tipas: {acc.roomType}
@@ -146,7 +159,7 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
               </Typography>
             )}
             {acc.starRating && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   Žvaigždučių reitingas:
                 </Typography>
@@ -159,10 +172,10 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
               </Typography>
             )}
           </Box>
-          
+
           {/* Second row with description */}
           {acc.description && (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography variant="body2" color="text.secondary">
                 Aprašymas: {acc.description}
               </Typography>
@@ -187,9 +200,9 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     offerData.transports.forEach((trans) => {
       const details: (string | React.ReactNode)[] = []
       const detailsBox = (
-        <Box key="details" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box key="details" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {/* First row with company, transport code, and cabin type */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {trans.companyName && (
               <Typography variant="body2" color="text.secondary">
                 Kompanija: {trans.companyName}
@@ -206,10 +219,10 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
               </Typography>
             )}
           </Box>
-          
+
           {/* Second row with description */}
           {trans.description && (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography variant="body2" color="text.secondary">
                 Aprašymas: {trans.description}
               </Typography>
@@ -221,7 +234,7 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
 
       elements.push({
         type: "transport",
-        name: trans.transportName || trans.transportType || "Transportas",
+        name: trans.transportName || getTransportTypeLabel(trans.transportType) || "Transportas",
         startDate: trans.departureTime,
         endDate: trans.arrivalTime,
         startPlace: trans.departurePlace,
@@ -237,9 +250,9 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
       offerData.cruises.forEach((cruise) => {
         const details: (string | React.ReactNode)[] = []
         const detailsBox = (
-          <Box key="details" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Box key="details" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {/* First row with company, cruise code, and cabin type */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {cruise.companyName && (
                 <Typography variant="body2" color="text.secondary">
                   Kompanija: {cruise.companyName}
@@ -256,10 +269,10 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
                 </Typography>
               )}
             </Box>
-            
+
             {/* Second row with description */}
             {cruise.description && (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="body2" color="text.secondary">
                   Aprašymas: {cruise.description}
                 </Typography>
@@ -310,14 +323,47 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     <Box sx={{ width: "100%" }}>
       {/* Main Trip Information */}
       <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 500, color: theme.palette.primary.main }}>
-          {offerData.tripName || "Nepavadinta kelionė"}
-        </Typography>
+        <Tooltip title={offerData.tripName || "Nepavadinta kelionė"} placement="top-start">
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              mb: 3,
+              fontWeight: 500,
+              color: theme.palette.primary.main,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+            }}
+          >
+            {offerData.tripName || "Nepavadinta kelionė"}
+          </Typography>
+        </Tooltip>
 
         <Grid container spacing={3}>
           {/* Left column - Main trip details */}
           <Grid item xs={12} md={6}>
             <List disablePadding>
+              <ListItem alignItems="center" sx={{ py: 1 }}>
+                <ListItemIcon>
+                  <LocationOn color="primary" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography variant="body1" component="span" fontWeight="bold">
+                        Kelionės tikslas:
+                      </Typography>{" "}
+                      <Typography variant="body1" component="span" sx={{ ml: 1 }}>
+                        {offerData.destination || "Nenustatyta"}
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </ListItem>
+
               <ListItem alignItems="center" sx={{ py: 1 }}>
                 <ListItemIcon>
                   <CalendarMonth color="primary" />
@@ -444,6 +490,40 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
           </Box>
         )}
 
+        {/* Existing images preview */}
+        {offerData.existingImages && offerData.existingImages.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle1" color="primary" gutterBottom sx={{ fontWeight: "bold" }}>
+              Nuotraukos ({offerData.existingImages.length})
+            </Typography>
+            <Grid container spacing={1}>
+              {offerData.existingImages.map((image, index) => (
+                <Grid item key={index} xs={6} sm={4} md={3} lg={2}>
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 100,
+                      borderRadius: 1,
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    <img
+                      src={image.url || "/placeholder.svg"}
+                      alt={`Nuotrauka ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        )}
+
         {/* Total price */}
         <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
           <Chip
@@ -503,8 +583,8 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
                     <Box sx={{ pl: 4 }}>
                       {element.details.map((detail, index) => (
                         <Box key={index} sx={{ mt: 1 }}>
-                          {typeof detail === 'string' ? (
-                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                          {typeof detail === "string" ? (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
                               {detail}
                             </Typography>
                           ) : (

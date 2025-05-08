@@ -23,16 +23,20 @@ import {
   Paper,
 } from "@mui/material"
 import {
-  Edit as EditIcon,
   Email as EmailIcon,
   Cake as CakeIcon,
   Lock as LockIcon,
   Notifications as NotificationsIcon,
   Badge as BadgeIcon,
   Security as SecurityIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material"
 import { API_URL } from "../Utils/Configuration"
 import ChangePasswordModal from "../components/ChangePasswordModal"
+import ActionBar from "../components/ActionBar"
+import { useNavigate } from "react-router-dom"
+import EditProfileModal from "../components/EditProfileModal"
+import CustomSnackbar from "../components/CustomSnackBar"
 
 // Define the User interface with WantsToReceiveReminders
 interface User {
@@ -41,7 +45,7 @@ interface User {
   role: "Admin" | "Agent" | null
   firstName: string
   lastName: string
-  birthDate: string
+  birthday: string // Changed from birthDay to birthday
   wantsToReceiveReminders: boolean
 }
 
@@ -50,7 +54,15 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const theme = useTheme()
+  const navigate = useNavigate()
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  })
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -74,12 +86,19 @@ const ProfilePage: React.FC = () => {
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
     if (!dateString) return "Nepateikta"
-    const date = new Date(dateString)
-    return date.toLocaleDateString("lt-LT", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+    try {
+      const date = new Date(dateString)
+      // Check if date is valid
+      if (isNaN(date.getTime())) return "Nepateikta"
+      return date.toLocaleDateString("lt-LT", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return "Nepateikta"
+    }
   }
 
   // Get user initials for avatar
@@ -89,8 +108,7 @@ const ProfilePage: React.FC = () => {
   }
 
   const handleEdit = () => {
-    // Implement edit functionality
-    console.log("Edit profile clicked")
+    setIsEditModalOpen(true)
   }
 
   const handleToggleReminders = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,8 +117,45 @@ const ProfilePage: React.FC = () => {
     // In a real implementation, you would make an API call here
   }
 
+  const handleChangePassword = () => {
+    setIsPasswordModalOpen(true)
+  }
+
+  const handleProfileUpdateSuccess = (updatedUser: User) => {
+    setUser(updatedUser)
+    setSnackbar({
+      open: true,
+      message: "Profilis sėkmingai atnaujintas!",
+      severity: "success",
+    })
+  }
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false })
+  }
+
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Action Bar for consistency with other pages */}
+      <ActionBar
+        title="Mano profilis"
+        showBackButton={true}
+        onBackClick={() => navigate(-1)}
+        showEditButton={true}
+        onEdit={handleEdit}
+        children={
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<LockIcon />}
+            onClick={handleChangePassword}
+            sx={{ textTransform: "none" }}
+          >
+            Keisti slaptažodį
+          </Button>
+        }
+      />
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
@@ -108,154 +163,209 @@ const ProfilePage: React.FC = () => {
       )}
 
       <Grid container spacing={3}>
-        {/* Main Profile Card */}
-        <Grid item xs={12}>
-          <Card elevation={3} sx={{ overflow: "visible" }}>
+        {/* Left Column - Profile Summary */}
+        <Grid item xs={12} md={4}>
+          <Card elevation={3} sx={{ borderRadius: 2, height: "100%" }}>
+            <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", pt: 3 }}>
+              {loading ? (
+                <Skeleton variant="circular" width={120} height={120} sx={{ mb: 2 }} />
+              ) : (
+                <Avatar
+                  sx={{
+                    width: 120,
+                    height: 120,
+                    fontSize: 48,
+                    bgcolor: theme.palette.secondary.main,
+                    mb: 2,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  }}
+                >
+                  {getUserInitials()}
+                </Avatar>
+              )}
+
+              {loading ? (
+                <>
+                  <Skeleton variant="text" width="70%" height={40} sx={{ mb: 1 }} />
+                  <Skeleton variant="rectangular" width="50%" height={32} sx={{ mb: 3, borderRadius: 1 }} />
+                </>
+              ) : (
+                <>
+                  <Typography variant="h5" sx={{ mb: 1, fontWeight: "bold", textAlign: "center" }}>
+                    {user?.firstName} {user?.lastName}
+                  </Typography>
+                  {user?.role && (
+                    <Chip
+                      label={user.role === "Admin" ? "Administratorius" : "Agentas"}
+                      color={user.role === "Admin" ? "error" : "primary"}
+                      size="medium"
+                      sx={{ fontWeight: "bold", mb: 3 }}
+                    />
+                  )}
+                </>
+              )}
+
+              <Divider sx={{ width: "100%", mb: 3 }} />
+
+              {loading ? (
+                <Skeleton variant="rectangular" width="100%" height={50} sx={{ mb: 2, borderRadius: 1 }} />
+              ) : (
+                <Box sx={{ width: "100%", mb: 2 }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<SecurityIcon />}
+                    sx={{
+                      textTransform: "none",
+                      justifyContent: "flex-start",
+                      py: 1.5,
+                      borderRadius: 2,
+                    }}
+                  >
+                    Saugumo nustatymai
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Right Column - Detailed Information */}
+        <Grid item xs={12} md={8}>
+          <Card elevation={3} sx={{ borderRadius: 2, mb: 3 }}>
             <CardHeader
               title={
-                <Typography variant="h5" align="left">
-                  Paskyros informacija
-                </Typography>
-              }
-              action={
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<EditIcon />}
-                  onClick={handleEdit}
-                  size="small"
-                  sx={{ textTransform: "none" }}
-                >
-                  Redaguoti
-                </Button>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <PersonIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                  <Typography variant="h6" align="left">
+                    Asmeninė informacija
+                  </Typography>
+                </Box>
               }
               sx={{
-                bgcolor: theme.palette.primary.main,
-                color: "white",
-                "& .MuiCardHeader-action": {
-                  margin: 0,
-                  alignSelf: "center",
-                },
-                "& .MuiCardHeader-content": {
-                  textAlign: "left",
-                },
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                p: 2.5,
               }}
             />
-
-            <CardContent sx={{ pt: 4, pb: 4 }}>
+            <CardContent sx={{ p: 3 }}>
               {loading ? (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <Skeleton variant="circular" width={80} height={80} sx={{ mx: "auto" }} />
-                  <Skeleton variant="rectangular" width="100%" height={30} />
-                  <Skeleton variant="rectangular" width="100%" height={30} />
-                  <Skeleton variant="rectangular" width="100%" height={30} />
-                </Box>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2, mb: 2 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2, mb: 2 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2, mb: 2 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2, mb: 2 }} />
+                  </Grid>
+                </Grid>
               ) : (
                 <Grid container spacing={3}>
-                  {/* Avatar and Name Section */}
-                  <Grid item xs={12} md={4} sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <Avatar
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
                       sx={{
-                        width: 120,
-                        height: 120,
-                        fontSize: 48,
-                        bgcolor: theme.palette.secondary.main,
-                        mb: 2,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: "background.default",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        height: "100%",
                       }}
                     >
-                      {getUserInitials()}
-                    </Avatar>
-                    <Typography variant="h5" sx={{ mb: 1, fontWeight: "bold", textAlign: "center" }}>
-                      {user?.firstName} {user?.lastName}
-                    </Typography>
-                    {user?.role && (
-                      <Chip
-                        label={user.role === "Admin" ? "Administratorius" : "Agentas"}
-                        color={user.role === "Admin" ? "error" : "primary"}
-                        size="medium"
-                        sx={{ fontWeight: "bold" }}
-                      />
-                    )}
+                      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                        <BadgeIcon sx={{ mr: 2, color: theme.palette.primary.main, mt: 0.5 }} />
+                        <Box>
+                          <Typography variant="body2" color="textSecondary" gutterBottom align="left">
+                            Vardas
+                          </Typography>
+                          <Typography variant="h6" fontWeight="medium" align="left">
+                            {user?.firstName || "Nėra"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
                   </Grid>
 
-                  {/* User Details Section */}
-                  <Grid item xs={12} md={8}>
-                    <Paper elevation={0} sx={{ p: 3, bgcolor: "background.default", borderRadius: 2 }}>
-                      <Typography variant="h6" sx={{ mb: 2, color: theme.palette.primary.main, fontWeight: "bold" }}>
-                        Asmeninė informacija
-                      </Typography>
-
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                            <BadgeIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
-                            <Box>
-                              <Typography variant="caption" color="textSecondary">
-                                Vardas
-                              </Typography>
-                              <Typography variant="body1" fontWeight="medium">
-                                {user?.firstName || "Nėra"}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                            <BadgeIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
-                            <Box>
-                              <Typography variant="caption" color="textSecondary">
-                                Pavardė
-                              </Typography>
-                              <Typography variant="body1" fontWeight="medium">
-                                {user?.lastName || "Nėra"}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                            <EmailIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
-                            <Box>
-                              <Typography variant="caption" color="textSecondary">
-                                El. paštas
-                              </Typography>
-                              <Typography variant="body1" fontWeight="medium">
-                                {user?.email || "Nėra"}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                            <CakeIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
-                            <Box>
-                              <Typography variant="caption" color="textSecondary">
-                                Gimimo data
-                              </Typography>
-                              <Typography variant="body1" fontWeight="medium">
-                                {user ? formatDate(user.birthDate) : "Nėra"}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                      </Grid>
-
-                      <Divider sx={{ my: 3 }} />
-
-                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <NotificationsIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
-                          <Typography variant="body1">Gauti priminimus el. paštu</Typography>
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: "background.default",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        height: "100%",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                        <BadgeIcon sx={{ mr: 2, color: theme.palette.primary.main, mt: 0.5 }} />
+                        <Box>
+                          <Typography variant="body2" color="textSecondary" gutterBottom align="left">
+                            Pavardė
+                          </Typography>
+                          <Typography variant="h6" fontWeight="medium" align="left">
+                            {user?.lastName || "Nėra"}
+                          </Typography>
                         </Box>
-                        <Switch
-                          checked={user?.wantsToReceiveReminders || false}
-                          onChange={handleToggleReminders}
-                          color="primary"
-                        />
+                      </Box>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: "background.default",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        height: "100%",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                        <EmailIcon sx={{ mr: 2, color: theme.palette.primary.main, mt: 0.5 }} />
+                        <Box>
+                          <Typography variant="body2" color="textSecondary" gutterBottom align="left">
+                            El. paštas
+                          </Typography>
+                          <Typography variant="h6" fontWeight="medium" align="left">
+                            {user?.email || "Nėra"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: "background.default",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        height: "100%",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                        <CakeIcon sx={{ mr: 2, color: theme.palette.primary.main, mt: 0.5 }} />
+                        <Box>
+                          <Typography variant="body2" color="textSecondary" gutterBottom align="left">
+                            Gimimo data
+                          </Typography>
+                          <Typography variant="h6" fontWeight="medium" align="left">
+                            {user ? formatDate(user.birthday) : "Nėra"}
+                          </Typography>
+                        </Box>
                       </Box>
                     </Paper>
                   </Grid>
@@ -263,52 +373,66 @@ const ProfilePage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        {/* Security Card */}
-        <Grid item xs={12}>
-          <Card elevation={3}>
+          {/* Notifications Card */}
+          <Card elevation={3} sx={{ borderRadius: 2 }}>
             <CardHeader
               title={
                 <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <SecurityIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                  <Typography variant="h6">Saugumas</Typography>
+                  <NotificationsIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                  <Typography variant="h6" align="left">
+                    Pranešimai
+                  </Typography>
                 </Box>
               }
               sx={{
-                bgcolor: "background.paper",
                 borderBottom: `1px solid ${theme.palette.divider}`,
+                p: 2.5,
               }}
             />
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 1 }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <LockIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
+            <CardContent sx={{ p: 3 }}>
+              {loading ? (
+                <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+              ) : (
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 1 }}>
                   <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      Slaptažodis
+                    <Typography variant="body1" fontWeight="medium" align="left">
+                      Gauti priminimus el. paštu
                     </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Pakeiskite savo prisijungimo slaptažodį
+                    <Typography variant="body2" color="textSecondary" align="left">
+                      Gaukite priminimus apie artėjančias keliones ir svarbius įvykius
                     </Typography>
                   </Box>
+                  <Switch
+                    checked={user?.wantsToReceiveReminders || false}
+                    onChange={handleToggleReminders}
+                    color="primary"
+                  />
                 </Box>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={() => setIsPasswordModalOpen(true)}
-                  sx={{ textTransform: "none" }}
-                >
-                  Keisti slaptažodį
-                </Button>
-              </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleProfileUpdateSuccess}
+        user={user}
+      />
+
       {/* Password Change Modal */}
       <ChangePasswordModal open={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
+
+      {/* Snackbar for notifications */}
+      <CustomSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={handleCloseSnackbar}
+      />
     </Container>
   )
 }

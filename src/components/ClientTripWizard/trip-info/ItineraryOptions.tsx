@@ -57,4 +57,3 @@ const ItineraryOptions: React.FC<ItineraryOptionsProps> = ({
 }
 
 export default ItineraryOptions
-

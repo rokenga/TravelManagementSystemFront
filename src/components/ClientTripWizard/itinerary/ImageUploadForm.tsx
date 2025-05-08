@@ -28,6 +28,8 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
   // Add console logs to debug
   console.log("ImageUploadForm - images:", images)
   console.log("ImageUploadForm - existingImageUrls:", existingImageUrls)
+  console.log("ImageUploadForm - existingImageUrls type:", typeof existingImageUrls)
+  console.log("ImageUploadForm - existingImageUrls is array:", Array.isArray(existingImageUrls))
 
   // State to track which images failed to load
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
@@ -126,6 +128,7 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
 
   // Handle deleting an existing image
   const handleDeleteExistingImage = (imageUrl: string) => {
+    console.log("Deleting existing image:", imageUrl)
     if (onExistingImageDelete) {
       // Pass the URL to the parent component
       onExistingImageDelete(imageUrl)
@@ -135,29 +138,53 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
   // Handle image load error
   const handleImageError = (url: string) => {
     console.error(`Image failed to load:`, url)
-    setFailedImages(prev => ({
+    setFailedImages((prev) => ({
       ...prev,
-      [url]: true
+      [url]: true,
     }))
   }
 
   // Check if we have any images (new or existing)
-  const hasImages = images.length > 0 || existingImageUrls.length > 0
+  const hasImages = images.length > 0 || (Array.isArray(existingImageUrls) && existingImageUrls.length > 0)
 
   // Function to extract filename from URL for display
   const getFilenameFromUrl = (url: string) => {
     try {
+      if (!url) return "Image"
+
       // Extract the filename from the URL
-      const urlParts = url.split('/')
+      const urlParts = url.split("/")
       const filenameWithParams = urlParts[urlParts.length - 1]
       // Remove query parameters
-      const filename = filenameWithParams.split('?')[0]
+      const filename = filenameWithParams.split("?")[0]
       // Decode URI components
       return decodeURIComponent(filename)
     } catch (e) {
-      return 'Image'
+      return "Image"
     }
   }
+
+  // Calculate if we have an even number of images
+  const totalImageCount = images.length + (Array.isArray(existingImageUrls) ? existingImageUrls.length : 0)
+  const hasEvenNumberOfImages = totalImageCount % 2 === 0
+
+  // Add this useEffect to clean up object URLs when component unmounts
+  useEffect(() => {
+    // Clean up function to revoke object URLs when component unmounts
+    return () => {
+      images.forEach((file) => {
+        if (file && URL.createObjectURL) {
+          URL.revokeObjectURL(URL.createObjectURL(file))
+        }
+      })
+    }
+  }, [images])
+
+  // Ensure existingImageUrls is an array and filter out null values
+  const safeExistingImageUrls = Array.isArray(existingImageUrls) ? existingImageUrls.filter(Boolean) : []
+
+  // Add debug log to see what URLs we're actually using
+  console.log("ImageUploadForm - safeExistingImageUrls after filtering:", safeExistingImageUrls)
 
   return (
     <Box>
@@ -165,6 +192,10 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
         <Typography variant="body2" color="text.secondary" gutterBottom>
           Leistini formatai: {ALLOWED_EXTENSIONS.join(", ").replace(/\./g, "").toUpperCase()}
           (max {MAX_FILE_SIZE_MB}MB vienai dienai)
+        </Typography>
+
+        <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mt: 1 }}>
+          Patarimas: Geriausia įkelti lyginį skaičių nuotraukų, kad jos būtų gražiai išdėstytos.
         </Typography>
 
         <Button
@@ -186,67 +217,75 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
         </Alert>
       )}
 
-      {existingImageUrls && existingImageUrls.length > 0 && (
+      {!hasEvenNumberOfImages && totalImageCount > 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Šiuo metu turite {totalImageCount} nuotraukų. Rekomenduojama įkelti lyginį skaičių nuotraukų.
+        </Alert>
+      )}
+
+      {safeExistingImageUrls.length > 0 && (
         <>
           <Typography variant="subtitle2" gutterBottom>
             Esamos nuotraukos:
           </Typography>
           <Grid container spacing={2} sx={{ mb: 2 }}>
-            {existingImageUrls.map((url, idx) => (
-              <Grid item key={`existing-${idx}`}>
-                <Box
-                  sx={{
-                    width: 120,
-                    height: 120,
-                    border: "1px solid #ccc",
-                    borderRadius: 2,
-                    overflow: "hidden",
-                    position: "relative",
-                    bgcolor: "rgba(0,0,0,0.05)",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {!failedImages[url] ? (
-                    <img
-                      src={url || "/placeholder.svg"}
-                      alt={`Nuotrauka ${idx + 1}`}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                      onError={() => handleImageError(url)}
-                    />
-                  ) : (
-                    <>
-                      <ImageIcon sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
-                      <Typography variant="caption" align="center" sx={{ px: 1 }}>
-                        {getFilenameFromUrl(url).substring(0, 15)}...
-                      </Typography>
-                    </>
-                  )}
-                  {onExistingImageDelete && (
-                    <IconButton
-                      size="small"
-                      color="error"
-                      sx={{
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        backgroundColor: "rgba(255,255,255,0.7)",
-                        "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
-                      }}
-                      onClick={() => handleDeleteExistingImage(url)}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  )}
-                </Box>
-              </Grid>
-            ))}
+            {safeExistingImageUrls
+              .filter((url) => !!url)
+              .map((url, idx) => (
+                <Grid item key={`existing-${idx}-${url ? url.substring(0, 8) : idx}`}>
+                  <Box
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      border: "1px solid #ccc",
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      position: "relative",
+                      bgcolor: "rgba(0,0,0,0.05)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    {!failedImages[url] ? (
+                      <img
+                        src={url || "/placeholder.svg"}
+                        alt={`Nuotrauka ${idx + 1}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                        onError={() => handleImageError(url)}
+                      />
+                    ) : (
+                      <>
+                        <ImageIcon sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
+                        <Typography variant="caption" align="center" sx={{ px: 1 }}>
+                          {getFilenameFromUrl(url).substring(0, 15)}...
+                        </Typography>
+                      </>
+                    )}
+                    {onExistingImageDelete && (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          backgroundColor: "rgba(255,255,255,0.7)",
+                          "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
+                        }}
+                        onClick={() => handleDeleteExistingImage(url)}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </Grid>
+              ))}
           </Grid>
         </>
       )}

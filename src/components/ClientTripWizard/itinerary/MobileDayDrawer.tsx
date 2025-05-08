@@ -67,4 +67,3 @@ const MobileDayDrawer: React.FC<MobileDayDrawerProps> = ({ open, onClose, days, 
 }
 
 export default MobileDayDrawer
-

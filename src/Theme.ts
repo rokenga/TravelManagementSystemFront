@@ -19,7 +19,7 @@ const theme = createTheme({
       main: "#F58220",
     },
     background: {
-      default: "#ffffff",
+      default: "#f5f7fa",
     },
     error: {
       main: "#d32f2f",

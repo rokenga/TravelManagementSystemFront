@@ -39,7 +39,8 @@ import AdminAgentList from "./pages/AdminAgentList"
 import AgentDetail from "./pages/AgentDetails"
 import ChangePassword from "./pages/ChangePassword"
 import CompleteProfile from "./pages/CompleteProfile"
-import WizardEditForm from "./components/ClientTripWizard/EditTripWizardForm"
+// Import the new WizardEditFormPage instead of directly using EditTripWizardForm
+import WizardEditFormPage from "./pages/EditTripWizardPage"
 import ClientSpecialOfferCreation from "./pages/CreateClientOfferWizardPage"
 import ClientSpecialOffer from "./pages/ClientSpecialOffer"
 import { NavigationProvider } from "./contexts/NavigationContext"
@@ -56,6 +57,8 @@ import TwoFactorSetup from "./pages/TwoFactorSetup"
 import AgentOnboarding from "./pages/AgentOnboarding"
 import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
+import EditPublicOfferWizardPage from "./pages/EditPublicOfferWizardPage"
+import AdminPublicSpecialOfferReservations from "./pages/AdminPublicSpecialOfferReservations"
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -144,11 +147,11 @@ function App() {
                       <Route path="/records/edit/:recordId" element={<EditRecord />} />
                       <Route path="/admin-client-list" element={<AdminClientList />} />
                       <Route path="/admin-client-list/:clientId" element={<ClientDetail />} />
-                      //
                       <Route path="/clients/edit/:clientId" element={<AdminEditClient />} />
                       <Route path="/admin-trip-list" element={<AdminTripList />} />
                       <Route path="/admin-trip-list/:tripId" element={<ClientTrip />} />
-                      <Route path="/admin-trip-list/:tripId/edit" element={<WizardEditForm />} />
+                      {/* CHANGE THIS LINE: Replace WizardEditForm with WizardEditFormPage */}
+                      <Route path="/admin-trip-list/:tripId/edit" element={<WizardEditFormPage />} />
                       <Route path="/admin-trip-list/create" element={<WizardForm />} />
                       <Route path="/partner-list" element={<PartnerList />} />
                       <Route path="/partner-list/:partnerId" element={<PartnerDetails />} />
@@ -160,8 +163,14 @@ function App() {
                       <Route path="/special-offers/create" element={<ClientSpecialOfferCreation />} />
                       <Route path="/special-offers/:tripId" element={<ClientSpecialOffer />} />
                       <Route path="/special-offers/:tripId/edit" element={<EditClientOfferWizardPage />} />
+                      
                       <Route path="/public-offers/create" element={<PublicOfferCreationForm />} />
                       <Route path="/public-offers/:id" element={<AdminPublicSpecialOfferDetails />} />
+                      <Route
+                        path="/public-offers/:offerId/reservations"
+                        element={<AdminPublicSpecialOfferReservations />}
+                      />
+                      <Route path="/public-offers/:tripId/edit" element={<EditPublicOfferWizardPage />} />
                       <Route path="/public-offers" element={<PublicSpecialOffer />} />
                       <Route path="/2fa-verify" element={<TwoFactorAuth />} />
                       <Route path="/agent-onboarding" element={<AgentOnboarding />} />

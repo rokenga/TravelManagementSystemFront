@@ -58,4 +58,3 @@ const MobileDaySelector: React.FC<MobileDaySelectorProps> = ({
 }
 
 export default MobileDaySelector
-

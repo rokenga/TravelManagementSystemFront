@@ -125,7 +125,9 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
   const filterContent = (
     <Box sx={{ p: 2, width: isMobile ? "auto" : "300px" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="h6">Filtrai</Typography>
+        <Typography variant="h6" sx={{ textAlign: "left" }}>
+          Filtrai
+        </Typography>
         <Button size="small" onClick={handleReset}>
           Išvalyti
         </Button>
@@ -139,7 +141,7 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
         </Box>
       ) : (
         <>
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
             Tipas
           </Typography>
           <FormGroup sx={{ mb: 2 }}>
@@ -166,13 +168,20 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
                       }}
                     />
                   }
+                  sx={{
+                    textAlign: "left",
+                    ".MuiFormControlLabel-label": {
+                      textAlign: "left",
+                      display: "block",
+                    },
+                  }}
                 />
               ))}
           </FormGroup>
 
           <Divider sx={{ mb: 2 }} />
 
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
             Šalys
           </Typography>
           <Box sx={{ mb: 2 }}>
@@ -195,7 +204,7 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
 
           <Divider sx={{ mb: 2 }} />
 
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
             Žemynai
           </Typography>
           <Box sx={{ mb: 2 }}>
@@ -218,13 +227,20 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
 
           <Divider sx={{ mb: 2 }} />
 
-          <Typography variant="subtitle1" gutterBottom>
+          <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
             Kita
           </Typography>
           <FormGroup sx={{ mb: 2 }}>
             <FormControlLabel
               control={<Checkbox checked={isMyPartner} onChange={handleMyPartnerChange} />}
               label="Mano partneris"
+              sx={{
+                textAlign: "left",
+                ".MuiFormControlLabel-label": {
+                  textAlign: "left",
+                  display: "block",
+                },
+              }}
             />
           </FormGroup>
         </>

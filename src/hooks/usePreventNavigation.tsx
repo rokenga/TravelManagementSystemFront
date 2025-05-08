@@ -1,90 +1,119 @@
 "use client"
 
-import { useEffect, useCallback, useState, useRef } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { useLocation, useNavigate, useBeforeUnload } from "react-router-dom"
 
-/**
- * Custom hook to prevent navigation with a confirmation dialog
- */
-export function usePreventNavigation(shouldBlock: boolean) {
-  const navigate = useNavigate()
-  const location = useLocation()
+export function usePreventNavigation(hasChanges: boolean) {
   const [showDialog, setShowDialog] = useState(false)
   const [pendingLocation, setPendingLocation] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
   const lastLocationRef = useRef(location)
   const navigationAttemptedRef = useRef(false)
   const originalTargetRef = useRef<string | null>(null)
+  const hasChangesRef = useRef(hasChanges)
 
-  // Handle browser refresh/close
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (shouldBlock) {
+    hasChangesRef.current = hasChanges
+  }, [hasChanges])
+
+  useBeforeUnload(
+    (event) => {
+      if (hasChanges) {
         event.preventDefault()
-        event.returnValue = ""
-        return ""
+        event.returnValue = "You have unsaved changes. Are you sure you want to leave?"
+        return event.returnValue
       }
-    }
+    },
+    [hasChanges],
+  )
 
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [shouldBlock])
-
-  // Handle location changes (browser back/forward)
   useEffect(() => {
-    if (shouldBlock && location !== lastLocationRef.current && !navigationAttemptedRef.current) {
-      // Only block if the pathname changes (not just search params)
+    const handleBeforeNavigate = (event: PopStateEvent) => {
+      if (!hasChangesRef.current) return
+
+      event.preventDefault()
+
+      const destinationUrl = window.location.href
+      setPendingLocation(destinationUrl)
+      originalTargetRef.current = destinationUrl
+
+      setShowDialog(true)
+
+      window.history.pushState(null, "", location.pathname)
+    }
+
+    window.addEventListener("popstate", handleBeforeNavigate)
+
+    return () => {
+      window.removeEventListener("popstate", handleBeforeNavigate)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (hasChanges && location !== lastLocationRef.current && !navigationAttemptedRef.current) {
       if (location.pathname !== lastLocationRef.current.pathname) {
-        // Prevent the navigation
         navigationAttemptedRef.current = true
 
-        // Store the attempted path
         const fullPath = location.pathname + location.search
         console.log("Storing pending location from history change:", fullPath)
         setPendingLocation(fullPath)
         originalTargetRef.current = fullPath
 
-        // Show the dialog
         setShowDialog(true)
 
-        // Navigate back to prevent the navigation
         navigate(-1)
       }
     }
 
-    // Always update the last location
     lastLocationRef.current = location
-    navigationAttemptedRef.current = false
-  }, [location, shouldBlock, navigate])
+    const timeoutId = setTimeout(() => {
+      navigationAttemptedRef.current = false
+    }, 100)
 
-  // Handle clicks on navigation elements (menu buttons, etc.)
+    return () => clearTimeout(timeoutId)
+  }, [location, hasChanges, navigate])
+
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
-      if (!shouldBlock) return
+      if (!hasChangesRef.current) return
 
       const target = event.target as HTMLElement
 
-      // Skip if the click is inside the form
       if (target.closest("form") !== null) return
-
-      // Skip if the click is inside a dialog
       if (target.closest(".MuiDialog-root") !== null) return
-
-      // Skip if the click is inside a popover or menu
       if (target.closest(".MuiPopover-root") !== null) return
-
-      // Skip if the click is inside a date picker
       if (target.closest(".MuiPickersPopper-root") !== null) return
-
-      // Skip if the click is inside the wizard form container
+      if (target.closest('[role="presentation"]') !== null) return
+      if (
+        target.closest(".MuiInputBase-root") !== null &&
+        target.closest(".MuiInputBase-root")?.querySelector('input[type="text"]') !== null
+      )
+        return
       if (target.closest('[data-wizard-form="true"]') !== null) return
+      if (target.closest(".MuiAccordionSummary-root") !== null) return
+      if (target.closest('[data-tab-button="true"]') !== null) return
+      if (target.closest('[data-upload-component="true"]') !== null) return
+      if (target.closest('[data-file-input="true"]') !== null || target.closest('[data-upload-button="true"]') !== null)
+        return
+      if (target.closest('[data-image-delete-button="true"]') !== null) return
+      if (target.closest('[data-datepicker="true"]') !== null) return
+      if (target.closest(".MuiDatePicker-root") !== null) return
+      if (target.closest(".MuiDateTimePicker-root") !== null) return
+      if (target.closest(".MuiPickersLayout-root") !== null) return
+      if (target.closest(".MuiPickersToolbar-root") !== null) return
+      if (target.closest(".MuiPickersCalendarHeader-root") !== null) return
+      if (target.closest(".MuiPickersDay-root") !== null) return
+      if (target.closest(".MuiClock-root") !== null) return
+      if (target.closest(".MuiClockNumber-root") !== null) return
+      if (target.closest(".MuiPickersArrowSwitcher-root") !== null) return
+      if (target.closest(".MuiPickersMonth-root") !== null) return
+      if (target.closest(".MuiPickersYear-root") !== null) return
+      if (target.closest(".MuiPickersSlideTransition-root") !== null) return
 
-      // Check if the click was on a button or link that would cause navigation
       const navigationElement = target.closest("a, button")
       if (!navigationElement) return
 
-      // Skip if it's an external link or special link
       if (navigationElement instanceof HTMLAnchorElement) {
         const href = navigationElement.getAttribute("href")
         if (
@@ -98,12 +127,10 @@ export function usePreventNavigation(shouldBlock: boolean) {
         }
       }
 
-      // Skip if it's a button inside the wizard form
       if (navigationElement.closest('[data-wizard-form="true"]') !== null) {
         return
       }
 
-      // Skip if it's a button with specific text that indicates it's part of the wizard navigation
       const buttonText = navigationElement.textContent?.trim().toLowerCase() || ""
       if (
         buttonText.includes("next") ||
@@ -112,39 +139,38 @@ export function usePreventNavigation(shouldBlock: boolean) {
         buttonText.includes("submit") ||
         buttonText.includes("save") ||
         buttonText.includes("add") ||
-        buttonText.includes("toliau") || // Lithuanian for "next"
-        buttonText.includes("atgal") || // Lithuanian for "back"
-        buttonText.includes("pridėti") // Lithuanian for "add"
+        buttonText.includes("toliau") ||
+        buttonText.includes("atgal") ||
+        buttonText.includes("pridėti")
       ) {
         return
       }
 
-      // Check for data-attributes that might indicate navigation
+      // Skip delete buttons in step 2 and save buttons in step 3
+      if (target.closest('[data-delete-offer-button="true"]') !== null) return
+      if (target.closest('[data-save-button="true"]') !== null) return
+
       const hasNavigationIntent =
         navigationElement.hasAttribute("href") ||
         navigationElement.hasAttribute("to") ||
         navigationElement.getAttribute("role") === "link" ||
         navigationElement.classList.contains("nav-link") ||
-        // Only catch buttons that are likely to navigate away from the form
         (navigationElement.tagName === "BUTTON" &&
-          !navigationElement.closest("form") && // Not in a form
-          !navigationElement.closest('[role="dialog"]') && // Not in a dialog
-          !navigationElement.closest('[data-wizard-form="true"]')) // Not in the wizard form
+          !navigationElement.closest("form") &&
+          !navigationElement.closest('[role="dialog"]') &&
+          !navigationElement.closest('[data-wizard-form="true"]'))
 
       if (hasNavigationIntent) {
-        // For MUI buttons, we need to check if they're not form submission buttons
         if (navigationElement.tagName === "BUTTON") {
           const type = navigationElement.getAttribute("type")
-          // Skip submit and reset buttons
           if (type === "submit" || type === "reset") {
             return
           }
         }
 
-        // Check if this is a navigation button inside the wizard
         const isWizardNavigation =
-          navigationElement.closest(".MuiStepper-root") !== null || // Stepper component
-          navigationElement.closest('[data-wizard-navigation="true"]') !== null // Custom attribute
+          navigationElement.closest(".MuiStepper-root") !== null ||
+          navigationElement.closest('[data-wizard-navigation="true"]') !== null
 
         if (isWizardNavigation) {
           return
@@ -153,48 +179,33 @@ export function usePreventNavigation(shouldBlock: boolean) {
         event.preventDefault()
         event.stopPropagation()
 
-        // Store the attempted path
         let targetPath = "/"
 
-        // If it's a link, get the href
         if (navigationElement instanceof HTMLAnchorElement) {
-          // Get the full path from the link
           targetPath = navigationElement.pathname + (navigationElement.search || "")
           console.log("Storing pending location from link click:", targetPath)
-        }
-        // For buttons with data-href attribute (common in some UI frameworks)
-        else if (navigationElement.hasAttribute("data-href")) {
+        } else if (navigationElement.hasAttribute("data-href")) {
           targetPath = navigationElement.getAttribute("data-href") || "/"
           console.log("Storing pending location from data-href:", targetPath)
-        }
-        // For buttons with data-path attribute
-        else if (navigationElement.hasAttribute("data-path")) {
+        } else if (navigationElement.hasAttribute("data-path")) {
           targetPath = navigationElement.getAttribute("data-path") || "/"
           console.log("Storing pending location from data-path:", targetPath)
-        }
-        // For React Router Link components that might be rendered as buttons
-        else if (navigationElement.hasAttribute("to")) {
+        } else if (navigationElement.hasAttribute("to")) {
           targetPath = navigationElement.getAttribute("to") || "/"
           console.log("Storing pending location from to attribute:", targetPath)
-        }
-        // For navigation elements with a specific destination in the dataset
-        else if (navigationElement.dataset.destination) {
-          targetPath = navigationElement.dataset.destination
+        } else if ((navigationElement as HTMLElement).dataset?.destination) {
+          targetPath = (navigationElement as HTMLElement).dataset.destination
           console.log("Storing pending location from data-destination:", targetPath)
-        }
-        // Try to get the closest link's href if the button is inside a link wrapper
-        else {
+        } else {
           const parentLink = navigationElement.closest("a")
           if (parentLink && parentLink.pathname) {
             targetPath = parentLink.pathname + (parentLink.search || "")
             console.log("Storing pending location from parent link:", targetPath)
           } else {
-            // If we can't determine the path, log it and use default
             console.log("Could not determine navigation path, using default:", targetPath)
           }
         }
 
-        // Store the path for later navigation
         setPendingLocation(targetPath)
         originalTargetRef.current = targetPath
         setShowDialog(true)
@@ -205,7 +216,7 @@ export function usePreventNavigation(shouldBlock: boolean) {
     return () => {
       document.removeEventListener("click", handleClick, { capture: true })
     }
-  }, [shouldBlock])
+  }, [])
 
   const handleStay = useCallback(() => {
     setShowDialog(false)
@@ -220,15 +231,13 @@ export function usePreventNavigation(shouldBlock: boolean) {
         setShowDialog(false)
         navigationAttemptedRef.current = false
 
-        // Use the original target if available, otherwise use pendingLocation
         const targetLocation = originalTargetRef.current || pendingLocation
 
         if (targetLocation) {
           console.log("Navigating to target location:", targetLocation)
-          // Use a timeout to ensure the dialog is closed before navigation
           setTimeout(() => {
             navigate(targetLocation)
-          }, 100)
+          }, 200)
         } else {
           console.warn("No target location to navigate to")
         }

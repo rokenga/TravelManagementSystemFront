@@ -37,6 +37,7 @@ import ConfirmationDialog from "../components/ConfirmationDialog"
 import CustomSnackbar from "../components/CustomSnackBar"
 import PdfViewerModal from "../components/PdfViewerModal"
 import ConvertOfferToTripPopup from "../components/ConvertOfferToTripPopup"
+import TripInfoCard from "../components/TripInfoCard"
 
 const lithuanianMonths = [
   "", // index 0 unused for 1-based months
@@ -468,149 +469,8 @@ const ClientSpecialOffer: React.FC = () => {
         onBackClick={navigateBack}
       />
 
-      <Card elevation={3} sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}>
-        <CardContent sx={{ p: 0 }}>
-          {/* Header with trip name, edit button and status */}
-          <Box
-            sx={{
-              p: 3,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              borderBottom: "1px solid rgba(0,0,0,0.08)",
-            }}
-          >
-            <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-              {offer.tripName}
-            </Typography>
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              {offer.status !== undefined && (
-                <Chip
-                  label={translateTripStatus(offer.status)}
-                  color={offer.status === TripStatus.Confirmed ? "success" : "primary"}
-                  icon={<FlagIcon />}
-                />
-              )}
-            </Box>
-          </Box>
-
-          {/* Trip details in a grid layout */}
-          <Box sx={{ p: 3, bgcolor: "rgba(0,0,0,0.02)" }}>
-            <Grid container spacing={3}>
-              {/* Left column: Basic trip info */}
-              <Grid item xs={12} md={6}>
-                <Grid container spacing={2}>
-                  {/* Category */}
-                  {offer.category && (
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <CategoryIcon color="primary" />
-                        <Typography variant="body1">
-                          <span style={{ color: "text.secondary" }}>Kategorija:</span>{" "}
-                          {translateTripCategory(offer.category)}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-
-                  {/* Price */}
-                  {offer.price !== undefined && (
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <EuroIcon color="primary" />
-                        <Typography variant="body1">
-                          <span style={{ color: "text.secondary" }}>Kaina:</span> €{offer.price}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-
-                  {/* StartDate */}
-                  {offer.startDate && (
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <CalendarIcon color="primary" />
-                        <Typography variant="body1">
-                          <span style={{ color: "text.secondary" }}>Pradžios data:</span> {formatDate(offer.startDate)}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-
-                  {/* EndDate */}
-                  {offer.endDate && (
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <CalendarIcon color="primary" />
-                        <Typography variant="body1">
-                          <span style={{ color: "text.secondary" }}>Pabaigos data:</span> {formatDate(offer.endDate)}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-
-                  {/* Adults */}
-                  {offer.adultsCount !== undefined && (
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <PersonIcon color="primary" />
-                        <Typography variant="body1">
-                          <span style={{ color: "text.secondary" }}>Suaugusiųjų:</span> {offer.adultsCount}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-
-                  {/* Children */}
-                  {offer.childrenCount !== undefined && (
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <ChildIcon color="primary" />
-                        <Typography variant="body1">
-                          <span style={{ color: "text.secondary" }}>Vaikų:</span> {offer.childrenCount}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-                </Grid>
-              </Grid>
-
-              {/* Right column: Description and client wishes */}
-              <Grid item xs={12} md={6}>
-                {/* Description */}
-                {offer.description && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle1" color="primary" gutterBottom sx={{ fontWeight: "bold" }}>
-                      Aprašymas
-                    </Typography>
-                    <Typography variant="body2">{offer.description}</Typography>
-                  </Box>
-                )}
-
-                {/* Client wishes */}
-                {offer.clientWishes && (
-                  <Box>
-                    <Typography variant="subtitle1" color="primary" gutterBottom sx={{ fontWeight: "bold" }}>
-                      Kliento pageidavimai
-                    </Typography>
-                    <Typography variant="body2">{offer.clientWishes}</Typography>
-                  </Box>
-                )}
-              </Grid>
-            </Grid>
-
-            {/* Main offer images */}
-            {offerImages.length > 0 && (
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="subtitle1" color="primary" gutterBottom sx={{ fontWeight: "bold" }}>
-                  Nuotraukos
-                </Typography>
-                <ImageGallery images={offerImages} thumbnailSize={120} />
-              </Box>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
+      {/* Offer Details Card */}
+      <TripInfoCard trip={offer} variant="offer" images={offerImages} />
 
       {/* Offer options section */}
       {!offer.itinerary?.sortedEvents || offer.itinerary.sortedEvents.length === 0 ? (

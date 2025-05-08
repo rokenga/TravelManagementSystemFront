@@ -98,4 +98,3 @@ const DaySidebar: React.FC<DaySidebarProps> = ({ days, selectedDayIndex, onSelec
 }
 
 export default DaySidebar
-

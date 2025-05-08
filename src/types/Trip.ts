@@ -5,6 +5,8 @@ import type { Itinerary, ItineraryDay } from "./Itinerary"
 
 // Form data used in the wizard
 export interface TripFormData {
+  //new one
+  id: string
   tripName: string
   clientId: string
   clientName: string | null
@@ -24,6 +26,9 @@ export interface TripFormData {
   destination: string | null
   images?: File[]
   documents?: File[]
+
+  existingImages?: Array<{ id: string; url: string; fileName?: string }>
+  existingDocuments?: Array<{ id: string; url: string; fileName: string }>
 }
 
 // State for the wizard form

@@ -159,7 +159,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
                     {client.name} {client.surname}
                   </Typography>
                   {client.isTransferred && client.transferredFromAgentName && (
-                    <Tooltip title={`Perkeltas nuo: ${client.transferredFromAgentName}`}>
+                    <Tooltip title={`Perkeltas iš: ${client.transferredFromAgentName}`}>
                       <Chip
                         icon={<SwapHoriz />}
                         label="Perkeltas"

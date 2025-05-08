@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react"
 import { Grid, TextField, Button, Typography, Box, Autocomplete, InputAdornment, MenuItem } from "@mui/material"
 import { DatePicker } from "@mui/x-date-pickers/DatePicker"
 import { Person, ArrowForward } from "@mui/icons-material"
@@ -10,7 +10,7 @@ import type { OfferWizardData } from "./CreateClientOfferWizardForm"
 import { validateDateTimeConstraints } from "../../Utils/validationUtils"
 import axios from "axios"
 import { API_URL } from "../../Utils/Configuration"
-import DestinationAutocomplete, { Country } from "../DestinationAutocomplete"
+import DestinationAutocomplete, { type Country } from "../DestinationAutocomplete"
 
 interface Client {
   id: string
@@ -22,9 +22,24 @@ interface Client {
 interface Step1Props {
   initialData: OfferWizardData
   onSubmit: (data: Partial<OfferWizardData>) => void
+  onDataChange?: (hasData: boolean) => void
 }
 
-const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
+// Add this to store the current form data globally
+declare global {
+  interface Window {
+    __currentFormData?: any
+  }
+}
+
+// Export a function to get the current form data
+export function getCurrentFormData() {
+  return window.__currentFormData || null
+}
+
+const MAX_TRIP_NAME_LENGTH = 200
+
+const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDataChange }, ref) => {
   const [formData, setFormData] = useState({
     tripName: initialData.tripName || "",
     clientId: initialData.clientId || "",
@@ -49,6 +64,44 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
 
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    collectFormData: async () => {
+      // Return the current form data
+      return {
+        ...formData,
+        clientId: selectedClientIdRef.current,
+      }
+    },
+  }))
+
+  // Store the current form data in a global variable for access from outside
+  useEffect(() => {
+    window.__currentFormData = {
+      ...formData,
+      clientId: selectedClientIdRef.current,
+    }
+
+    // Clean up when component unmounts
+    return () => {
+      window.__currentFormData = null
+    }
+  }, [formData, selectedClientIdRef.current])
+
+  // Notify parent of data changes
+  useEffect(() => {
+    if (onDataChange) {
+      // Check if there's any meaningful data in the form
+      const hasData =
+        formData.tripName.trim() !== "" ||
+        selectedClientIdRef.current !== "" ||
+        formData.description !== "" ||
+        formData.clientWishes !== ""
+
+      onDataChange(hasData)
+    }
+  }, [formData, selectedClientIdRef.current, onDataChange])
+
   // If startDate/endDate are set, do immediate validation
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
@@ -71,7 +124,67 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     }
   }, [initialData.clientId, clients])
 
+  // Add this useEffect after the existing useEffects
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const clientIdParam = urlParams.get("clientId")
+    const clientNameParam = urlParams.get("clientName")
+
+    if (clientIdParam && clientNameParam) {
+      console.log("Setting client from URL params:", clientIdParam, clientNameParam)
+      selectedClientIdRef.current = clientIdParam
+      handleInputChange("clientId", clientIdParam)
+      handleInputChange("clientName", clientNameParam)
+
+      // Try to find the client in the existing list first
+      const existingClient = clients.find((c) => c.id === clientIdParam)
+      if (existingClient) {
+        setSelectedClient(existingClient)
+      } else {
+        // If not found in the list, fetch it directly
+        initializeSelectedClient(clientIdParam)
+      }
+    }
+  }, [clients]) // Add clients as dependency since we need it for the lookup
+
+  // Update the initializeSelectedClient function to handle the client name properly
+  const initializeSelectedClient = async (clientId: string) => {
+    // If we already have the list of clients, see if we can find one matching
+    const found = clients.find((c) => c.id === clientId)
+    if (found) {
+      setSelectedClient(found)
+      setFormData((prev) => ({
+        ...prev,
+        clientId: found.id,
+        clientName: `${found.name} ${found.surname}`,
+      }))
+      return
+    }
+
+    // Otherwise try a direct fetch
+    try {
+      const response = await axios.get<Client>(`${API_URL}/Client/${clientId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      })
+      if (response.data) {
+        setSelectedClient(response.data)
+        setFormData((prev) => ({
+          ...prev,
+          clientId: response.data.id,
+          clientName: `${response.data.name} ${response.data.surname}`,
+        }))
+      }
+    } catch (err) {
+      console.error("Failed to load single client:", err)
+    }
+  }
+
   const handleInputChange = (name: string, value: any) => {
+    if (name === "tripName" && typeof value === "string" && value.length > MAX_TRIP_NAME_LENGTH) {
+      // Truncate the value if it exceeds the maximum length
+      value = value.slice(0, MAX_TRIP_NAME_LENGTH)
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -107,38 +220,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
       }
     } catch (err) {
       console.error("Error fetching clients:", err)
-    }
-  }
-
-  // Add this function to initialize the selected client
-  const initializeSelectedClient = async (clientId: string) => {
-    // If we already have the list of clients, see if we can find one matching
-    const found = clients.find((c) => c.id === clientId)
-    if (found) {
-      setSelectedClient(found)
-      setFormData((prev) => ({
-        ...prev,
-        clientId: found.id,
-        clientName: `${found.name} ${found.surname}`,
-      }))
-      return
-    }
-
-    // Otherwise try a direct fetch
-    try {
-      const response = await axios.get<Client>(`${API_URL}/Client/${clientId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-      })
-      if (response.data) {
-        setSelectedClient(response.data)
-        setFormData((prev) => ({
-          ...prev,
-          clientId: response.data.id,
-          clientName: `${response.data.name} ${response.data.surname}`,
-        }))
-      }
-    } catch (err) {
-      console.error("Failed to load single client:", err)
     }
   }
 
@@ -207,6 +288,9 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
             value={formData.tripName}
             onChange={(e) => handleInputChange("tripName", e.target.value)}
             fullWidth
+            inputProps={{ maxLength: MAX_TRIP_NAME_LENGTH }}
+            helperText={`${formData.tripName.length}/${MAX_TRIP_NAME_LENGTH}`}
+            FormHelperTextProps={{ sx: { textAlign: "right" } }}
           />
         </Grid>
 
@@ -235,10 +319,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
 
         {/* Add destination field */}
         <Grid item xs={12}>
-          <DestinationAutocomplete 
-            value={formData.destination} 
-            onChange={handleDestinationChange}
-          />
+          <DestinationAutocomplete value={formData.destination} onChange={handleDestinationChange} />
         </Grid>
 
         <Grid item xs={12}>
@@ -270,7 +351,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
                 fullWidth
               >
                 <MenuItem value="">--Nepasirinkta--</MenuItem>
-                <MenuItem value="Tourist">Turistinė</MenuItem>
+                <MenuItem value="Tourist">Pažintinė</MenuItem>
                 <MenuItem value="Group">Grupinė</MenuItem>
                 <MenuItem value="Relax">Poilsinė</MenuItem>
                 <MenuItem value="Business">Verslo</MenuItem>
@@ -359,6 +440,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
       />
     </form>
   )
-}
+})
 
 export default Step1TripInfo

@@ -48,11 +48,23 @@ const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
 const ALLOWED_DOCUMENT_EXTENSIONS = [".pdf", ".docx", ".txt", ".xlsx"]
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 
-// Global variables to store the current files and deletion lists
-let globalNewImages: File[] = []
-let globalNewDocuments: File[] = []
-let globalImagesToDelete: string[] = []
-let globalDocumentsToDelete: string[] = []
+// Declare global variables to store the current files and deletion lists
+declare global {
+  interface Window {
+    globalNewImages?: File[]
+    globalNewDocuments?: File[]
+    globalImagesToDelete?: string[]
+    globalDocumentsToDelete?: string[]
+  }
+}
+
+// Initialize global variables if they don't exist
+if (typeof window !== "undefined") {
+  window.globalNewImages = window.globalNewImages || []
+  window.globalNewDocuments = window.globalNewDocuments || []
+  window.globalImagesToDelete = window.globalImagesToDelete || []
+  window.globalDocumentsToDelete = window.globalDocumentsToDelete || []
+}
 
 // Export a function to get the current files
 export function getCurrentFilesData(): {
@@ -62,10 +74,10 @@ export function getCurrentFilesData(): {
   documentsToDelete: string[]
 } {
   return {
-    newImages: globalNewImages ? [...globalNewImages] : [],
-    newDocuments: globalNewDocuments ? [...globalNewDocuments] : [],
-    imagesToDelete: globalImagesToDelete ? [...globalImagesToDelete] : [],
-    documentsToDelete: globalDocumentsToDelete ? [...globalDocumentsToDelete] : [],
+    newImages: window.globalNewImages || [],
+    newDocuments: window.globalNewDocuments || [],
+    imagesToDelete: window.globalImagesToDelete || [],
+    documentsToDelete: window.globalDocumentsToDelete || [],
   }
 }
 
@@ -77,11 +89,11 @@ export function getCurrentFilesData(): {
 const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existingDocuments, onSubmit, onBack }) => {
   // 1) Keep track of existing items the user *wants to delete*:
   const [imagesToDelete, setImagesToDelete] = useState<string[]>(
-    globalImagesToDelete.length > 0 ? [...globalImagesToDelete] : [],
+    window.globalImagesToDelete?.length ? [...window.globalImagesToDelete] : [],
   )
 
   const [documentsToDelete, setDocumentsToDelete] = useState<string[]>(
-    globalDocumentsToDelete.length > 0 ? [...globalDocumentsToDelete] : [],
+    window.globalDocumentsToDelete?.length ? [...window.globalDocumentsToDelete] : [],
   )
 
   // 2) Show the existing items that are *still active* (not deleted yet)
@@ -90,9 +102,11 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
   const [activeExistingDocuments, setActiveExistingDocuments] = useState<ExistingFile[]>([])
 
   // 3) For brand-new uploads
-  const [newImages, setNewImages] = useState<File[]>(globalNewImages.length > 0 ? [...globalNewImages] : [])
+  const [newImages, setNewImages] = useState<File[]>(window.globalNewImages?.length ? [...window.globalNewImages] : [])
 
-  const [newDocuments, setNewDocuments] = useState<File[]>(globalNewDocuments.length > 0 ? [...globalNewDocuments] : [])
+  const [newDocuments, setNewDocuments] = useState<File[]>(
+    window.globalNewDocuments?.length ? [...window.globalNewDocuments] : [],
+  )
 
   const [error, setError] = useState<string | null>(null)
 
@@ -101,16 +115,16 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
 
   // Update global variables when state changes
   useEffect(() => {
-    globalNewImages = [...newImages]
-    globalNewDocuments = [...newDocuments]
-    globalImagesToDelete = [...imagesToDelete]
-    globalDocumentsToDelete = [...documentsToDelete]
+    window.globalNewImages = [...newImages]
+    window.globalNewDocuments = [...newDocuments]
+    window.globalImagesToDelete = [...imagesToDelete]
+    window.globalDocumentsToDelete = [...documentsToDelete]
 
     console.log("Step2_5FileUploadsEdit - Updated globals:", {
-      newImages: globalNewImages.length,
-      newDocuments: globalNewDocuments.length,
-      imagesToDelete: globalImagesToDelete.length,
-      documentsToDelete: globalDocumentsToDelete.length,
+      newImages: window.globalNewImages.length,
+      newDocuments: window.globalNewDocuments.length,
+      imagesToDelete: window.globalImagesToDelete.length,
+      documentsToDelete: window.globalDocumentsToDelete.length,
     })
   }, [newImages, newDocuments, imagesToDelete, documentsToDelete])
 
@@ -159,10 +173,10 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
 
     if (fileType === "image") {
       setNewImages((prev) => [...prev, ...validFiles])
-      globalNewImages = [...globalNewImages, ...validFiles]
+      window.globalNewImages = [...(window.globalNewImages || []), ...validFiles]
     } else {
       setNewDocuments((prev) => [...prev, ...validFiles])
-      globalNewDocuments = [...globalNewDocuments, ...validFiles]
+      window.globalNewDocuments = [...(window.globalNewDocuments || []), ...validFiles]
     }
 
     event.target.value = ""
@@ -173,13 +187,13 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
     if (fileType === "image") {
       setNewImages((prev) => {
         const updated = prev.filter((_, i) => i !== index)
-        globalNewImages = [...updated]
+        window.globalNewImages = [...updated]
         return updated
       })
     } else {
       setNewDocuments((prev) => {
         const updated = prev.filter((_, i) => i !== index)
-        globalNewDocuments = [...updated]
+        window.globalNewDocuments = [...updated]
         return updated
       })
     }
@@ -189,7 +203,7 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
   const deleteExistingImage = (fileId: string) => {
     setImagesToDelete((prev) => {
       const updated = [...prev, fileId]
-      globalImagesToDelete = [...updated]
+      window.globalImagesToDelete = [...updated]
       return updated
     })
 
@@ -200,7 +214,7 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
   const deleteExistingDocument = (fileId: string) => {
     setDocumentsToDelete((prev) => {
       const updated = [...prev, fileId]
-      globalDocumentsToDelete = [...updated]
+      window.globalDocumentsToDelete = [...updated]
       return updated
     })
 
@@ -242,10 +256,10 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
 
   const handleNext = () => {
     // Update global variables before submitting
-    globalNewImages = [...newImages]
-    globalNewDocuments = [...newDocuments]
-    globalImagesToDelete = [...imagesToDelete]
-    globalDocumentsToDelete = [...documentsToDelete]
+    window.globalNewImages = [...newImages]
+    window.globalNewDocuments = [...newDocuments]
+    window.globalImagesToDelete = [...imagesToDelete]
+    window.globalDocumentsToDelete = [...documentsToDelete]
 
     console.log("Step2_5FileUploadsEdit - Submitting:", {
       newImages: newImages.length,
@@ -264,10 +278,10 @@ const Step2_5FileUploadsEdit: React.FC<Step2_5Props> = ({ existingImages, existi
 
   const handleBackClick = () => {
     // Update global variables before going back
-    globalNewImages = [...newImages]
-    globalNewDocuments = [...newDocuments]
-    globalImagesToDelete = [...imagesToDelete]
-    globalDocumentsToDelete = [...documentsToDelete]
+    window.globalNewImages = [...newImages]
+    window.globalNewDocuments = [...newDocuments]
+    window.globalImagesToDelete = [...imagesToDelete]
+    window.globalDocumentsToDelete = [...documentsToDelete]
 
     console.log("Step2_5FileUploadsEdit - Going back with:", {
       newImages: newImages.length,

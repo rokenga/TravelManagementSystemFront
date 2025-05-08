@@ -4,7 +4,6 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { Grid, Typography, Button, Paper, Box, Divider, Badge, IconButton } from "@mui/material"
 import { Warning as WarningIcon } from "@mui/icons-material"
-import PDFActions from "../PDFActions"
 
 // Import types
 import type { TripFormData, ItineraryDay, ValidationWarning } from "../../types"
@@ -15,6 +14,7 @@ import ItineraryInfoCard from "./review/ItineraryInfoCard"
 import SingleDayPreview from "./review/SingleDayPreview"
 import MultiDayPreview from "./review/MultiDayPreview"
 import ValidationWarningsDialog from "./review/ValidationWarningsDialog"
+import TripMediaCard from "./review/TripMediaCard"
 
 interface Step3Props {
   tripData: TripFormData
@@ -26,6 +26,12 @@ interface Step3Props {
   isSaving?: boolean
   hideHighlighting?: boolean
   onHideHighlightingChange?: (hide: boolean) => void
+  // Add props for images
+  stepImages?: { [key: number]: File[] }
+  existingStepImages?: { [key: number]: Array<{ id: string; url: string; urlInline?: string }> }
+  // Add props for existing files
+  existingTripImages?: Array<{ id: string; url: string; fileName?: string }>
+  existingTripDocuments?: Array<{ id: string; url: string; fileName: string }>
 }
 
 const Step3ReviewConfirm: React.FC<Step3Props> = ({
@@ -38,11 +44,59 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
   isSaving = false,
   hideHighlighting = false,
   onHideHighlightingChange = () => {},
+  stepImages = {},
+  existingStepImages = {},
+  existingTripImages = [],
+  existingTripDocuments = [],
 }) => {
   const dayByDay = tripData.dayByDayItineraryNeeded
 
+  // Process itinerary to include image data
+  const processedItinerary = itinerary.map((day, index) => {
+    // Find image events in this day
+    const imageEvents = day.events.filter((event) => event.type === "images")
+
+    // If there are image events, add image data to them
+    if (imageEvents.length > 0) {
+      const updatedEvents = day.events.map((event) => {
+        if (event.type === "images") {
+          // Create URLs for new images
+          const newImageUrls = stepImages[index]
+            ? Array.from(stepImages[index]).map((file) => ({
+                url: URL.createObjectURL(file),
+                isNew: true,
+              }))
+            : []
+
+          // Get existing image URLs
+          const existingImageUrls = existingStepImages[index]
+            ? existingStepImages[index].map((img) => ({
+                id: img.id,
+                url: img.urlInline || img.url,
+                isExisting: true,
+              }))
+            : []
+
+          // Combine both types of images
+          return {
+            ...event,
+            images: [...newImageUrls, ...existingImageUrls],
+          }
+        }
+        return event
+      })
+
+      return {
+        ...day,
+        events: updatedEvents,
+      }
+    }
+
+    return day
+  })
+
   // Skip empty days
-  const nonEmptyDays = itinerary
+  const nonEmptyDays = processedItinerary
     .map((day, i) => ({
       ...day,
       originalIndex: i + 1,
@@ -54,6 +108,20 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
 
   // State for validation warnings dialog
   const [warningsDialogOpen, setWarningsDialogOpen] = useState(false)
+
+  // Add local state to track highlighting
+  const [localHideHighlighting, setLocalHideHighlighting] = useState(hideHighlighting)
+
+  // Update local state when props change
+  useEffect(() => {
+    setLocalHideHighlighting(hideHighlighting)
+  }, [hideHighlighting])
+
+  // Handle hide highlighting change
+  const handleHideHighlightingChange = (hide: boolean) => {
+    setLocalHideHighlighting(hide)
+    onHideHighlightingChange(hide)
+  }
 
   // Generate synthetic warnings if none exist but fields are highlighted
   const [syntheticWarnings, setSyntheticWarnings] = useState<ValidationWarning[]>([])
@@ -103,23 +171,10 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
   const allWarnings = [...(validationWarnings || []), ...syntheticWarnings]
   const hasWarnings = allWarnings.length > 0
 
-  // Debug logs
-  useEffect(() => {
-    console.log("Validation warnings:", validationWarnings)
-    console.log("Synthetic warnings:", syntheticWarnings)
-    console.log("All warnings:", allWarnings)
-    console.log("Has warnings:", hasWarnings)
-    console.log("Hide highlighting:", hideHighlighting)
-  }, [validationWarnings, syntheticWarnings, hasWarnings, hideHighlighting])
-
   return (
     <Grid container spacing={2}>
       <Grid item xs={12}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Typography variant="h5" gutterBottom>
-            Peržiūra ir patvirtinimas
-          </Typography>
-
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", mb: 2 }}>
           {/* Always show the button if there are warnings, regardless of hideHighlighting */}
           {hasWarnings && (
             <Badge badgeContent={allWarnings.length} color="warning" sx={{ mr: 2 }}>
@@ -141,46 +196,58 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         </Box>
       </Grid>
 
-      {/* Add PDF Actions */}
-      <Grid item xs={12}>
-        <PDFActions tripData={tripData} itinerary={itinerary} />
-      </Grid>
-
       {/* Trip info */}
-      <TripInfoCard tripData={tripData} hideHighlighting={hideHighlighting} />
+      <TripInfoCard tripData={tripData} hideHighlighting={localHideHighlighting} />
+
+      {/* Trip media (images and documents) - No props needed, it will fetch data internally */}
+      <TripMediaCard
+        existingStepImages={existingStepImages}
+        tripImages={tripData.images || []}
+        tripDocuments={tripData.documents || []}
+        existingTripImages={existingTripImages}
+        existingTripDocuments={existingTripDocuments}
+      />
 
       {/* Itinerary info - Only shown if title or description exists */}
       <ItineraryInfoCard
         itineraryTitle={tripData.itineraryTitle}
         itineraryDescription={tripData.itineraryDescription}
         showItineraryInfo={showItineraryInfo}
-        hideHighlighting={hideHighlighting}
+        hideHighlighting={localHideHighlighting}
       />
 
       {/* Itinerary preview */}
       <Grid item xs={12}>
-        <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
+        <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ fontWeight: 500, color: "primary.main", mb: 2, textAlign: "left" }}
+          >
             Planas
           </Typography>
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 3 }} />
 
           {!dayByDay ? (
-            <SingleDayPreview day={itinerary[0]} warnings={allWarnings} hideHighlighting={hideHighlighting} />
+            <SingleDayPreview
+              day={processedItinerary[0]}
+              warnings={allWarnings}
+              hideHighlighting={localHideHighlighting}
+            />
           ) : (
-            <MultiDayPreview days={nonEmptyDays} warnings={allWarnings} hideHighlighting={hideHighlighting} />
+            <MultiDayPreview days={nonEmptyDays} warnings={allWarnings} hideHighlighting={localHideHighlighting} />
           )}
         </Paper>
       </Grid>
 
-      <Grid item xs={12} sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-        <Button variant="outlined" onClick={onBack} sx={{ mr: 2 }} disabled={isSaving}>
+      <Grid item xs={12} sx={{ display: "flex", justifyContent: "center", mt: 3, mb: 2 }}>
+        <Button variant="outlined" onClick={onBack} sx={{ mr: 2 }} disabled={isSaving} size="large">
           Atgal
         </Button>
-        <Button variant="outlined" onClick={onSaveDraft} sx={{ mr: 2 }} disabled={isSaving}>
+        <Button variant="outlined" onClick={onSaveDraft} sx={{ mr: 2 }} disabled={isSaving} size="large">
           {isSaving ? "Išsaugoma..." : "Išsaugoti juodraštį"}
         </Button>
-        <Button variant="contained" color="primary" onClick={onConfirm} disabled={isSaving}>
+        <Button variant="contained" color="primary" onClick={onConfirm} disabled={isSaving} size="large">
           {isSaving ? "Išsaugoma..." : "Patvirtinti"}
         </Button>
       </Grid>
@@ -190,12 +257,11 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         open={warningsDialogOpen}
         onClose={() => setWarningsDialogOpen(false)}
         warnings={allWarnings}
-        hideHighlighting={hideHighlighting}
-        onHideHighlightingChange={onHideHighlightingChange}
+        hideHighlighting={localHideHighlighting}
+        onHideHighlightingChange={handleHideHighlightingChange}
       />
     </Grid>
   )
 }
 
 export default Step3ReviewConfirm
-

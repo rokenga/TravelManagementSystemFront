@@ -12,7 +12,7 @@ interface DayDescriptionProps {
 
 const DayDescription: React.FC<DayDescriptionProps> = ({ description, isDayByDay, onChange }) => {
   return (
-    <Card variant="outlined" sx={{ mb: 4, bgcolor: "background.default" }}>
+    <Card variant="outlined" sx={{ mb: 4, bgcolor: "background.paper" }}>
       <CardContent>
         <Typography variant="subtitle1" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Description />
@@ -38,4 +38,3 @@ const DayDescription: React.FC<DayDescriptionProps> = ({ description, isDayByDay
 }
 
 export default DayDescription
-

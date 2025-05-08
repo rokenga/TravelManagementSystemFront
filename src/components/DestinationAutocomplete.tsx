@@ -5,8 +5,8 @@ import { Autocomplete, TextField, CircularProgress } from "@mui/material"
 import countriesData from "../assets/full-countries-lt.json"
 
 export interface Country {
-    code: string
-    name: string
+  code: string
+  name: string
 }
 
 interface DestinationAutocompleteProps {
@@ -41,10 +41,10 @@ const DestinationAutocomplete: React.FC<DestinationAutocompleteProps> = ({
         code: country.code,
         name: country.name,
       }))
-      
+
       // Sort by name
       processedCountries.sort((a, b) => a.name.localeCompare(b.name))
-      
+
       setCountries([...processedCountries])
       setLoading(false)
     } catch (error) {
@@ -65,6 +65,8 @@ const DestinationAutocomplete: React.FC<DestinationAutocompleteProps> = ({
       onChange={(_, newValue) => onChange(newValue)}
       isOptionEqualToValue={(option, value) => option.code === value.code}
       getOptionLabel={(option) => option.name}
+      noOptionsText="Tokios šalies nėra"
+      loadingText="Kraunama..."
       renderInput={(params) => (
         <TextField
           {...params}

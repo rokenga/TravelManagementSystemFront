@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Accordion,
   AccordionSummary,
@@ -26,6 +27,8 @@ interface ImageSectionProps {
     id: string
     url: string
     altText?: string
+    fileName?: string
+    urlInline?: string // Add support for urlInline property
   }>
   onImageChange: (stepIndex: number, files: File[]) => void
   onRemoveImageSection: (stepIndex: number) => void
@@ -40,9 +43,22 @@ const ImageSection: React.FC<ImageSectionProps> = ({
   onRemoveImageSection,
   onExistingImageDelete,
 }) => {
+  // State to track deleted images locally
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([])
+  // State to track image loading errors
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
+
   // Calculate total size of current images
   const totalImageSizeMB = stepImages.reduce((total, file) => total + file.size, 0) / (1024 * 1024)
-  const isOverSizeLimit = totalImageSizeMB > MAX_FILE_SIZE_MB
+  const isOverSizeLimit = totalImageSizeMB > MAX_FILE_SIZE_BYTES
+
+  // Filter out deleted images from the display
+  const filteredExistingImages = existingStepImages.filter((img) => !deletedImageIds.includes(img.id))
+
+  // Debug log to check what images we're receiving
+  useEffect(() => {
+    console.log(`Step ${stepIndex} existing images:`, existingStepImages)
+  }, [existingStepImages, stepIndex])
 
   // Handle file selection for images
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,8 +116,40 @@ const ImageSection: React.FC<ImageSectionProps> = ({
     event.target.value = ""
   }
 
+  // Handle existing image deletion
+  const handleExistingImageDelete = (imageId: string) => {
+    console.log("Deleting image with ID:", imageId)
+
+    // Add to local tracking of deleted images
+    setDeletedImageIds((prev) => [...prev, imageId])
+
+    // Call the parent component's delete handler
+    if (onExistingImageDelete) {
+      onExistingImageDelete(stepIndex, imageId)
+    }
+  }
+
+  // Handle image load error
+  const handleImageError = (imageId: string) => {
+    console.log(`Image with ID ${imageId} failed to load`)
+    setImageErrors((prev) => ({
+      ...prev,
+      [imageId]: true,
+    }))
+  }
+
+  // Get the best URL for an image
+  const getImageUrl = (img: any) => {
+    // Try urlInline first (which might be used in some API responses)
+    if (img.urlInline) return img.urlInline
+    // Then try url
+    if (img.url) return img.url
+    // Fallback to placeholder
+    return "/placeholder.svg"
+  }
+
   return (
-    <Accordion key="images-section" sx={{ mb: 2 }}>
+    <Accordion key="images-section" sx={{ mb: 2 }} defaultExpanded>
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="images-content"
@@ -127,7 +175,7 @@ const ImageSection: React.FC<ImageSectionProps> = ({
           </Box>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="body2" sx={{ mr: 2, color: "text.secondary" }}>
-              {(stepImages?.length || 0) + (existingStepImages?.length || 0)} nuotraukos
+              {(stepImages?.length || 0) + (filteredExistingImages?.length || 0)} nuotraukos
             </Typography>
             <IconButton
               size="small"
@@ -171,14 +219,14 @@ const ImageSection: React.FC<ImageSectionProps> = ({
           )}
 
           {/* Display existing images from the server */}
-          {existingStepImages && existingStepImages.length > 0 && (
+          {filteredExistingImages.length > 0 && (
             <>
               <Typography variant="subtitle2" gutterBottom>
                 Esamos nuotraukos:
               </Typography>
               <Grid container spacing={2} sx={{ mb: 2 }}>
-                {existingStepImages.map((img, idx) => (
-                  <Grid item key={`existing-${idx}`}>
+                {filteredExistingImages.map((img, idx) => (
+                  <Grid item key={`existing-${img.id}`}>
                     <Box
                       sx={{
                         width: 120,
@@ -189,15 +237,33 @@ const ImageSection: React.FC<ImageSectionProps> = ({
                         position: "relative",
                       }}
                     >
-                      <img
-                        src={img.url || "/placeholder.svg"}
-                        alt={img.altText || `Nuotrauka ${idx + 1}`}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
+                      {imageErrors[img.id] ? (
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: "#f5f5f5",
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            Nepavyko įkelti
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <img
+                          src={getImageUrl(img) || "/placeholder.svg"}
+                          alt={img.altText || img.fileName || `Nuotrauka ${idx + 1}`}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                          onError={() => handleImageError(img.id)}
+                        />
+                      )}
                       <IconButton
                         size="small"
                         color="error"
@@ -208,11 +274,8 @@ const ImageSection: React.FC<ImageSectionProps> = ({
                           backgroundColor: "rgba(255,255,255,0.7)",
                           "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
                         }}
-                        onClick={() => {
-                          if (onExistingImageDelete) {
-                            onExistingImageDelete(stepIndex, img.id)
-                          }
-                        }}
+                        onClick={() => handleExistingImageDelete(img.id)}
+                        data-image-delete-button="true"
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -227,7 +290,7 @@ const ImageSection: React.FC<ImageSectionProps> = ({
           {stepImages.length > 0 ? (
             <>
               <Typography variant="subtitle2" gutterBottom>
-                {existingStepImages && existingStepImages.length > 0 ? "Naujos nuotraukos:" : "Nuotraukos:"}
+                {filteredExistingImages.length > 0 ? "Naujos nuotraukos:" : "Nuotraukos:"}
               </Typography>
               <Grid container spacing={2}>
                 {stepImages.map((file, index) => (
@@ -262,6 +325,7 @@ const ImageSection: React.FC<ImageSectionProps> = ({
                           newFiles.splice(index, 1)
                           onImageChange(stepIndex, newFiles)
                         }}
+                        data-image-delete-button="true"
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -271,7 +335,7 @@ const ImageSection: React.FC<ImageSectionProps> = ({
               </Grid>
             </>
           ) : (
-            !existingStepImages?.length && (
+            !filteredExistingImages.length && (
               <Box sx={{ textAlign: "center", py: 3 }}>
                 <Typography variant="body2" color="text.secondary">
                   Nėra įkeltų nuotraukų

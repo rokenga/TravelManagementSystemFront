@@ -76,6 +76,8 @@ export interface TripResponse {
   destination?: string
   isTransferred?: boolean
   transferredFromAgentName?: string
+  agentFirstName?: string
+  agentLastName?: string
 }
 
 /** ======= Pagination & Filtering Types ======= **/

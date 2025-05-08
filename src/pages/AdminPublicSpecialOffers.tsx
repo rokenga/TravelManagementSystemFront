@@ -7,7 +7,7 @@ import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import { Box, Typography, Grid, Button, CircularProgress, useTheme, useMediaQuery, Chip } from "@mui/material"
 import { FilterList } from "@mui/icons-material"
-import PublicOfferCard from "../components/PublicOfferCard"
+import AdminPublicOfferCard from "../components/AdminPublicOfferCard"
 import type { TripResponse } from "../types/ClientTrip"
 import SearchBar from "../components/SearchBar"
 import SortMenu from "../components/SortMenu"
@@ -33,7 +33,6 @@ const defaultFilters: PublicSpecialOfferFilters = {
   startDate: null,
   endDate: null,
   priceRange: [0, 10000],
-  isPromoted: false,
   onlyMine: false,
 }
 
@@ -48,6 +47,10 @@ interface PublicOfferRequestBody {
   statuses?: string[]
   destinations?: string[]
   onlyMine?: boolean
+  priceFrom?: number
+  priceTo?: number
+  startDateFrom?: string
+  startDateTo?: string
 }
 
 interface PaginatedResponse<T> {
@@ -176,6 +179,24 @@ const AdminPublicSpecialOffers: React.FC = () => {
         onlyMine: filters.onlyMine || undefined,
       }
 
+      // Add price range if it's different from default
+      if (filters.priceRange[0] > 0) {
+        requestBody.priceFrom = filters.priceRange[0]
+      }
+
+      if (filters.priceRange[1] < 10000) {
+        requestBody.priceTo = filters.priceRange[1]
+      }
+
+      // Add date range if dates are selected
+      if (filters.startDate) {
+        requestBody.startDateFrom = filters.startDate
+      }
+
+      if (filters.endDate) {
+        requestBody.startDateTo = filters.endDate
+      }
+
       // Add sorting
       if (sort === "Pavadinimas A-Z") {
         requestBody.sortBy = "tripName"
@@ -280,7 +301,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
     if (selectedFilters.destinations.length > 0) count++
     if (selectedFilters.startDate) count++
     if (selectedFilters.endDate) count++
-    if (selectedFilters.isPromoted) count++
     if (selectedFilters.onlyMine) count++
 
     // Check if price range is different from default
@@ -380,7 +400,7 @@ const AdminPublicSpecialOffers: React.FC = () => {
               <Grid container spacing={2}>
                 {offers.map((offer) => (
                   <Grid item xs={12} sm={6} md={4} key={offer.id}>
-                    <PublicOfferCard offer={offer} onClick={() => handleOfferClick(offer.id)} />
+                    <AdminPublicOfferCard offer={offer} onClick={() => handleOfferClick(offer.id)} />
                   </Grid>
                 ))}
               </Grid>

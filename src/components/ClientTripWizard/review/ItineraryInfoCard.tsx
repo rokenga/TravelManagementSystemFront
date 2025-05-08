@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { Grid, Typography, Paper, Box, Divider } from "@mui/material"
+import { Title, Description } from "@mui/icons-material"
 
 interface ItineraryInfoCardProps {
   itineraryTitle?: string
@@ -20,14 +21,17 @@ const ItineraryInfoCard: React.FC<ItineraryInfoCardProps> = ({
 
   return (
     <Grid item xs={12}>
-      <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper elevation={3} sx={{ p: 3, mb: 2, borderRadius: 2 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 500, color: "primary.main", mb: 2 }}>
           Maršruto informacija
         </Typography>
-        <Divider sx={{ mb: 2 }} />
+        <Divider sx={{ mb: 3 }} />
+
         <Box
           sx={{
-            mb: 1,
+            display: "flex",
+            alignItems: "flex-start",
+            mb: 2,
             p: 1,
             borderRadius: "4px",
             bgcolor: !hideHighlighting && !itineraryTitle ? "rgba(255, 167, 38, 0.08)" : "transparent",
@@ -36,12 +40,30 @@ const ItineraryInfoCard: React.FC<ItineraryInfoCardProps> = ({
             transition: "all 0.2s ease-in-out",
           }}
         >
-          <strong>Pavadinimas:</strong>{" "}
-          {itineraryTitle || <span style={{ color: "#ED6C02", fontStyle: "italic" }}>Neužpildyta</span>}
+          <Title color="primary" sx={{ mr: 1, mt: 0.5 }} />
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="subtitle2" fontWeight="medium">
+              Pavadinimas
+            </Typography>
+            <Typography sx={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
+              {itineraryTitle || (
+                <Typography
+                  component="span"
+                  color={hideHighlighting ? "text.primary" : "#ED6C02"}
+                  fontStyle={hideHighlighting ? "normal" : "italic"}
+                >
+                  Neužpildyta
+                </Typography>
+              )}
+            </Typography>
+          </Box>
         </Box>
+
         <Box
           sx={{
-            mb: 1,
+            display: "flex",
+            alignItems: "flex-start",
+            mb: 2,
             p: 1,
             borderRadius: "4px",
             bgcolor: !hideHighlighting && !itineraryDescription ? "rgba(255, 167, 38, 0.08)" : "transparent",
@@ -50,8 +72,23 @@ const ItineraryInfoCard: React.FC<ItineraryInfoCardProps> = ({
             transition: "all 0.2s ease-in-out",
           }}
         >
-          <strong>Aprašymas:</strong>{" "}
-          {itineraryDescription || <span style={{ color: "#ED6C02", fontStyle: "italic" }}>Neužpildyta</span>}
+          <Description color="primary" sx={{ mr: 1, mt: 0.5 }} />
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="subtitle2" fontWeight="medium">
+              Aprašymas
+            </Typography>
+            <Typography sx={{ wordBreak: "break-word", overflowWrap: "break-word" }}>
+              {itineraryDescription || (
+                <Typography
+                  component="span"
+                  color={hideHighlighting ? "text.primary" : "#ED6C02"}
+                  fontStyle={hideHighlighting ? "normal" : "italic"}
+                >
+                  Neužpildyta
+                </Typography>
+              )}
+            </Typography>
+          </Box>
         </Box>
       </Paper>
     </Grid>
@@ -59,4 +96,3 @@ const ItineraryInfoCard: React.FC<ItineraryInfoCardProps> = ({
 }
 
 export default ItineraryInfoCard
-

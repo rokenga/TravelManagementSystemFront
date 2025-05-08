@@ -32,19 +32,17 @@ import {
 // File types
 export interface FileWithPreview extends File {
   preview?: string
-  size: number // Ensure size is always defined
 }
 
 export interface ExistingFile {
   id: string
   url: string
   fileName: string
-  preview?: string
 }
 
 interface FileUploadManagerProps {
-  newFiles: FileWithPreview[]
-  setNewFiles: (files: FileWithPreview[]) => void
+  newFiles: File[]
+  setNewFiles: (files: File[]) => void
   existingFiles?: ExistingFile[]
   onDeleteExisting?: (id: string) => void
   fileType: "image" | "document"
@@ -67,6 +65,8 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   allowedExtensions,
 }) => {
   const [error, setError] = useState<string | null>(null)
+  const [previews, setPreviews] = useState<Record<string, string>>({})
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Determine allowed extensions based on file type
@@ -77,23 +77,24 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   useEffect(() => {
     // Generate previews for new files that are images
     if (fileType === "image") {
-      newFiles.forEach((file) => {
-        if (!file.preview) {
-          const objectUrl = URL.createObjectURL(file)
-          Object.defineProperty(file, "preview", {
-            value: objectUrl,
-            writable: true,
-          })
+      const newPreviews: Record<string, string> = {}
+
+      newFiles.forEach((file, index) => {
+        const key = `${file.name}-${index}`
+        if (!previews[key]) {
+          newPreviews[key] = URL.createObjectURL(file)
         }
       })
+
+      if (Object.keys(newPreviews).length > 0) {
+        setPreviews((prev) => ({ ...prev, ...newPreviews }))
+      }
     }
 
     // Cleanup function to revoke object URLs
     return () => {
-      newFiles.forEach((file) => {
-        if (file.preview && typeof file.preview === "string" && !file.preview.startsWith("http")) {
-          URL.revokeObjectURL(file.preview)
-        }
+      Object.values(previews).forEach((url) => {
+        URL.revokeObjectURL(url)
       })
     }
   }, [newFiles, fileType])
@@ -108,7 +109,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
 
     // Validate each file
     const invalidFiles: string[] = []
-    const validFiles: FileWithPreview[] = []
+    const validFiles: File[] = []
 
     fileArray.forEach((file) => {
       // Check file extension
@@ -126,9 +127,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
         return
       }
 
-      // Ensure file has size property
-      const fileWithSize = file as FileWithPreview
-      validFiles.push(fileWithSize)
+      validFiles.push(file)
     })
 
     // Show error if there are invalid files
@@ -148,13 +147,17 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   // Remove a new file
   const removeNewFile = (index: number) => {
     const updatedFiles = [...newFiles]
-    // Clean up preview URL before removing
-    const file = updatedFiles[index]
-    if (file && file.preview && typeof file.preview === "string" && !file.preview.startsWith("http")) {
-      URL.revokeObjectURL(file.preview)
-    }
     updatedFiles.splice(index, 1)
     setNewFiles(updatedFiles)
+  }
+
+  // Handle image load error
+  const handleImageError = (url: string) => {
+    console.error(`Image failed to load:`, url)
+    setFailedImages((prev) => ({
+      ...prev,
+      [url]: true,
+    }))
   }
 
   // Get icon for document type
@@ -184,7 +187,23 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
 
   // Get the appropriate label for the file type
   const getFileTypeLabel = () => {
-    return fileType === "image" ? "Nuotraukos" : "Dokumentai"
+    if (fileType === "image") {
+      const count = existingFiles.length + newFiles.length
+      // Lithuanian grammar rules for pluralization
+      if (count === 0) return "nuotraukų"
+      if (count === 1) return "nuotrauka"
+      if (count % 10 === 0 || (count % 100 >= 11 && count % 100 <= 19)) return "nuotraukų"
+      if (count % 10 === 1) return "nuotrauka"
+      return "nuotraukos"
+    } else {
+      const count = existingFiles.length + newFiles.length
+      // Lithuanian grammar rules for pluralization
+      if (count === 0) return "dokumentų"
+      if (count === 1) return "dokumentas"
+      if (count % 10 === 0 || (count % 100 >= 11 && count % 100 <= 19)) return "dokumentų"
+      if (count % 10 === 1) return "dokumentas"
+      return "dokumentai"
+    }
   }
 
   // Get the allowed extensions as a string
@@ -198,6 +217,21 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
       return "0 KB"
     }
     return `${(size / 1024).toFixed(1)} KB`
+  }
+
+  // Function to extract filename from URL for display
+  const getFilenameFromUrl = (url: string) => {
+    try {
+      // Extract the filename from the URL
+      const urlParts = url.split("/")
+      const filenameWithParams = urlParts[urlParts.length - 1]
+      // Remove query parameters
+      const filename = filenameWithParams.split("?")[0]
+      // Decode URI components
+      return decodeURIComponent(filename)
+    } catch (e) {
+      return fileType === "image" ? "Nuotrauka" : "Dokumentas"
+    }
   }
 
   return (
@@ -222,7 +256,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
           fullWidth
           sx={{ mt: 1 }}
         >
-          Įkelti
+          Įkelti {fileType === "image" ? "nuotraukas" : "dokumentus"}
         </Button>
         <input
           type="file"
@@ -243,146 +277,161 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
       <Divider sx={{ mb: 2 }} />
 
       {fileType === "image" ? (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-          {/* Display existing images */}
-          {existingFiles.map((file) => (
-            <Box
-              key={file.id}
-              sx={{
-                position: "relative",
-                width: 80,
-                height: 80,
-                border: "1px solid #ddd",
-                borderRadius: 1,
-                overflow: "hidden",
-              }}
-            >
-              <img
-                src={file.url || "/placeholder.svg"}
-                alt={file.fileName || "Image"}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-                onError={(e) => {
-                  // Handle image loading errors
-                  const target = e.target as HTMLImageElement
-                  target.src = "/placeholder.svg"
-                  target.onerror = null // Prevent infinite error loop
-                }}
-              />
-              {onDeleteExisting && (
-                <IconButton
-                  size="small"
+        <>
+          {existingFiles.length === 0 && newFiles.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 3 }}>
+              <Image sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                Nėra įkeltų nuotraukų
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+              {/* Display existing images */}
+              {existingFiles.map((file) => (
+                <Box
+                  key={file.id}
                   sx={{
-                    position: "absolute",
-                    top: 0,
-                    right: 0,
-                    backgroundColor: "rgba(255,255,255,0.7)",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
+                    position: "relative",
+                    width: 120,
+                    height: 120,
+                    border: "1px solid #ddd",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
                   }}
-                  onClick={() => onDeleteExisting(file.id)}
                 >
-                  <Delete fontSize="small" />
-                </IconButton>
-              )}
-            </Box>
-          ))}
+                  {!failedImages[file.url] ? (
+                    <img
+                      src={file.url || "/placeholder.svg"}
+                      alt={file.fileName || "Nuotrauka"}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                      onError={() => handleImageError(file.url)}
+                    />
+                  ) : (
+                    <>
+                      <Image sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
+                      <Typography variant="caption" align="center" sx={{ px: 1 }}>
+                        {getFilenameFromUrl(file.url).substring(0, 15)}...
+                      </Typography>
+                    </>
+                  )}
+                  {onDeleteExisting && (
+                    <IconButton
+                      size="small"
+                      color="error"
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        backgroundColor: "rgba(255,255,255,0.7)",
+                        "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
+                      }}
+                      onClick={() => onDeleteExisting(file.id)}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
 
-          {/* Display new images */}
-          {newFiles.map((file, index) => (
-            <Box
-              key={`new-img-${index}`}
-              sx={{
-                position: "relative",
-                width: 80,
-                height: 80,
-                border: "1px solid #ddd",
-                borderRadius: 1,
-                overflow: "hidden",
-              }}
-            >
-              <img
-                src={file.preview || "/placeholder.svg"}
-                alt={file.name || "New image"}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-                onError={(e) => {
-                  // Handle image loading errors
-                  const target = e.target as HTMLImageElement
-                  target.src = "/placeholder.svg"
-                  target.onerror = null // Prevent infinite error loop
-                }}
-              />
-              <IconButton
-                size="small"
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  backgroundColor: "rgba(255,255,255,0.7)",
-                  "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
-                }}
-                onClick={() => removeNewFile(index)}
-              >
-                <Delete fontSize="small" />
-              </IconButton>
-            </Box>
-          ))}
-
-          {existingFiles.length === 0 && newFiles.length === 0 && (
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ width: "100%", py: 2 }}>
-              Nėra įkeltų {getFileTypeLabel()}
-            </Typography>
-          )}
-        </Box>
-      ) : (
-        <List dense sx={{ maxHeight: 200, overflow: "auto" }}>
-          {/* Display existing documents */}
-          {existingFiles.map((file) => (
-            <ListItem key={file.id}>
-              <ListItemIcon>{getDocumentIcon(file.fileName)}</ListItemIcon>
-              <ListItemText
-                primary={file.fileName || "Document"}
-                secondary={
-                  <a href={file.url} target="_blank" rel="noreferrer">
-                    Peržiūrėti
-                  </a>
-                }
-              />
-              {onDeleteExisting && (
-                <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => onDeleteExisting(file.id)}>
-                    <Delete />
+              {/* Display new images */}
+              {newFiles.map((file, index) => (
+                <Box
+                  key={`new-img-${index}`}
+                  sx={{
+                    position: "relative",
+                    width: 120,
+                    height: 120,
+                    border: "1px solid #ddd",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={previews[`${file.name || "/placeholder.svg"}-${index}`] || "/placeholder.svg"}
+                    alt={file.name || "Nauja nuotrauka"}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="error"
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      backgroundColor: "rgba(255,255,255,0.7)",
+                      "&:hover": { backgroundColor: "rgba(255,255,255,0.9)" },
+                    }}
+                    onClick={() => removeNewFile(index)}
+                  >
+                    <Delete fontSize="small" />
                   </IconButton>
-                </ListItemSecondaryAction>
-              )}
-            </ListItem>
-          ))}
-
-          {/* Display new documents */}
-          {newFiles.map((file, index) => (
-            <ListItem key={`new-doc-${index}`}>
-              <ListItemIcon>{getDocumentIcon(file.name)}</ListItemIcon>
-              <ListItemText primary={file.name || "Document"} secondary={formatFileSize(file.size)} />
-              <ListItemSecondaryAction>
-                <IconButton edge="end" onClick={() => removeNewFile(index)}>
-                  <Delete />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-
-          {existingFiles.length === 0 && newFiles.length === 0 && (
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>
-              Nėra įkeltų {getFileTypeLabel()}
-            </Typography>
+                </Box>
+              ))}
+            </Box>
           )}
-        </List>
+        </>
+      ) : (
+        <>
+          {existingFiles.length === 0 && newFiles.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 3 }}>
+              <Description sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                Nėra įkeltų dokumentų
+              </Typography>
+            </Box>
+          ) : (
+            <List dense sx={{ maxHeight: 300, overflow: "auto" }}>
+              {/* Display existing documents */}
+              {existingFiles.map((file) => (
+                <ListItem key={file.id}>
+                  <ListItemIcon>{getDocumentIcon(file.fileName)}</ListItemIcon>
+                  <ListItemText
+                    primary={file.fileName || "Dokumentas"}
+                    secondary={
+                      <a href={file.url} target="_blank" rel="noreferrer">
+                        Peržiūrėti
+                      </a>
+                    }
+                  />
+                  {onDeleteExisting && (
+                    <ListItemSecondaryAction>
+                      <IconButton edge="end" onClick={() => onDeleteExisting(file.id)}>
+                        <Delete />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  )}
+                </ListItem>
+              ))}
+
+              {/* Display new documents */}
+              {newFiles.map((file, index) => (
+                <ListItem key={`new-doc-${index}`}>
+                  <ListItemIcon>{getDocumentIcon(file.name)}</ListItemIcon>
+                  <ListItemText primary={file.name || "Dokumentas"} secondary={formatFileSize(file.size)} />
+                  <ListItemSecondaryAction>
+                    <IconButton edge="end" onClick={() => removeNewFile(index)}>
+                      <Delete />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </>
       )}
 
       {(existingFiles.length > 0 || newFiles.length > 0) && (

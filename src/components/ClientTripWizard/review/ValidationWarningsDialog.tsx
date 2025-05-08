@@ -15,9 +15,11 @@ import {
   ListItemText,
   FormControlLabel,
   Checkbox,
+  useTheme,
 } from "@mui/material"
 import { Warning as WarningIcon } from "@mui/icons-material"
 import type { ValidationWarning } from "../../../types"
+import { useState, useEffect } from "react"
 
 interface ValidationWarningsDialogProps {
   open: boolean
@@ -34,12 +36,38 @@ const ValidationWarningsDialog: React.FC<ValidationWarningsDialogProps> = ({
   hideHighlighting,
   onHideHighlightingChange,
 }) => {
+  const theme = useTheme()
+
+  // Use local state to track checkbox value
+  const [localHideHighlighting, setLocalHideHighlighting] = useState(hideHighlighting)
+
+  // Update local state when props change and dialog opens
+  useEffect(() => {
+    if (open) {
+      setLocalHideHighlighting(hideHighlighting)
+    }
+  }, [hideHighlighting, open])
+
+  // Handle checkbox change
+  const handleCheckboxChange = () => {
+    const newValue = !localHideHighlighting
+    setLocalHideHighlighting(newValue)
+  }
+
+  // When dialog closes, propagate the local state to parent
+  const handleClose = () => {
+    onHideHighlightingChange(localHideHighlighting)
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ bgcolor: "rgba(255, 167, 38, 0.15)", color: "text.primary" }}>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ bgcolor: "rgba(255, 167, 38, 0.15)", color: "text.primary", py: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <WarningIcon />
-          <Typography variant="h6">Patikrinimo pastabos ({warnings.length})</Typography>
+          <WarningIcon color="warning" />
+          <Typography variant="h6" fontWeight="medium">
+            Patikrinimo pastabos ({warnings.length})
+          </Typography>
         </Box>
       </DialogTitle>
       <DialogContent dividers>
@@ -54,35 +82,30 @@ const ValidationWarningsDialog: React.FC<ValidationWarningsDialogProps> = ({
               sx={{
                 mb: 1,
                 borderRadius: "4px",
+                bgcolor: "rgba(255, 167, 38, 0.05)",
                 transition: "background-color 0.2s ease-in-out",
                 "&:hover": {
-                  bgcolor: "rgba(0, 0, 0, 0.04)",
+                  bgcolor: "rgba(255, 167, 38, 0.1)",
                 },
               }}
             >
               <ListItemIcon>
                 <WarningIcon color="warning" />
               </ListItemIcon>
-              <ListItemText primary={warning.message} />
+              <ListItemText primary={warning.message} primaryTypographyProps={{ fontWeight: "medium" }} />
             </ListItem>
           ))}
         </List>
 
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 3, bgcolor: "rgba(0, 0, 0, 0.02)", p: 2, borderRadius: 1 }}>
           <FormControlLabel
-            control={
-              <Checkbox
-                checked={hideHighlighting}
-                onChange={(e) => onHideHighlightingChange(e.target.checked)}
-                color="primary"
-              />
-            }
+            control={<Checkbox checked={localHideHighlighting} onChange={handleCheckboxChange} color="primary" />}
             label="Nebenoriu matyti įspėjimų paryškinimų kelionės peržiūroj (įspėjimų mygtukas liks matomas)"
           />
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={handleClose} color="primary" variant="contained" size="large">
           Supratau
         </Button>
       </DialogActions>
@@ -91,4 +114,3 @@ const ValidationWarningsDialog: React.FC<ValidationWarningsDialogProps> = ({
 }
 
 export default ValidationWarningsDialog
-

@@ -48,6 +48,8 @@ interface CruiseItemProps {
     value: Dayjs | null,
   ) => void
   isSmall: boolean
+  tripStartDate?: Dayjs | null
+  tripEndDate?: Dayjs | null
 }
 
 const CruiseItem: React.FC<CruiseItemProps> = ({
@@ -60,6 +62,8 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
   timeError,
   onTimeChange,
   isSmall,
+  tripStartDate,
+  tripEndDate,
 }) => {
   return (
     <Accordion sx={{ mb: 2 }}>
@@ -67,6 +71,7 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
         expandIcon={<ExpandMoreIcon />}
         aria-controls={`cruise-content-${cruiseIndex}`}
         id={`cruise-header-${cruiseIndex}`}
+        data-tab-button="true"
         sx={{
           bgcolor: "background.paper",
           borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
@@ -75,7 +80,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
             width: "100%",
             justifyContent: "space-between",
             flexDirection: isSmall ? "column" : "row",
@@ -113,6 +117,7 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
                 onRemoveCruise(stepIndex, cruiseIndex)
               }}
               sx={{ ml: 1 }}
+              data-delete-offer-button="true"
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
@@ -120,7 +125,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Company, Ship name, Code, Cabin type */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -160,7 +164,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Second row: Departure and arrival ports and times */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -176,6 +179,9 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
               label="Išvykimo laikas"
               value={cruise.departureTime}
               onChange={(newDate) => onTimeChange(stepIndex, cruiseIndex, "departureTime", newDate)}
+              data-datepicker="true"
+              minDate={tripStartDate}
+              maxDate={tripEndDate}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -192,7 +198,9 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
               label="Atvykimo laikas"
               value={cruise.arrivalTime}
               onChange={(newDate) => onTimeChange(stepIndex, cruiseIndex, "arrivalTime", newDate)}
-              minDate={cruise.departureTime}
+              minDate={cruise.departureTime || tripStartDate}
+              maxDate={tripEndDate}
+              data-datepicker="true"
             />
             {timeError && (
               <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
@@ -201,8 +209,14 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
             )}
           </Grid>
         </Grid>
+        {(tripStartDate || tripEndDate) && (
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              {/* We don't show explicit error messages, just rely on the date picker color */}
+            </Grid>
+          </Grid>
+        )}
 
-        {/* Third row: Description */}
         <TextField
           label="Papildomas aprašymas"
           value={cruise.description}
@@ -214,18 +228,23 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
           sx={{ mb: 2 }}
         />
 
-        {/* Fourth row: Price */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} md={9}></Grid>
           <Grid item xs={12} md={3}>
             <TextField
-              label="Kaina (€)"
+              label="Kaina"
               type="number"
-              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
               value={cruise.price}
-              onChange={(e) => onCruiseChange(stepIndex, cruiseIndex, "price", e.target.value)}
+              onChange={(e) => {
+                const value = Number.parseFloat(e.target.value)
+                onCruiseChange(stepIndex, cruiseIndex, "price", value >= 0 ? value : 0)
+              }}
               fullWidth
               size="small"
+              InputProps={{
+                endAdornment: <Typography variant="body2">€</Typography>,
+              }}
+              inputProps={{ min: "0" }}
             />
           </Grid>
         </Grid>

@@ -28,7 +28,7 @@ import { FlightTakeoff, LocalOffer, CalendarMonth, FilterAlt } from "@mui/icons-
 import type { TripResponse, TripCategory } from "../types/ClientTrip"
 import { useNavigate } from "react-router-dom"
 import { translateTripCategory } from "../Utils/translateEnums"
-
+import type { ClientTripListResponse } from "../types/ClientsTripList"
 interface TimelineEvent {
   id: string
   title: string
@@ -41,7 +41,7 @@ interface TimelineEvent {
 }
 
 interface ClientTimelineProps {
-  trips: TripResponse[]
+  trips: ClientTripListResponse[]
   offers: TripResponse[] // Changed to TripResponse[] to match real data
 }
 

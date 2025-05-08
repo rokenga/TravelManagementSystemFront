@@ -12,15 +12,16 @@ import {
   Person as PersonIcon,
   ChildCare as ChildIcon,
   LocationOn as LocationIcon,
+  Comment as CommentIcon,
 } from "@mui/icons-material"
 import { translateTripCategory, translateTripStatus } from "../Utils/translateEnums"
-import type { TripResponse } from "../types/ClientTrip"
 
-interface TripDetailsCardProps {
-  trip: TripResponse
+interface TripInfoCardProps {
+  trip: any // Using any for simplicity, but you can create a union type of both response types
+  variant?: "trip" | "offer" // To distinguish between trip and offer if needed
 }
 
-const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
+const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
@@ -34,6 +35,9 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
       day: "numeric",
     })
   }
+
+  // Determine if this is a trip or an offer
+  const isOffer = variant === "offer" || trip.tripType === "ClientSpecialOffer"
 
   return (
     <Card elevation={3} sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}>
@@ -50,7 +54,9 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
             gap: isMobile ? 2 : 0,
           }}
         >
-          <Typography variant="h5">{trip.tripName}</Typography>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+            {trip.tripName || "Kelionės pasiūlymas"}
+          </Typography>
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             {trip.status !== undefined && (
               <Chip
@@ -72,9 +78,10 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
                 {trip.category && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CategoryIcon />
+                      <CategoryIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Kategorija:</span> {translateTripCategory(trip.category)}
+                        <span style={{ color: "text.secondary" }}>Kategorija:</span>{" "}
+                        {translateTripCategory(trip.category)}
                       </Typography>
                     </Box>
                   </Grid>
@@ -84,9 +91,9 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
                 {trip.destination && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <LocationIcon />
+                      <LocationIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Kryptis:</span> {trip.destination}
+                        <span style={{ color: "text.secondary" }}>Kryptis:</span> {trip.destination}
                       </Typography>
                     </Box>
                   </Grid>
@@ -96,55 +103,48 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
                 {trip.price !== undefined && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <EuroIcon />
+                      <EuroIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Kaina:</span> €{trip.price}
+                        <span style={{ color: "text.secondary" }}>Kaina:</span> €{trip.price}
                       </Typography>
                     </Box>
                   </Grid>
                 )}
 
-                {/* StartDate */}
-                {trip.startDate && (
+                {/* Date Range - show as a single item with both dates */}
+                {(trip.startDate || trip.endDate) && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CalendarIcon />
+                      <CalendarIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Nuo:</span> {formatDate(trip.startDate)}
+                        <span style={{ color: "text.secondary" }}>Data:</span>{" "}
+                        {trip.startDate ? formatDate(trip.startDate) : "—"} -{" "}
+                        {trip.endDate ? formatDate(trip.endDate) : "—"}
                       </Typography>
                     </Box>
                   </Grid>
                 )}
 
-                {/* EndDate */}
-                {trip.endDate && (
+                {/* Insurance - only for trips, not offers */}
+                {!isOffer && trip.insuranceTaken !== undefined && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CalendarIcon />
+                      <InsuranceIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Iki:</span> {formatDate(trip.endDate)}
+                        <span style={{ color: "text.secondary" }}>Draudimas:</span>{" "}
+                        {trip.insuranceTaken ? "Taip" : "Ne"}
                       </Typography>
                     </Box>
                   </Grid>
                 )}
-
-                {/* Insurance */}
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <InsuranceIcon />
-                    <Typography variant="body1">
-                      <span>Draudimas:</span> {trip.insuranceTaken ? "Taip" : "Ne"}
-                    </Typography>
-                  </Box>
-                </Grid>
 
                 {/* Adults */}
                 {trip.adultsCount !== undefined && trip.adultsCount > 0 && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <PersonIcon />
+                      <PersonIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Suaugusiųjų:</span> {trip.adultsCount}
+                        <span style={{ color: "text.secondary" }}>Suaugusiųjų:</span> {trip.adultsCount}
                       </Typography>
                     </Box>
                   </Grid>
@@ -154,9 +154,9 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
                 {trip.childrenCount !== undefined && trip.childrenCount > 0 && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <ChildIcon />
+                      <ChildIcon color="primary" />
                       <Typography variant="body1">
-                        <span>Vaikų:</span> {trip.childrenCount}
+                        <span style={{ color: "text.secondary" }}>Vaikų:</span> {trip.childrenCount}
                       </Typography>
                     </Box>
                   </Grid>
@@ -164,15 +164,48 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
               </Grid>
             </Grid>
 
-            {/* Right column: Description */}
+            {/* Right column: Description and client wishes */}
             <Grid item xs={12} md={6}>
+              {/* Description */}
               {trip.description && (
-                <Box>
-                  <Typography variant="body1" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ mb: trip.clientWishes ? 3 : 0 }}>
+                  <Typography
+                    variant="subtitle1"
+                    color="primary"
+                    gutterBottom
+                    sx={{
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
                     <DescriptionIcon fontSize="small" /> Aprašymas
                   </Typography>
                   <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
                     {trip.description}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Client wishes - only for offers */}
+              {isOffer && trip.clientWishes && (
+                <Box>
+                  <Typography
+                    variant="subtitle1"
+                    color="primary"
+                    gutterBottom
+                    sx={{
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <CommentIcon fontSize="small" /> Kliento pageidavimai
+                  </Typography>
+                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                    {trip.clientWishes}
                   </Typography>
                 </Box>
               )}
@@ -184,4 +217,4 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({ trip }) => {
   )
 }
 
-export default TripDetailsCard
+export default TripInfoCard

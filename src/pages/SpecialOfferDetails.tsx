@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
@@ -15,38 +15,30 @@ import {
   Typography,
   Box,
   Paper,
-  Divider,
   Chip,
   Button,
-  Card,
-  CardContent,
   Skeleton,
   Alert,
   useTheme,
   useMediaQuery,
-  Tab,
-  Tabs,
   Fab,
+  Divider,
 } from "@mui/material"
 import {
   CalendarMonth as CalendarIcon,
-  AccessTime as TimeIcon,
   Flight as FlightIcon,
   DirectionsCar as CarIcon,
   DirectionsBus as BusIcon,
   DirectionsBoat as BoatIcon,
-  Hotel as HotelIcon,
-  Restaurant as RestaurantIcon,
-  LocationOn as LocationIcon,
   Person as PersonIcon,
   ChildCare as ChildIcon,
   Info as InfoIcon,
-  EventAvailable as ValidUntilIcon,
-  Bed as BedIcon,
-  Euro as EuroIcon,
-  Description as DescriptionIcon,
   DirectionsBus as DirectionsBusIcon,
   ShoppingCart as ShoppingCartIcon,
+  Star as StarIcon,
+  Euro as EuroIcon,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
 } from "@mui/icons-material"
 
 // Import the ImageSlider component
@@ -87,20 +79,28 @@ const getTransportIcon = (type: string) => {
   }
 }
 
+// Helper function to render star rating
+const renderStarRating = (rating?: number) => {
+  if (!rating) return null
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      {[...Array(rating)].map((_, i) => (
+        <StarIcon key={i} sx={{ color: "#FFD700", fontSize: "1rem" }} />
+      ))}
+    </Box>
+  )
+}
+
 const SpecialOfferDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [offer, setOffer] = useState<PublicOfferDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeAccommodationTab, setActiveAccommodationTab] = useState(0)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
-  const reservationSectionRef = useRef<HTMLDivElement>(null)
-
-  const scrollToReservation = () => {
-    reservationSectionRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   useEffect(() => {
     const fetchOfferDetails = async () => {
@@ -125,10 +125,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
     navigate(`/reserve-special-offer/${id}`)
   }
 
-  const handleAccommodationTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveAccommodationTab(newValue)
-  }
-
   // Prepare images for gallery
   const galleryImages: ImageItem[] =
     offer?.files
@@ -146,11 +142,14 @@ const SpecialOfferDetailsPage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={8}>
             <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2, mb: 3 }} />
             <Skeleton variant="text" height={60} sx={{ mb: 1 }} />
             <Skeleton variant="text" height={30} sx={{ mb: 2 }} />
             <Skeleton variant="rectangular" height={200} sx={{ mb: 3 }} />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
           </Grid>
         </Grid>
       </Container>
@@ -182,10 +181,10 @@ const SpecialOfferDetailsPage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3, md: 4 } }}>
       <Grid container spacing={3}>
         {/* Main Content */}
-        <Grid item xs={12}>
+        <Grid item xs={12} md={9}>
           {/* Hero Section with Image Slider */}
           <Paper
             elevation={3}
@@ -201,7 +200,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 <ImageSlider
                   images={galleryImages}
                   onImageClick={(index) => {
-                    // You could implement a full-screen gallery view here
                     console.log("Image clicked:", index)
                   }}
                 />
@@ -209,45 +207,39 @@ const SpecialOfferDetailsPage: React.FC = () => {
             )}
           </Paper>
 
-          {/* Floating Reservation Button */}
-          <Box
-            sx={{
-              position: "sticky",
-              top: 20,
-              zIndex: 10,
-              display: "flex",
-              justifyContent: "center",
-              mb: 3,
-            }}
-          >
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={scrollToReservation}
-              sx={{
-                py: 1.5,
-                px: 4,
-                fontWeight: "bold",
-                boxShadow: 3,
-              }}
-            >
-              Rezervuoti kelionę
-            </Button>
-          </Box>
-          <Box sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}>
-            <Fab color="primary" aria-label="reserve" onClick={scrollToReservation}>
-              <ShoppingCartIcon />
-            </Fab>
-          </Box>
+          {/* Floating Reservation Button (mobile only) */}
+          {isMobile && (
+            <Box sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}>
+              <Fab color="primary" aria-label="reserve" onClick={handleReserve}>
+                <ShoppingCartIcon />
+              </Fab>
+            </Box>
+          )}
 
-          {/* Description with trip details */}
-          <Paper elevation={3} sx={{ borderRadius: 2, p: 3, mb: 3 }}>
-            <Typography variant="h4" gutterBottom fontWeight="bold">
+          {/* Trip Title and Key Details */}
+          <Paper elevation={3} sx={{ borderRadius: 2, p: { xs: 2, sm: 3 }, mb: 3 }}>
+            <Typography
+              variant={isSmallMobile ? "h5" : "h4"}
+              gutterBottom
+              fontWeight="bold"
+              sx={{ color: theme.palette.primary.main, textAlign: "left" }}
+            >
               {offer.tripName}
             </Typography>
 
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+            {/* Key details in a more compact, unified design */}
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1.5,
+                mb: 2,
+                "& .MuiChip-root": {
+                  height: "32px",
+                  fontSize: "0.875rem",
+                },
+              }}
+            >
               <Chip
                 icon={<CalendarIcon />}
                 label={`${formatDate(offer.startDate)} - ${formatDate(offer.endDate)}`}
@@ -270,395 +262,349 @@ const SpecialOfferDetailsPage: React.FC = () => {
               )}
               <Chip
                 icon={<InfoIcon />}
-                label={`Kategorija: ${translateTripCategory(offer.category)}`}
+                label={translateTripCategory(offer.category)}
                 color="secondary"
                 variant="outlined"
               />
               <Chip
-                icon={<ValidUntilIcon />}
-                label={`Pasiūlymas galioja iki: ${formatDate(offer.validUntil)}`}
-                color="info"
+                icon={<EuroIcon />}
+                label={`Nuo: ${new Intl.NumberFormat("lt-LT", {
+                  style: "currency",
+                  currency: "EUR",
+                }).format(offer.price)}`}
+                color="success"
                 variant="outlined"
               />
             </Box>
 
-            <Typography variant="h5" gutterBottom fontWeight="bold">
-              Apie kelionę
-            </Typography>
-            <Typography variant="body1" paragraph>
+            {/* Trip description */}
+            <Typography
+              variant="body1"
+              sx={{
+                fontSize: { xs: "0.9rem", sm: "1rem" },
+                lineHeight: 1.6,
+                color: theme.palette.text.primary,
+                textAlign: "left",
+              }}
+            >
               {offer.description}
             </Typography>
-
-            <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                Kaina nuo:
-              </Typography>
-              <Typography variant="h6" color="primary" fontWeight="bold">
-                {new Intl.NumberFormat("lt-LT", {
-                  style: "currency",
-                  currency: "EUR",
-                }).format(offer.price)}
-              </Typography>
-            </Box>
           </Paper>
 
-          {/* Accommodations Section with Map */}
-          {allAccommodations.length > 0 && (
-            <Paper elevation={3} sx={{ borderRadius: 2, p: 3, mb: 3 }}>
-              <Typography variant="h5" gutterBottom fontWeight="bold">
-                Apgyvendinimas
+          {/* Itinerary Steps */}
+          {offer.itinerary.steps.map((step, index) => (
+            <Paper key={index} elevation={3} sx={{ borderRadius: 2, p: { xs: 2, sm: 3 }, mb: 3 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: theme.palette.primary.main,
+                  fontWeight: "bold",
+                  mb: 2,
+                  textAlign: "left",
+                }}
+              >
+                {step.description}
               </Typography>
 
-              {allAccommodations.length > 1 && (
-                <Tabs
-                  value={activeAccommodationTab}
-                  onChange={handleAccommodationTabChange}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{ mb: 3 }}
-                >
-                  {allAccommodations.map((accommodation, index) => (
-                    <Tab
-                      key={index}
-                      label={accommodation.hotelName || `Viešbutis ${index + 1}`}
-                      id={`accommodation-tab-${index}`}
-                      aria-controls={`accommodation-tabpanel-${index}`}
-                    />
-                  ))}
-                </Tabs>
-              )}
+              {/* Transport section */}
+              {step.transports.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  {step.transports.map((transport, tIndex) => (
+                    <Box
+                      key={tIndex}
+                      sx={{
+                        mb: 2,
+                        pb: 2,
+                        borderBottom: tIndex < step.transports.length - 1 ? "1px solid rgba(0,0,0,0.1)" : "none",
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="bold"
+                        sx={{ fontSize: { xs: "0.9rem", sm: "1rem" }, textAlign: "left", mb: 1 }}
+                      >
+                        {transport.companyName} - {transport.transportName}
+                        {transport.transportCode && ` (${transport.transportCode})`}
+                      </Typography>
 
-              {allAccommodations.map((accommodation, index) => (
-                <Box
-                  key={index}
-                  role="tabpanel"
-                  hidden={activeAccommodationTab !== index}
-                  id={`accommodation-tabpanel-${index}`}
-                  aria-labelledby={`accommodation-tab-${index}`}
-                >
-                  {activeAccommodationTab === index && (
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={6}>
-                        <Card variant="outlined" sx={{ height: "100%" }}>
-                          <CardContent>
-                            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                              <HotelIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                              <Typography variant="h6" fontWeight="bold">
-                                {accommodation.hotelName}
-                              </Typography>
-                            </Box>
-
-                            <Divider sx={{ my: 2 }} />
-
-                            <Grid container spacing={2}>
-                              <Grid item xs={12} sm={6}>
-                                <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                                  <TimeIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Atvykimas:
-                                    </Typography>
-                                    <Typography variant="body1">{formatDate(accommodation.checkIn)}</Typography>
-                                  </Box>
-                                </Box>
-                              </Grid>
-
-                              <Grid item xs={12} sm={6}>
-                                <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                                  <TimeIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Išvykimas:
-                                    </Typography>
-                                    <Typography variant="body1">{formatDate(accommodation.checkOut)}</Typography>
-                                  </Box>
-                                </Box>
-                              </Grid>
-
-                              {accommodation.roomType && (
-                                <Grid item xs={12} sm={6}>
-                                  <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                                    <BedIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                    <Box>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Kambario tipas:
-                                      </Typography>
-                                      <Typography variant="body1">{accommodation.roomType}</Typography>
-                                    </Box>
-                                  </Box>
-                                </Grid>
-                              )}
-
-                              {accommodation.boardBasis && (
-                                <Grid item xs={12} sm={6}>
-                                  <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                                    <RestaurantIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                    <Box>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Maitinimas:
-                                      </Typography>
-                                      <Typography variant="body1">
-                                        {translateBoardBasisType(accommodation.boardBasis)}
-                                      </Typography>
-                                    </Box>
-                                  </Box>
-                                </Grid>
-                              )}
-
-                              {accommodation.price && (
-                                <Grid item xs={12} sm={6}>
-                                  <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                                    <EuroIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                    <Box>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Kaina:
-                                      </Typography>
-                                      <Typography variant="body1" fontWeight="bold" color="primary.main">
-                                        {new Intl.NumberFormat("lt-LT", {
-                                          style: "currency",
-                                          currency: "EUR",
-                                        }).format(accommodation.price)}
-                                      </Typography>
-                                    </Box>
-                                  </Box>
-                                </Grid>
-                              )}
-
-                              {accommodation.hotelLink && (
-                                <Grid item xs={12}>
-                                  <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                                    <LocationIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                    <Box>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Adresas:
-                                      </Typography>
-                                      <Typography variant="body1">{accommodation.hotelLink}</Typography>
-                                    </Box>
-                                  </Box>
-                                </Grid>
-                              )}
-                            </Grid>
-
-                            {accommodation.description && (
-                              <>
-                                <Divider sx={{ my: 2 }} />
-                                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                                  <DescriptionIcon fontSize="small" sx={{ mr: 1, mt: 0.5, color: "text.secondary" }} />
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Aprašymas:
-                                    </Typography>
-                                    <Typography variant="body1">{accommodation.description}</Typography>
-                                  </Box>
-                                </Box>
-                              </>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-
-                      {/* Map Section */}
-                      {accommodation.hotelLink && (
-                        <Grid item xs={12} md={6}>
-                          <Card variant="outlined" sx={{ height: "100%", minHeight: 400 }}>
-                            <CardContent sx={{ height: "100%", p: 0 }}>
-                              <Box sx={{ height: "100%" }}>
-                                <LeafletMapDisplay address={accommodation.hotelLink} />
-                              </Box>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      )}
-                    </Grid>
-                  )}
-                </Box>
-              ))}
-            </Paper>
-          )}
-
-          {/* Simplified Itinerary */}
-          <Paper elevation={3} sx={{ borderRadius: 2, p: 3, mb: 3 }}>
-            <Typography variant="h5" gutterBottom fontWeight="bold">
-              Pasiūlymas
-            </Typography>
-            <Typography variant="body1" paragraph>
-              {offer.itinerary.description}
-            </Typography>
-
-            <Divider sx={{ my: 2 }} />
-
-            {offer.itinerary.steps.map((step, index) => (
-              <Box key={index} sx={{ mb: 4 }}>
-                <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main }}>
-                  {step.description}
-                </Typography>
-
-                {/* Transports - no accordion */}
-                {step.transports.length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                      Transportas
-                    </Typography>
-                    {step.transports.map((transport, tIndex) => (
-                      <Card key={tIndex} variant="outlined" sx={{ mb: 2 }}>
-                        <CardContent>
-                          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                            <Box sx={{ mr: 1 }}>{getTransportIcon(transport.transportType)}</Box>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {transport.companyName} - {transport.transportName}
-                              {transport.transportCode && ` (${transport.transportCode})`}
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ mb: 1 }}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, textAlign: "left" }}
+                            >
+                              Išvykimas:
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                            >
+                              <strong>{transport.departurePlace}</strong>
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                            >
+                              {formatDate(transport.departureTime)}, {formatTime(transport.departureTime)}
                             </Typography>
                           </Box>
-
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                                <LocationIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-                                <Typography variant="body2">
-                                  Išvykimas: <strong>{transport.departurePlace}</strong>
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <TimeIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-                                <Typography variant="body2">
-                                  {formatDate(transport.departureTime)}, {formatTime(transport.departureTime)}
-                                </Typography>
-                              </Box>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                                <LocationIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-                                <Typography variant="body2">
-                                  Atvykimas: <strong>{transport.arrivalPlace}</strong>
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <TimeIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-                                <Typography variant="body2">
-                                  {formatDate(transport.arrivalTime)}, {formatTime(transport.arrivalTime)}
-                                </Typography>
-                              </Box>
-                            </Grid>
-                          </Grid>
-
-                          {transport.description && (
-                            <Typography variant="body2" sx={{ mt: 2 }}>
-                              {transport.description}
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ mb: 1 }}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, textAlign: "left" }}
+                            >
+                              Atvykimas:
                             </Typography>
-                          )}
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                            >
+                              <strong>{transport.arrivalPlace}</strong>
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                            >
+                              {formatDate(transport.arrivalTime)}, {formatTime(transport.arrivalTime)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
 
-                          {transport.cabinType && (
-                            <Box sx={{ mt: 1 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Klasė/Kabina: {transport.cabinType}
+                      {transport.cabinType && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1,
+                            fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                            color: "text.secondary",
+                            textAlign: "left",
+                          }}
+                        >
+                          Klasė/Kabina: {transport.cabinType}
+                        </Typography>
+                      )}
+
+                      {transport.description && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1,
+                            fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                            textAlign: "left",
+                          }}
+                        >
+                          {transport.description}
+                        </Typography>
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              {/* Add divider between transport and accommodation if both exist */}
+              {step.transports.length > 0 && step.accommodations.length > 0 && <Divider sx={{ my: 3 }} />}
+
+              {/* Accommodation section */}
+              {step.accommodations.length > 0 && (
+                <Box sx={{ mt: step.transports.length > 0 ? 3 : 0 }}>
+                  {step.accommodations.map((accommodation, aIndex) => (
+                    <Box
+                      key={aIndex}
+                      sx={{
+                        mb: 2,
+                        pb: 2,
+                        borderBottom: aIndex < step.accommodations.length - 1 ? "1px solid rgba(0,0,0,0.1)" : "none",
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="bold"
+                        sx={{ fontSize: { xs: "1rem", sm: "1.1rem" }, textAlign: "left", mb: 1 }}
+                      >
+                        {accommodation.hotelName}
+                        {accommodation.starRating && renderStarRating(accommodation.starRating)}
+                      </Typography>
+
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ mb: 2 }}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, textAlign: "left" }}
+                            >
+                              Įsiregistravimas:
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                            >
+                              {formatDate(accommodation.checkIn)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ mb: 2 }}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, textAlign: "left" }}
+                            >
+                              Išsiregistravimas:
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                            >
+                              {formatDate(accommodation.checkOut)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+
+                        {/* Add divider if there are additional details */}
+                        {(accommodation.roomType || accommodation.boardBasis) && (
+                          <Grid item xs={12}>
+                            <Divider sx={{ my: 1 }} />
+                          </Grid>
+                        )}
+
+                        {accommodation.roomType && (
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, textAlign: "left" }}
+                              >
+                                Kambario tipas:
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                              >
+                                {accommodation.roomType}
                               </Typography>
                             </Box>
-                          )}
+                          </Grid>
+                        )}
 
-                          {transport.price && (
-                            <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Kaina:{" "}
-                                <strong>
-                                  {new Intl.NumberFormat("lt-LT", {
-                                    style: "currency",
-                                    currency: "EUR",
-                                  }).format(transport.price)}
-                                </strong>
+                        {accommodation.boardBasis && (
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" }, textAlign: "left" }}
+                              >
+                                Maitinimas:
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" }, textAlign: "left" }}
+                              >
+                                {translateBoardBasisType(accommodation.boardBasis)}
                               </Typography>
                             </Box>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Box>
-                )}
-              </Box>
-            ))}
-          </Paper>
+                          </Grid>
+                        )}
+                      </Grid>
 
-          {/* Need Help Section */}
-          <Paper elevation={3} sx={{ borderRadius: 2, p: 3, mb: 3 }}>
-            <Typography variant="h5" gutterBottom fontWeight="bold">
-              Reikia pagalbos?
-            </Typography>
-            <Typography variant="body1" paragraph>
-              Turite klausimų apie šią kelionę? Susisiekite su mumis ir mielai padėsime!
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Button variant="outlined" fullWidth sx={{ py: 1.5 }}>
-                  +370 600 00000
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Button variant="outlined" fullWidth sx={{ py: 1.5 }}>
-                  info@keliones.lt
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
+                      {/* Add divider if there's a description */}
+                      {accommodation.description && <Divider sx={{ my: 1 }} />}
 
-          {/* Reservation Card */}
-          <Paper
-            ref={reservationSectionRef}
-            elevation={3}
+                      {accommodation.description && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1,
+                            fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                            textAlign: "left",
+                          }}
+                        >
+                          {accommodation.description}
+                        </Typography>
+                      )}
+
+                      {/* Map - only show if there's a valid address */}
+                      {accommodation.hotelLink && (
+                        <Box sx={{ mt: 2, height: 250, borderRadius: 1, overflow: "hidden" }}>
+                          <LeafletMapDisplay address={accommodation.hotelLink} height={250} hideErrors={true} />
+                        </Box>
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Paper>
+          ))}
+        </Grid>
+
+        {/* Right Sidebar - Help and Reservation */}
+        <Grid item xs={12} md={3}>
+          <Box
             sx={{
-              borderRadius: 2,
-              p: 3,
-              background: "linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%)",
+              position: { xs: "static", md: "sticky" },
+              top: "20px",
+              width: "100%",
             }}
           >
-            <Typography variant="h5" gutterBottom fontWeight="bold">
-              Kelionės kaina
-            </Typography>
+            <Paper
+              elevation={3}
+              sx={{
+                borderRadius: 2,
+                p: { xs: 2, sm: 2.5 },
+                mb: 3,
+                background: "linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%)",
+              }}
+            >
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                fullWidth
+                onClick={handleReserve}
+                sx={{
+                  py: { xs: 1.5, sm: 2 },
+                  fontWeight: "bold",
+                  fontSize: { xs: "1rem", sm: "1.1rem" },
+                  mb: 2,
+                }}
+              >
+                Rezervuoti kelionę
+              </Button>
 
-            <Grid container spacing={3} alignItems="center">
-              <Grid item xs={12} md={8}>
-                <Box sx={{ my: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Kaina asmeniui nuo
-                  </Typography>
-                  <Typography variant="h4" color="primary" fontWeight="bold">
-                    {new Intl.NumberFormat("lt-LT", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(offer.price)}
-                  </Typography>
-                </Box>
+              <Divider sx={{ my: 2 }} />
 
-                {/* Fix the price calculation (remove multiplication) */}
-                <Box sx={{ my: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Bendra kaina ({offer.adultsCount + offer.childrenCount} asm.)
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    {new Intl.NumberFormat("lt-LT", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(offer.price)}
-                  </Typography>
-                </Box>
+              <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main, textAlign: "left" }}>
+                Reikia pagalbos?
+              </Typography>
 
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2 }}>
-                  Pasiūlymas galioja iki {formatDate(offer.validUntil)}
-                </Typography>
-              </Grid>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<PhoneIcon />}
+                sx={{ py: 1, mb: 1.5, justifyContent: "flex-start" }}
+              >
+                +370 37 224409
+              </Button>
 
-              <Grid item xs={12} md={4}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  fullWidth
-                  onClick={handleReserve}
-                  sx={{ py: 2, fontWeight: "bold" }}
-                >
-                  Rezervuoti kelionę
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<EmailIcon />}
+                sx={{ py: 1, justifyContent: "flex-start" }}
+              >
+                info@saitas.lt
+              </Button>
+            </Paper>
+          </Box>
         </Grid>
       </Grid>
     </Container>
@@ -666,4 +612,3 @@ const SpecialOfferDetailsPage: React.FC = () => {
 }
 
 export default SpecialOfferDetailsPage
-

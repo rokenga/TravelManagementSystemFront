@@ -15,12 +15,14 @@ import CloneTripModal, { type CloneTripOptions } from "../components/CloneTripMo
 import CustomSnackbar from "../components/CustomSnackBar"
 import ActionBar from "../components/ActionBar"
 import { useNavigation } from "../contexts/NavigationContext"
-import TripDetailsCard from "../components/TripDetailsCard"
+import TripInfoCard from "../components/TripInfoCard"
 import ItineraryDisplay from "../components/ItineraryDisplay"
 import DocumentGallery from "../components/DocumentGallery"
 import PdfViewerModal from "../components/PdfViewerModal"
 import TripReviewModal from "../components/TripReviewModal"
 import type { TripReviewResponse } from "../types/TripReview"
+import TripStatusChangeDialog from "../components/status/ClientTripStatusChangeModal"
+import type { TripStatus, PaymentStatus } from "../types/ClientTrip"
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -91,6 +93,9 @@ const ClientTrip: React.FC = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
   const [hasReview, setHasReview] = useState(false)
   const [reviewData, setReviewData] = useState<TripReviewResponse | null>(null)
+
+  // State for status change dialog
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
 
   const user = useContext(UserContext)
   const token = localStorage.getItem("accessToken")
@@ -333,6 +338,34 @@ const ClientTrip: React.FC = () => {
     setActiveTab(newValue)
   }
 
+  // New function to handle status change
+  const handleChangeStatus = () => {
+    setStatusDialogOpen(true)
+  }
+
+  const handleStatusChangeSuccess = () => {
+    // Refresh trip data
+    if (tripId) {
+      axios
+        .get<TripResponse>(`${API_URL}/client-trips/${tripId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((response) => {
+          setTrip(response.data)
+          setSnackbar({
+            open: true,
+            message: "Kelionės statusas sėkmingai pakeistas!",
+            severity: "success",
+          })
+        })
+        .catch((err) => {
+          console.error("Failed to refresh trip data:", err)
+        })
+    }
+  }
+
   // New function to handle PDF download
   const handleDownloadPdf = async () => {
     if (!tripId) return
@@ -473,15 +506,13 @@ const ClientTrip: React.FC = () => {
         showCloneButton={true}
         showChangeStatusButton={true}
         showPdfButtons={true}
-        showReviewButton={tripStatus === "ended"}
+        showReviewButton={tripStatus === "ended" && trip?.status === "Confirmed"}
         hasReview={hasReview}
         pdfLoading={pdfLoading}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         onClone={handleCloneClick}
-        onChangeStatus={() => {
-          /* Non-functioning for now */
-        }}
+        onChangeStatus={handleChangeStatus}
         onCreateReview={handleCreateReview}
         onViewReview={handleViewReview}
         onPreviewPdf={handlePreviewPdf}
@@ -490,7 +521,7 @@ const ClientTrip: React.FC = () => {
       />
 
       {/* Trip Details Card */}
-      <TripDetailsCard trip={trip} />
+      <TripInfoCard trip={trip} variant="trip" images={tripImages} />
 
       {/* Tabs for different sections */}
       <Paper sx={{ borderRadius: 2, mb: 3, overflow: "hidden" }}>
@@ -610,6 +641,16 @@ const ClientTrip: React.FC = () => {
         onClose={handleCloseReviewModal}
         tripId={tripId}
         onSuccess={handleReviewSuccess}
+      />
+
+      {/* Status Change Dialog */}
+      <TripStatusChangeDialog
+        open={statusDialogOpen}
+        tripId={tripId || ""}
+        currentTripStatus={trip?.status as TripStatus}
+        currentPaymentStatus={trip?.paymentStatus as PaymentStatus}
+        onClose={() => setStatusDialogOpen(false)}
+        onSuccess={handleStatusChangeSuccess}
       />
 
       {/* Snackbar for notifications */}

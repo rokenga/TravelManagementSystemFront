@@ -208,21 +208,6 @@ const ResetPassword: React.FC = () => {
               margin="normal"
               required
               fullWidth
-              id="token"
-              label="Atstatymo kodas"
-              name="token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              error={!!formErrors.token}
-              helperText={formErrors.token}
-              disabled={!!location.search.includes("token=")}
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
               name="newPassword"
               label="Naujas slaptažodis"
               type={showPassword ? "text" : "password"}

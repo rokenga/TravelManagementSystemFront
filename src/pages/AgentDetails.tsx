@@ -6,6 +6,7 @@ import axios from "axios"
 import { Box, Tabs, Tab, CircularProgress, Paper, Alert } from "@mui/material"
 import { useParams, useNavigate } from "react-router-dom"
 import AgentCard from "../components/AgentCard"
+import AgentSummaryCards from "../components/AgentSummaryCards"
 import ClientsTable from "../components/ClientsTable"
 import TripsTable from "../components/TripsTable"
 import SpecialOffersTable from "../components/SpecialOffersTable"
@@ -17,6 +18,7 @@ import type { ClientResponse } from "../types/Client"
 import type { TripResponse } from "../types/ClientTrip"
 import { API_URL } from "../Utils/Configuration"
 import ConfirmationDialog from "../components/ConfirmationDialog"
+import CustomSnackbar from "../components/CustomSnackBar"
 
 // Define the PaginatedResponse interface
 interface PaginatedResponse<T> {
@@ -61,6 +63,10 @@ const AgentDetails: React.FC = () => {
   const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false)
   const [deleteWizardOpen, setDeleteWizardOpen] = useState(false)
 
+  const [reset2FAConfirmDialogOpen, setReset2FAConfirmDialogOpen] = useState(false)
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" })
+  const [resetting2FA, setResetting2FA] = useState(false)
+
   useEffect(() => {
     fetchAgentDetails()
   }, [id])
@@ -92,7 +98,16 @@ const AgentDetails: React.FC = () => {
       const agentResponse = await axios.get<Agent>(`${API_URL}/agent/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       })
-      setAgent(agentResponse.data)
+
+      // Map backend response to our Agent interface
+      const agentData = {
+        ...agentResponse.data,
+        // Map the backend field names to our interface field names if needed
+        newTripsThisMonth: agentResponse.data.newClientTripsThisMonth,
+        totalRevenue: agentResponse.data.thisMonthsRevenue || 0, // Fallback for compatibility
+      }
+
+      setAgent(agentData)
     } catch (err) {
       setError("Nepavyko gauti agento informacijos.")
       console.error("Error fetching agent details:", err)
@@ -232,6 +247,47 @@ const AgentDetails: React.FC = () => {
     setOffersPage(1) // Reset to first page when changing page size
   }
 
+  const handleReset2FAClick = () => {
+    setReset2FAConfirmDialogOpen(true)
+  }
+
+  // Add handler for reset 2FA confirmation
+  const handleReset2FAConfirm = async () => {
+    if (!id) return
+
+    setResetting2FA(true)
+    try {
+      await axios.post(
+        `${API_URL}/Auth/disable-2fa/${id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        },
+      )
+
+      setSnackbar({
+        open: true,
+        message: "2FA sėkmingai atstatyta agentui.",
+        severity: "success",
+      })
+    } catch (err) {
+      console.error("Failed to reset 2FA:", err)
+      setSnackbar({
+        open: true,
+        message: "Nepavyko atstatyti 2FA. Bandykite dar kartą vėliau.",
+        severity: "error",
+      })
+    } finally {
+      setResetting2FA(false)
+      setReset2FAConfirmDialogOpen(false)
+    }
+  }
+
+  // Add handler for snackbar close
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false })
+  }
+
   return (
     <Box sx={{ width: "100%", p: 3, minHeight: "100vh" }}>
       {loading ? (
@@ -247,14 +303,21 @@ const AgentDetails: React.FC = () => {
           <ActionBar
             showBackButton={true}
             showDeleteButton={true}
+            showReset2FAButton={true}
             onBackClick={handleBackClick}
             onDelete={handleDeleteClick}
+            onReset2FA={handleReset2FAClick}
             backUrl="/agents"
           />
 
           <Paper sx={{ p: 3, mb: 4, borderRadius: 2, boxShadow: 3 }}>
             <AgentCard agent={agent} />
           </Paper>
+
+          {/* Add the new summary cards */}
+          <Box sx={{ mb: 4 }}>
+            <AgentSummaryCards agent={agent} />
+          </Box>
 
           <Paper sx={{ borderRadius: 2, boxShadow: 3, overflow: "hidden" }}>
             <Tabs
@@ -340,6 +403,23 @@ const AgentDetails: React.FC = () => {
             onClose={() => setDeleteWizardOpen(false)}
             agentId={id || ""}
             agentName={getAgentFullName()}
+          />
+
+          {/* Reset 2FA Confirmation Dialog */}
+          <ConfirmationDialog
+            open={reset2FAConfirmDialogOpen}
+            title="Atstatyti 2FA"
+            message={`Ar tikrai norite atstatyti dviejų faktorių autentifikaciją agentui ${getAgentFullName()}? Agentas turės iš naujo nustatyti 2FA prisijungęs.`}
+            onConfirm={handleReset2FAConfirm}
+            onCancel={() => setReset2FAConfirmDialogOpen(false)}
+          />
+
+          {/* Snackbar for notifications */}
+          <CustomSnackbar
+            open={snackbar.open}
+            message={snackbar.message}
+            severity={snackbar.severity}
+            onClose={handleSnackbarClose}
           />
         </>
       ) : (

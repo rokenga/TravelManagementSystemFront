@@ -49,6 +49,8 @@ interface AccommodationItemProps {
   timeError?: string | null
   onTimeChange: (stepIndex: number, accIndex: number, field: "checkIn" | "checkOut", value: Dayjs | null) => void
   isSmall: boolean
+  tripStartDate?: Dayjs | null
+  tripEndDate?: Dayjs | null
 }
 
 const Star = ({ color = "gold" }: { color?: string }) => <span style={{ fontSize: "1rem", color }}>★</span>
@@ -64,13 +66,13 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
   timeError,
   onTimeChange,
   isSmall,
+  tripStartDate,
+  tripEndDate,
 }) => {
-  // Handle star rating changes
   const handleStarRatingChange = (value: number | null) => {
     onAccommodationChange(stepIndex, accIndex, "starRating", value)
   }
 
-  // Render stars for the header
   const renderStars = (rating: number | undefined) => {
     if (!rating) return null
     return (
@@ -83,20 +85,21 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
   }
 
   return (
-    <Accordion sx={{ mb: 2 }}>
+    <Accordion sx={{ mb: 2, width: "100%" }}>
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls={`acc-content-${accIndex}`}
         id={`acc-header-${accIndex}`}
+        data-tab-button="true"
         sx={{
           bgcolor: "background.paper",
           borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
+          width: "100%",
         }}
       >
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
             width: "100%",
             justifyContent: "space-between",
             flexDirection: isSmall ? "column" : "row",
@@ -133,6 +136,7 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
                 onRemoveAccommodation(stepIndex, accIndex)
               }}
               sx={{ ml: 1 }}
+              data-delete-offer-button="true"
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
@@ -140,7 +144,6 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Hotel name, link and star rating */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} md={4}>
             <TextField
@@ -153,8 +156,8 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
           </Grid>
           <Grid item xs={12} md={4}>
             <TextField
-              label="Viešbučio nuoroda"
-              placeholder="https://..."
+              label="Viešbučio adresas"
+              placeholder="Maldyvai, ..."
               value={accommodation.hotelLink}
               onChange={(e) => onAccommodationChange(stepIndex, accIndex, "hotelLink", e.target.value)}
               fullWidth
@@ -168,7 +171,7 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
                 value={
                   typeof accommodation.starRating === "string"
                     ? starRatingEnumToNumber(accommodation.starRating as string)
-                    : accommodation.starRating
+                    : accommodation.starRating || null
                 }
                 onChange={handleStarRatingChange}
                 size="medium"
@@ -177,21 +180,25 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Second row: Check-in/Check-out times, Meal type, Room type */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <CustomDateTimePicker
-              label="Atvykimo data"
+              label="Įsiregistravimas"
               value={accommodation.checkIn}
               onChange={(newDate) => onTimeChange(stepIndex, accIndex, "checkIn", newDate)}
+              data-datepicker="true"
+              minDate={tripStartDate}
+              maxDate={tripEndDate}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <CustomDateTimePicker
-              label="Išvykimo data"
+              label="Išsiregistravimas"
               value={accommodation.checkOut}
               onChange={(newDate) => onTimeChange(stepIndex, accIndex, "checkOut", newDate)}
-              minDate={accommodation.checkIn}
+              minDate={accommodation.checkIn || tripStartDate}
+              maxDate={tripEndDate}
+              data-datepicker="true"
             />
             {timeError && (
               <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
@@ -225,10 +232,16 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
               size="small"
             />
           </Grid>
-          {/* Removed Star Rating Grid Item */}
         </Grid>
 
-        {/* Third row: Description */}
+        {(tripStartDate || tripEndDate) && (
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              {/* We don't show explicit error messages, just rely on the date picker color */}
+            </Grid>
+          </Grid>
+        )}
+
         <TextField
           label="Papildomas aprašymas"
           value={accommodation.description}
@@ -240,18 +253,23 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
           sx={{ mb: 2 }}
         />
 
-        {/* Fourth row: Price */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} md={9}></Grid>
           <Grid item xs={12} md={3}>
             <TextField
-              label="Kaina (€)"
+              label="Kaina"
               type="number"
-              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
               value={accommodation.price}
-              onChange={(e) => onAccommodationChange(stepIndex, accIndex, "price", e.target.value)}
+              onChange={(e) => {
+                const value = Number.parseFloat(e.target.value)
+                onAccommodationChange(stepIndex, accIndex, "price", value >= 0 ? value : 0)
+              }}
               fullWidth
               size="small"
+              InputProps={{
+                endAdornment: <Typography variant="body2">€</Typography>,
+              }}
+              inputProps={{ min: "0" }}
             />
           </Grid>
         </Grid>

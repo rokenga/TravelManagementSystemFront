@@ -49,7 +49,7 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
     const formattedValue = value ? value.format(showTime ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD") : ""
 
     return (
-      <Box>
+      <Box data-datepicker="true">
         <TextField
           label={label}
           value={formattedValue}
@@ -67,6 +67,7 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
               color: "rgba(0, 0, 0, 0.87)", // Normal text color
             },
           }}
+          data-datepicker="true"
         />
         {helperText && <FormHelperText>{helperText}</FormHelperText>}
       </Box>
@@ -83,16 +84,49 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
         fullWidth: true,
         size: "small" as const,
         disabled,
+        inputProps: {
+          "data-tab-button": "true",
+          "data-datepicker": "true",
+        },
+        "data-datepicker": "true",
+      },
+      popper: {
+        sx: {
+          "& .MuiPaper-root": {
+            "data-tab-button": "true",
+            "data-datepicker": "true",
+          },
+        },
+      },
+      // Add data attributes to all other slots
+      day: {
+        "data-datepicker": "true",
+      },
+      calendarHeader: {
+        "data-datepicker": "true",
+      },
+      actionBar: {
+        "data-datepicker": "true",
+      },
+      toolbar: {
+        "data-datepicker": "true",
+      },
+      layout: {
+        "data-datepicker": "true",
+      },
+      field: {
+        "data-datepicker": "true",
       },
     },
     minDate: minDate || undefined,
     maxDate: maxDate || undefined,
     disablePast,
     disableFuture,
+    "data-datepicker": "true",
   }
 
   return (
-    <Box>
+    <Box data-datepicker="true">
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={capitalizeMonths("lt")}>
         {showTime ? (
           <DateTimePicker {...commonProps} format="YYYY-MM-DD HH:mm" ampm={false} />
@@ -106,4 +140,3 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
 }
 
 export default CustomDateTimePicker
-

@@ -15,7 +15,7 @@ interface SingleDayPreviewProps {
 const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [], hideHighlighting = false }) => {
   if (!day) {
     return (
-      <Typography variant="body1" textAlign="center">
+      <Typography variant="body1" textAlign="left">
         Planas dar nesudarytas.
       </Typography>
     )
@@ -26,12 +26,22 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
     if (day.dayDescription) {
       return (
         <Box>
-          <Typography sx={{ mb: 2, fontStyle: "italic" }}>{day.dayDescription}</Typography>
+          <Typography
+            sx={{
+              mb: 2,
+              fontStyle: hideHighlighting ? "normal" : "italic",
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              textAlign: "left",
+            }}
+          >
+            {day.dayDescription}
+          </Typography>
         </Box>
       )
     }
     return (
-      <Typography variant="body1" textAlign="center">
+      <Typography variant="body1" textAlign="left">
         Planas dar nesudarytas.
       </Typography>
     )
@@ -52,6 +62,7 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
         processedEvent.isShortStay = true
       }
 
+      // Always add checkout event, regardless of time
       if (checkInDate.toDateString() !== checkOutDate.toDateString()) {
         return [
           processedEvent,
@@ -133,12 +144,24 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
 
   return (
     <>
-      {day.dayDescription && <Typography sx={{ mb: 2, fontStyle: "italic" }}>{day.dayDescription}</Typography>}
+      {day.dayDescription && (
+        <Typography
+          sx={{
+            mb: 2,
+            fontStyle: hideHighlighting ? "normal" : "italic",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            textAlign: "left",
+          }}
+        >
+          {day.dayDescription}
+        </Typography>
+      )}
 
       {Object.entries(eventsByDate).map(([dateStr, events]: [string, any]) => (
         <Box key={dateStr} sx={{ mb: 3 }}>
           {dateStr !== "noDate" && (
-            <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1, color: "primary.main" }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1, color: "primary.main", textAlign: "left" }}>
               {dateStr}
             </Typography>
           )}
@@ -153,4 +176,3 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
 }
 
 export default SingleDayPreview
-

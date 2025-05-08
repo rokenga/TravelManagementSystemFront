@@ -65,6 +65,8 @@ interface TransportItemProps {
     value: Dayjs | null,
   ) => void
   isSmall: boolean
+  tripStartDate?: Dayjs | null
+  tripEndDate?: Dayjs | null
 }
 
 const TransportItem: React.FC<TransportItemProps> = ({
@@ -78,8 +80,9 @@ const TransportItem: React.FC<TransportItemProps> = ({
   timeError,
   onTimeChange,
   isSmall,
+  tripStartDate,
+  tripEndDate,
 }) => {
-  // Get transport type icon
   const getTransportTypeIcon = (type: string) => {
     switch (type) {
       case "Flight":
@@ -97,7 +100,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
     }
   }
 
-  // Get departure/arrival icons based on transport type
   const getDepartureIcon = (type: string, isArrival = false) => {
     switch (type) {
       case "Flight":
@@ -111,7 +113,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
     }
   }
 
-  // Get transport type label
   const getTransportTypeLabel = (type: string): string => {
     const option = transportTypeOptions.find((opt) => opt.value === type)
     return option ? option.label : type
@@ -123,6 +124,7 @@ const TransportItem: React.FC<TransportItemProps> = ({
         expandIcon={<ExpandMoreIcon />}
         aria-controls={`trans-content-${transIndex}`}
         id={`trans-header-${transIndex}`}
+        data-tab-button="true"
         sx={{
           bgcolor: "background.paper",
           borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
@@ -131,7 +133,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
             width: "100%",
             justifyContent: "space-between",
             flexDirection: isSmall ? "column" : "row",
@@ -178,7 +179,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Type, Company, Name, Code */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
@@ -188,7 +188,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
                 onChange={(e) => onTransportChange(stepIndex, transIndex, "transportType", e.target.value)}
                 label="Transporto tipas"
               >
-                <MenuItem value="">-- Pasirinkite --</MenuItem>
                 {transportTypeOptions
                   .filter((opt) => opt.value !== "Cruise")
                   .map((opt) => (
@@ -233,7 +232,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Transport fields in one row */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -249,6 +247,9 @@ const TransportItem: React.FC<TransportItemProps> = ({
               label="Išvykimo laikas"
               value={transport.departureTime}
               onChange={(newDate) => onTimeChange(stepIndex, transIndex, "departureTime", newDate)}
+              data-datepicker="true"
+              minDate={tripStartDate}
+              maxDate={tripEndDate}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -265,7 +266,9 @@ const TransportItem: React.FC<TransportItemProps> = ({
               label="Atvykimo laikas"
               value={transport.arrivalTime}
               onChange={(newDate) => onTimeChange(stepIndex, transIndex, "arrivalTime", newDate)}
-              minDate={transport.departureTime}
+              minDate={transport.departureTime || tripStartDate}
+              maxDate={tripEndDate}
+              data-datepicker="true"
             />
             {timeError && (
               <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
@@ -274,10 +277,16 @@ const TransportItem: React.FC<TransportItemProps> = ({
             )}
           </Grid>
         </Grid>
+        {(tripStartDate || tripEndDate) && (
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              {/* We don't show explicit error messages, just rely on the date picker color */}
+            </Grid>
+          </Grid>
+        )}
 
-        {/* Description */}
         <TextField
-          label="Aprašymas"
+          label="Papildomas aprašymas"
           value={transport.description}
           onChange={(e) => onTransportChange(stepIndex, transIndex, "description", e.target.value)}
           fullWidth
@@ -287,18 +296,23 @@ const TransportItem: React.FC<TransportItemProps> = ({
           sx={{ mb: 2 }}
         />
 
-        {/* Price */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} md={9}></Grid>
           <Grid item xs={12} md={3}>
             <TextField
-              label="Kaina (€)"
+              label="Kaina"
               type="number"
-              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
               value={transport.price}
-              onChange={(e) => onTransportChange(stepIndex, transIndex, "price", e.target.value)}
+              onChange={(e) => {
+                const value = Number.parseFloat(e.target.value)
+                onTransportChange(stepIndex, transIndex, "price", value >= 0 ? value : 0)
+              }}
               fullWidth
               size="small"
+              InputProps={{
+                endAdornment: <Typography variant="body2">€</Typography>,
+              }}
+              inputProps={{ min: "0" }}
             />
           </Grid>
         </Grid>

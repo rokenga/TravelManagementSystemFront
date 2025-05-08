@@ -1,12 +1,10 @@
 "use client"
 
 import type React from "react"
-import { Grid, TextField, InputAdornment, Typography, Autocomplete } from "@mui/material"
-import { Person, LocationOn } from "@mui/icons-material"
+import { Grid, TextField, InputAdornment, Autocomplete } from "@mui/material"
+import { Person } from "@mui/icons-material"
 import type { Client } from "../../../types/Client"
 import type { Country } from "../../DestinationAutocomplete"
-import type { TripFormData } from "../../../types"
-import fullCountriesList from "../../../assets/full-countries-lt.json"
 import DestinationAutocomplete from "../../DestinationAutocomplete"
 
 interface BasicTripInfoProps {
@@ -38,12 +36,6 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
 }) => {
   return (
     <>
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
-          Pagrindinė informacija
-        </Typography>
-      </Grid>
-
       <Grid item xs={12} md={6}>
         <TextField
           label="Kelionės pavadinimas"
@@ -94,14 +86,9 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
         )}
       </Grid>
 
-      {/* Add destination autocomplete */}
-      <Grid item xs={12} md={6}>
-        <DestinationAutocomplete
-          value={destination}
-          onChange={onDestinationChange}
-          label="Kelionės tikslas"
-          placeholder="Pasirinkite šalį"
-        />
+      {/* Add destination field */}
+      <Grid item xs={12}>
+        <DestinationAutocomplete value={destination} onChange={onDestinationChange} />
       </Grid>
 
       <Grid item xs={12}>

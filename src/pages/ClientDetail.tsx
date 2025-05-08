@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useContext, useCallback } from "react"
+import { useState, useEffect, useContext, useCallback, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import {
@@ -14,26 +14,33 @@ import {
   Chip,
   Paper,
   Grid,
-  Avatar,
   Tabs,
   Tab,
+  Link,
 } from "@mui/material"
 import { styled } from "@mui/material/styles"
 import { UserContext } from "../contexts/UserContext"
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff"
 import LocalOfferIcon from "@mui/icons-material/LocalOffer"
 import HistoryIcon from "@mui/icons-material/History"
+import EmailIcon from "@mui/icons-material/Email"
+import PhoneIcon from "@mui/icons-material/Phone"
+import CakeIcon from "@mui/icons-material/Cake"
 import { API_URL } from "../Utils/Configuration"
 import TagManagementModal from "../components/TagManagementModal"
 import ClientTimeline from "../components/ClientTimeline"
-import TripSummaryCard from "../components/TripSummaryCard"
+import ClientsTripListCard from "../components/ClientsTripListCard"
 import type { TripResponse } from "../types/ClientTrip"
+import type { ClientTripListResponse, PaginationParams } from "../types/ClientsTripList"
+import type { PaginatedResponse } from "../types/Pagination"
 import { useNavigation } from "../contexts/NavigationContext"
 import ActionBar from "../components/ActionBar"
 import ClientFormModal from "../components/ClientFormModal"
 import ConfirmationDialog from "../components/ConfirmationDialog"
 import CustomSnackbar from "../components/CustomSnackBar"
 import SpecialOfferCard from "../components/ClientSpecialOfferCard"
+import Pagination from "../components/Pagination"
+import PageSizeSelector from "../components/PageSizeSelector"
 
 enum TagCategory {
   DestinationInterest = "DestinationInterest",
@@ -58,13 +65,6 @@ const categoryColors: Record<TagCategory, string> = {
   [TagCategory.SpecialRequirements]: "#42A5F5",
   [TagCategory.TravelFrequency]: "#EC407A",
   [TagCategory.TravelPreference]: "#AB47BC",
-}
-
-// Add a function to get avatar color based on name
-const getAvatarColor = (name: string) => {
-  const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8"]
-  const charCode = name.charCodeAt(0)
-  return colors[charCode % colors.length]
 }
 
 // Now update the StyledCard component to make it more visually appealing
@@ -92,18 +92,41 @@ interface Client {
   createdAt: string
 }
 
-interface Offer {
-  id: string
-  title: string
-  description: string
-  createdAt?: string
-}
-
 // Define the client detail state interface
 interface ClientDetailState {
   clientId: string
   tabValue: number
   scrollPosition: number
+}
+
+// TabPanel component
+interface TabPanelProps {
+  children?: React.ReactNode
+  index: any
+  value: any
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`full-width-tabpanel-${index}`}
+      aria-labelledby={`full-width-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  )
+}
+
+// Helper function to check if a date is valid (not 0001-01-01)
+const isValidDate = (dateString: string | null): boolean => {
+  if (!dateString) return false
+  const date = new Date(dateString)
+  return date.getFullYear() > 1
 }
 
 // Now let's update the ClientDetail component to include tag functionality
@@ -114,21 +137,48 @@ const ClientDetail: React.FC = () => {
   const { savePageState, getPageState, setNavigationSource, setSourceClientId, navigateBack } = useNavigation()
 
   const [client, setClient] = useState<Client | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isClientLoading, setIsClientLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false)
   const [tabValue, setTabValue] = useState<number>(0)
   const [clientTags, setClientTags] = useState<ClientTagAssignment[]>([])
   const [isTagModalOpen, setIsTagModalOpen] = useState<boolean>(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false)
-  const [clientTrips, setClientTrips] = useState<TripResponse[]>([])
-  const [clientSpecialOffers, setClientSpecialOffers] = useState<TripResponse[]>([])
   const [initialStateLoaded, setInitialStateLoaded] = useState<boolean>(false)
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   })
+
+  // Separate loading states for each tab
+  const [isTripsLoading, setIsTripsLoading] = useState<boolean>(false)
+  const [isOffersLoading, setIsOffersLoading] = useState<boolean>(false)
+
+  // Data states
+  const [clientTrips, setClientTrips] = useState<ClientTripListResponse[]>([])
+  const [clientSpecialOffers, setClientSpecialOffers] = useState<TripResponse[]>([])
+
+  // Pagination state for trips
+  const [tripPageNumber, setTripPageNumber] = useState(1)
+  const [tripPageSize, setTripPageSize] = useState(10)
+  const [tripTotalCount, setTripTotalCount] = useState(0)
+
+  // Pagination state for offers
+  const [offerPageNumber, setOfferPageNumber] = useState(1)
+  const [offerPageSize, setOfferPageSize] = useState(10)
+  const [offerTotalCount, setOfferTotalCount] = useState(0)
+
+  const pageSizeOptions = [5, 10, 25, 50]
+
+  // Refs for tab content scroll positions
+  const tripsTabScrollPos = useRef(0)
+  const offersTabScrollPos = useRef(0)
+  const historyTabScrollPos = useRef(0)
+
+  // Track if data has been loaded for each tab
+  const [tripsLoaded, setTripsLoaded] = useState(false)
+  const [offersLoaded, setOffersLoaded] = useState(false)
 
   // Save current state to be restored when coming back
   const saveCurrentState = useCallback(() => {
@@ -139,7 +189,6 @@ const ClientDetail: React.FC = () => {
       tabValue,
       scrollPosition: window.scrollY,
     }
-    console.log("Saving client detail state:", state)
     savePageState(`client-detail-${clientId}`, state)
   }, [clientId, tabValue, savePageState])
 
@@ -147,7 +196,7 @@ const ClientDetail: React.FC = () => {
     if (!clientId) return
 
     try {
-      setIsLoading(true)
+      setIsClientLoading(true)
       setError(null)
 
       const response = await axios.get(`${API_URL}/Client/${clientId}`, {
@@ -159,7 +208,7 @@ const ClientDetail: React.FC = () => {
       console.error("Error fetching client data:", err)
       setError("Nepavyko gauti kliento duomenų.")
     } finally {
-      setIsLoading(false)
+      setIsClientLoading(false)
     }
   }, [clientId])
 
@@ -167,14 +216,31 @@ const ClientDetail: React.FC = () => {
     if (!clientId) return
 
     try {
-      const response = await axios.get<TripResponse[]>(`${API_URL}/client-trips/client/${clientId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-      })
-      setClientTrips(response.data)
+      setIsTripsLoading(true)
+
+      const paginationParams: PaginationParams = {
+        pageNumber: tripPageNumber,
+        pageSize: tripPageSize,
+      }
+
+      const response = await axios.post<PaginatedResponse<ClientTripListResponse>>(
+        `${API_URL}/client-trips/client/${clientId}`,
+        paginationParams,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        },
+      )
+
+      setClientTrips(response.data.items)
+      setTripTotalCount(response.data.totalCount)
+      setTripsLoaded(true)
     } catch (error) {
       console.error("Failed to fetch client trips:", error)
+      setError("Nepavyko gauti kliento kelionių.")
+    } finally {
+      setIsTripsLoading(false)
     }
-  }, [clientId])
+  }, [clientId, tripPageNumber, tripPageSize])
 
   // Add a function to fetch client tags
   const fetchClientTags = useCallback(async () => {
@@ -194,14 +260,31 @@ const ClientDetail: React.FC = () => {
     if (!clientId) return
 
     try {
-      const response = await axios.get<TripResponse[]>(`${API_URL}/ClientTripOfferFacade/client/${clientId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-      })
-      setClientSpecialOffers(response.data)
+      setIsOffersLoading(true)
+
+      const paginationParams: PaginationParams = {
+        pageNumber: offerPageNumber,
+        pageSize: offerPageSize,
+      }
+
+      const response = await axios.post<PaginatedResponse<TripResponse>>(
+        `${API_URL}/ClientTripOfferFacade/client/${clientId}`,
+        paginationParams,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        },
+      )
+
+      setClientSpecialOffers(response.data.items)
+      setOfferTotalCount(response.data.totalCount)
+      setOffersLoaded(true)
     } catch (error) {
       console.error("Failed to fetch client special offers:", error)
+      setError("Nepavyko gauti kliento specialių pasiūlymų.")
+    } finally {
+      setIsOffersLoading(false)
     }
-  }, [clientId])
+  }, [clientId, offerPageNumber, offerPageSize])
 
   // Restore state only once when component mounts
   useEffect(() => {
@@ -221,10 +304,35 @@ const ClientDetail: React.FC = () => {
     if (clientId) {
       fetchClientData()
       fetchClientTags()
+    }
+  }, [clientId, fetchClientData, fetchClientTags])
+
+  // Prefetch data for all tabs on initial load
+  useEffect(() => {
+    if (clientId && !tripsLoaded) {
       fetchClientTrips()
+    }
+  }, [clientId, fetchClientTrips, tripsLoaded])
+
+  useEffect(() => {
+    if (clientId && !offersLoaded) {
       fetchClientSpecialOffers()
     }
-  }, [clientId, fetchClientData, fetchClientTags, fetchClientTrips, fetchClientSpecialOffers])
+  }, [clientId, fetchClientSpecialOffers, offersLoaded])
+
+  // Fetch client trips when pagination changes
+  useEffect(() => {
+    if (clientId && tripsLoaded && tabValue === 0) {
+      fetchClientTrips()
+    }
+  }, [clientId, fetchClientTrips, tabValue, tripPageNumber, tripPageSize, tripsLoaded])
+
+  // Fetch client offers when pagination changes
+  useEffect(() => {
+    if (clientId && offersLoaded && tabValue === 1) {
+      fetchClientSpecialOffers()
+    }
+  }, [clientId, fetchClientSpecialOffers, tabValue, offerPageNumber, offerPageSize, offersLoaded])
 
   // Save state when component unmounts
   useEffect(() => {
@@ -232,6 +340,19 @@ const ClientDetail: React.FC = () => {
       saveCurrentState()
     }
   }, [saveCurrentState])
+
+  // Save scroll position when switching tabs
+  const saveScrollPosition = useCallback(() => {
+    const currentScrollPos = window.scrollY
+
+    if (tabValue === 0) {
+      tripsTabScrollPos.current = currentScrollPos
+    } else if (tabValue === 1) {
+      offersTabScrollPos.current = currentScrollPos
+    } else if (tabValue === 2) {
+      historyTabScrollPos.current = currentScrollPos
+    }
+  }, [tabValue])
 
   const handleDeleteClient = async () => {
     try {
@@ -278,8 +399,24 @@ const ClientDetail: React.FC = () => {
 
   const openDeleteDialog = () => setDeleteDialogOpen(true)
   const closeDeleteDialog = () => setDeleteDialogOpen(false)
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    // Save current scroll position before changing tabs
+    saveScrollPosition()
+
+    // Change tab
     setTabValue(newValue)
+
+    // Restore scroll position for the selected tab after a short delay
+    setTimeout(() => {
+      if (newValue === 0) {
+        window.scrollTo(0, tripsTabScrollPos.current)
+      } else if (newValue === 1) {
+        window.scrollTo(0, offersTabScrollPos.current)
+      } else if (newValue === 2) {
+        window.scrollTo(0, historyTabScrollPos.current)
+      }
+    }, 50)
   }
 
   const handleCloseSnackbar = () => {
@@ -318,21 +455,42 @@ const ClientDetail: React.FC = () => {
     navigate(`/special-offers/${offerId}`)
   }
 
-  const handleCreateTrip = () => {
+  const handleCreateOffer = () => {
     if (client) {
       navigate(
-        `/admin-trip-list/create?clientId=${clientId}&clientName=${encodeURIComponent(`${client.name} ${client.surname}`)}`,
+        `/special-offers/create?clientId=${clientId}&clientName=${encodeURIComponent(`${client.name} ${client.surname}`)}`,
       )
+    } else {
+      navigate("/special-offers/create")
     }
   }
 
-  const handleCreateOffer = () => {
-    navigate("/special-offers/create")
+  // Trip pagination handlers
+  const handleTripPageChange = (newPage: number) => {
+    setTripPageNumber(newPage)
   }
+
+  const handleTripPageSizeChange = (newPageSize: number) => {
+    setTripPageSize(newPageSize)
+    setTripPageNumber(1) // Reset to first page when changing page size
+  }
+
+  // Offer pagination handlers
+  const handleOfferPageChange = (newPage: number) => {
+    setOfferPageNumber(newPage)
+  }
+
+  const handleOfferPageSizeChange = (newPageSize: number) => {
+    setOfferPageSize(newPageSize)
+    setOfferPageNumber(1) // Reset to first page when changing page size
+  }
+
+  const tripTotalPages = Math.ceil(tripTotalCount / tripPageSize)
+  const offerTotalPages = Math.ceil(offerTotalCount / offerPageSize)
 
   return (
     <Box sx={{ maxWidth: "xl", margin: "0 auto", padding: "20px" }}>
-      {isLoading ? (
+      {isClientLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", marginTop: "50px" }}>
           <CircularProgress />
         </Box>
@@ -358,63 +516,69 @@ const ClientDetail: React.FC = () => {
                 `/admin-trip-list/create?clientId=${clientId}&clientName=${encodeURIComponent(`${client.name} ${client.surname}`)}`,
               )
             }
-            onCreateOffer={() => navigate("/special-offers/create")}
+            onCreateOffer={handleCreateOffer}
           />
 
           <StyledCard>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: "flex", alignItems: "flex-start", gap: 3 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
                       {client.name} {client.surname}
                     </Typography>
                   </Box>
 
-                  <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 3 }}>
-                    <Chip label={`Telefonas: ${client.phoneNumber}`} variant="outlined" sx={{ borderRadius: "8px" }} />
-                    <Chip label={`El. paštas: ${client.email}`} variant="outlined" sx={{ borderRadius: "8px" }} />
-                    {client.birthday && (
-                      <Chip
-                        label={`Gimimo data: ${new Date(client.birthday).toLocaleDateString("lt-LT")}`}
-                        variant="outlined"
-                        sx={{ borderRadius: "8px" }}
-                      />
-                    )}
-                    {client.address && (
-                      <Chip label={`Adresas: ${client.address}`} variant="outlined" sx={{ borderRadius: "8px" }} />
+                  {/* Contact Information - Now as regular text with icons */}
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <PhoneIcon color="primary" fontSize="small" />
+                      <Typography variant="body1">{client.phoneNumber}</Typography>
+                    </Box>
+
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <EmailIcon color="primary" fontSize="small" />
+                      <Link href={`mailto:${client.email}`} underline="hover" color="primary" sx={{ fontWeight: 400 }}>
+                        {client.email}
+                      </Link>
+                    </Box>
+
+                    {isValidDate(client.birthday) && (
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <CakeIcon color="primary" fontSize="small" />
+                        <Typography variant="body1">
+                          {new Date(client.birthday!).toLocaleDateString("lt-LT")}
+                        </Typography>
+                      </Box>
                     )}
                   </Box>
 
-                  {/* Display client tags */}
+                  {/* Display client tags without heading */}
                   {clientTags.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500 }}>
-                        Kliento žymos:
-                      </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        {clientTags.map((tag) => (
-                          <Chip
-                            key={tag.tagId}
-                            label={tag.tagName}
-                            sx={{
-                              backgroundColor: categoryColors[tag.category],
-                              color: "white",
-                              fontWeight: 500,
-                              borderRadius: "8px",
-                            }}
-                          />
-                        ))}
-                      </Box>
+                    <Box sx={{ mb: 3, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {clientTags.map((tag) => (
+                        <Chip
+                          key={tag.tagId}
+                          label={tag.tagName}
+                          size="small"
+                          sx={{
+                            backgroundColor: categoryColors[tag.category],
+                            color: "white",
+                            "& .MuiChip-label": {
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            },
+                          }}
+                        />
+                      ))}
                     </Box>
                   )}
 
+                  {/* Notes without heading */}
                   {client.notes && (
                     <>
                       <Divider sx={{ my: 2 }} />
-                      <Typography variant="h6" sx={{ mb: 1 }}>
-                        Pastabos
-                      </Typography>
                       <Typography
                         variant="body1"
                         sx={{
@@ -422,6 +586,7 @@ const ClientDetail: React.FC = () => {
                           p: 2,
                           borderRadius: 2,
                           whiteSpace: "pre-wrap",
+                          textAlign: "left",
                         }}
                       >
                         {client.notes}
@@ -453,36 +618,88 @@ const ClientDetail: React.FC = () => {
               <Tab icon={<HistoryIcon />} iconPosition="start" label="Istorija" />
             </Tabs>
 
+            {/* Client Trips Tab */}
             <TabPanel value={tabValue} index={0}>
-              {clientTrips.length > 0 ? (
-                <Grid container spacing={2}>
-                  {clientTrips.map((trip) => (
-                    <Grid item xs={12} sm={6} key={trip.id}>
-                      <TripSummaryCard trip={trip} onClick={() => handleTripClick(trip.id)} />
-                    </Grid>
-                  ))}
-                </Grid>
-              ) : (
-                <Typography variant="body1" textAlign="center" sx={{ mt: 4 }}>
-                  Klientas dar neturi kelionių.
-                </Typography>
-              )}
+              <Box sx={{ width: "100%" }}>
+                {/* Page Size Selector */}
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+                  <PageSizeSelector
+                    pageSize={tripPageSize}
+                    onPageSizeChange={handleTripPageSizeChange}
+                    options={pageSizeOptions}
+                  />
+                </Box>
+
+                {/* Client Trips List with local loading state */}
+                {isTripsLoading ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : clientTrips.length > 0 ? (
+                  <>
+                    {clientTrips.map((trip) => (
+                      <ClientsTripListCard key={trip.id} trip={trip} onClick={handleTripClick} />
+                    ))}
+
+                    {/* Pagination */}
+                    <Box sx={{ mt: 4, mb: 2 }}>
+                      <Pagination
+                        currentPage={tripPageNumber}
+                        totalPages={tripTotalPages}
+                        onPageChange={handleTripPageChange}
+                      />
+                    </Box>
+                  </>
+                ) : (
+                  <Typography variant="body1" textAlign="center" sx={{ mt: 4 }}>
+                    Klientas dar neturi kelionių.
+                  </Typography>
+                )}
+              </Box>
             </TabPanel>
 
+            {/* Special Offers Tab - Updated with pagination */}
             <TabPanel value={tabValue} index={1}>
-              {clientSpecialOffers.length > 0 ? (
-                <Grid container spacing={2}>
-                  {clientSpecialOffers.map((offer) => (
-                    <Grid item xs={12} sm={6} key={offer.id}>
-                      <SpecialOfferCard offer={offer} onClick={handleSpecialOfferClick} />
+              <Box sx={{ width: "100%" }}>
+                {/* Page Size Selector */}
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+                  <PageSizeSelector
+                    pageSize={offerPageSize}
+                    onPageSizeChange={handleOfferPageSizeChange}
+                    options={pageSizeOptions}
+                  />
+                </Box>
+
+                {/* Client Special Offers List with local loading state */}
+                {isOffersLoading ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : clientSpecialOffers.length > 0 ? (
+                  <>
+                    <Grid container spacing={2}>
+                      {clientSpecialOffers.map((offer) => (
+                        <Grid item xs={12} sm={6} key={offer.id}>
+                          <SpecialOfferCard offer={offer} onClick={handleSpecialOfferClick} />
+                        </Grid>
+                      ))}
                     </Grid>
-                  ))}
-                </Grid>
-              ) : (
-                <Typography variant="body1" textAlign="center" sx={{ mt: 4 }}>
-                  Klientas dar neturi specialių pasiūlymų.
-                </Typography>
-              )}
+
+                    {/* Pagination */}
+                    <Box sx={{ mt: 4, mb: 2 }}>
+                      <Pagination
+                        currentPage={offerPageNumber}
+                        totalPages={offerTotalPages}
+                        onPageChange={handleOfferPageChange}
+                      />
+                    </Box>
+                  </>
+                ) : (
+                  <Typography variant="body1" textAlign="center" sx={{ mt: 4 }}>
+                    Klientas dar neturi specialių pasiūlymų.
+                  </Typography>
+                )}
+              </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
@@ -537,28 +754,6 @@ const ClientDetail: React.FC = () => {
         <Typography>Klientas nerastas.</Typography>
       )}
     </Box>
-  )
-}
-
-interface TabPanelProps {
-  children?: React.ReactNode
-  index: any
-  value: any
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`full-width-tabpanel-${index}`}
-      aria-labelledby={`full-width-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
   )
 }
 

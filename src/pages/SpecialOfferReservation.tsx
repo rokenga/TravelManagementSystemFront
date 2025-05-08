@@ -6,6 +6,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import type { PublicOfferDetails } from "../types/PublicSpecialOffer"
+import type { ParticipantResponse } from "../types/Reservation"
 import CustomDateTimePicker from "../components/CustomDatePicker"
 import CustomSnackbar from "../components/CustomSnackBar"
 import type dayjs from "dayjs"
@@ -205,18 +206,20 @@ const SpecialOfferReservationPage: React.FC = () => {
 
     try {
       // Prepare data for API according to the expected structure
-      const participants = [
+      const participants: ParticipantResponse[] = [
         // Include main contact person as first participant
         {
+          id: "", // Will be assigned by the server
           name: formData.firstName,
           surname: formData.lastName,
-          birthDate: formData.birthDate?.toISOString(),
+          birthDate: formData.birthDate?.toISOString() || "",
         },
         // Include additional travelers
         ...formData.travelers.map((traveler) => ({
+          id: "", // Will be assigned by the server
           name: traveler.firstName,
           surname: traveler.lastName,
-          birthDate: traveler.birthDate?.toISOString(),
+          birthDate: traveler.birthDate?.toISOString() || "",
         })),
       ]
 
@@ -487,7 +490,7 @@ const SpecialOfferReservationPage: React.FC = () => {
                       color="primary"
                     />
                   }
-                  label="Sutinku kad su manimi elektroniniu pastu arba nurodytu numeriu susisieks agentas"
+                  label="Sutinku, kad su manimi nurodytu el. pašto arba telefono numeriu susisieks agentas"
                 />
                 {errors.agreeToTerms && (
                   <Typography color="error" variant="caption" display="block">
@@ -524,4 +527,3 @@ const SpecialOfferReservationPage: React.FC = () => {
 }
 
 export default SpecialOfferReservationPage
-

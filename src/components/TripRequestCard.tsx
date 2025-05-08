@@ -2,11 +2,13 @@
 
 import type React from "react"
 import { Card, CardContent, CardActionArea, Typography, Box, Chip, styled } from "@mui/material"
-import { Email, Phone, CalendarToday, Message } from "@mui/icons-material"
+import { Email, Phone, CalendarToday, Message, Person } from "@mui/icons-material"
 import { type TripRequestResponse, TripRequestStatus } from "../types/TripRequest"
 import { format } from "date-fns"
 import { lt } from "date-fns/locale"
 import { translateTripRequestStatus } from "../Utils/translateEnums"
+import { useContext } from "react"
+import { UserContext } from "../contexts/UserContext" // Assuming you have a UserContext
 
 interface TripRequestCardProps {
   request: TripRequestResponse
@@ -43,11 +45,17 @@ const truncateText = (text: string, maxLength: number) => {
 }
 
 const TripRequestCard: React.FC<TripRequestCardProps> = ({ request, onClick }) => {
+  const user = useContext(UserContext)
+  const isAdmin = user?.role === "Admin"
   const formattedDate = format(new Date(request.createdAt), "yyyy-MM-dd HH:mm", { locale: lt })
 
   // Truncate name and message
   const truncatedName = truncateText(request.fullName, 30)
   const truncatedMessage = request.message ? truncateText(request.message, 100) : ""
+
+  // Check if we should show agent info (admin user and agent info exists)
+  const showAgentInfo = isAdmin && (request.agentFirstName || request.agentLastName)
+  const agentName = showAgentInfo ? `${request.agentFirstName || ""} ${request.agentLastName || ""}`.trim() : ""
 
   return (
     <StyledCard>
@@ -125,6 +133,22 @@ const TripRequestCard: React.FC<TripRequestCardProps> = ({ request, onClick }) =
                   </Box>
                 </>
               )}
+              {showAgentInfo && (
+                <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+                  <Person fontSize="small" sx={{ mr: 0.5, color: "text.secondary", flexShrink: 0 }} />
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {agentName}
+                  </Typography>
+                </Box>
+              )}
               {request.message && (
                 <Box sx={{ display: "flex", alignItems: "center", minWidth: 0, flex: 1, width: "100%" }}>
                   <Message fontSize="small" sx={{ mr: 0.5, color: "text.secondary", flexShrink: 0 }} />
@@ -150,4 +174,3 @@ const TripRequestCard: React.FC<TripRequestCardProps> = ({ request, onClick }) =
 }
 
 export default TripRequestCard
-

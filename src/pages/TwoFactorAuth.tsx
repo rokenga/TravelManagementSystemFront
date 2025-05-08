@@ -175,7 +175,7 @@ export default function TwoFactorAuth() {
               },
             }}
           >
-            {loading ? <CircularProgress size={24} /> : "PATVIRTINTI"}
+            {loading ? <CircularProgress size={24} /> : "Patvirtinti"}
           </Button>
         </Box>
       </Paper>

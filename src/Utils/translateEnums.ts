@@ -4,6 +4,26 @@ import { TransportType } from "../types/Transport"
 import { BoardBasisType } from "../types/Accommodation"
 import { TripRequestStatus } from "../types/TripRequest"
 import { PartnerType } from "../types/Partner"
+import { ReservationStatus } from "../types/Reservation"
+
+
+
+export const translateReservationStatus = (status: ReservationStatus): string => {
+  switch (status) {
+    case ReservationStatus.New:
+      return "Nauja"
+    case ReservationStatus.Contacted:
+      return "Susisiekta"
+    case ReservationStatus.InProgress:
+      return "Vykdoma"
+    case ReservationStatus.Confirmed:
+      return "Patvirtinta"
+    case ReservationStatus.Cancelled:
+      return "Atšaukta"
+    default:
+      return String(status)
+  }
+}
 
 export const translatePartnerType = (type: PartnerType | string): string => {
   // Handle if the type comes as a string

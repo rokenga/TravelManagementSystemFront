@@ -14,6 +14,7 @@ import {
   ListItemText,
   useTheme,
   useMediaQuery,
+  IconButton,
 } from "@mui/material"
 import {
   Person,
@@ -28,6 +29,8 @@ import {
   Train,
   Sailing,
   Star,
+  Image as ImageIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material"
 import type { OfferWizardData, OfferStep, Accommodation, Transport, Cruise } from "./CreateClientOfferWizardForm"
 import type { Dayjs } from "dayjs"
@@ -35,22 +38,29 @@ import dayjs from "dayjs"
 
 interface Step3ReviewProps {
   tripData: OfferWizardData
+  onImageDelete?: (stepIndex: number, imageId: string) => void
 }
 
 // Combined type for all offer elements
 type OfferElement = {
-  type: "accommodation" | "transport" | "cruise"
+  type: "accommodation" | "transport" | "cruise" | "image"
   name: string
-  startDate: Dayjs | null
-  endDate: Dayjs | null
+  startDate?: Dayjs | null
+  endDate?: Dayjs | null
   startPlace?: string
   endPlace?: string
-  price: number
-  details: string[]
-  originalData: Accommodation | Transport | Cruise
+  price?: number
+  details?: string[]
+  originalData?: Accommodation | Transport | Cruise
+  images?: File[] | null
+  existingImages?: Array<{
+    id: string
+    url: string
+    altText?: string
+  }> | null
 }
 
-const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
+const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"))
@@ -83,6 +93,19 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
       Cruise: "Kruizas",
     }
     return categories[category] || category || "Nepasirinkta"
+  }
+
+  // Get transport type label in Lithuanian
+  const getTransportTypeLabel = (type: string): string => {
+    const transportTypes: Record<string, string> = {
+      Flight: "Skrydis",
+      Train: "Traukinys",
+      Bus: "Autobusas",
+      Car: "Automobilis",
+      Ferry: "Keltas",
+      Cruise: "Kruizas",
+    }
+    return transportTypes[type] || type || "Transportas"
   }
 
   // Get transport type icon
@@ -124,7 +147,7 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
   }
 
   // Function to get all offer elements in a single array and sort them chronologically
-  const getChronologicalOfferElements = (offer: OfferStep): OfferElement[] => {
+  const getChronologicalOfferElements = (offer: OfferStep, offerIndex: number): OfferElement[] => {
     const elements: OfferElement[] = []
 
     // Add accommodations
@@ -155,7 +178,7 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
 
       elements.push({
         type: "transport",
-        name: trans.transportName || trans.transportType || "Transportas",
+        name: trans.transportName || getTransportTypeLabel(trans.transportType) || "Transportas",
         startDate: trans.departureTime,
         endDate: trans.arrivalTime,
         startPlace: trans.departurePlace,
@@ -189,8 +212,25 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
       })
     }
 
-    // Sort by start date
+    // Add image section if it exists
+    const hasImageSection =
+      Array.isArray(offer.stepImages) || (offer.existingStepImages && offer.existingStepImages.length > 0)
+    if (hasImageSection) {
+      elements.push({
+        type: "image",
+        name: "Nuotraukos",
+        images: offer.stepImages,
+        existingImages: offer.existingStepImages,
+      })
+    }
+
+    // Sort by start date (but keep image section at the end)
     return elements.sort((a, b) => {
+      // Always put image section at the end
+      if (a.type === "image") return 1
+      if (b.type === "image") return -1
+
+      // Sort other elements by start date
       if (!a.startDate) return 1
       if (!b.startDate) return -1
       return a.startDate.valueOf() - b.startDate.valueOf()
@@ -204,8 +244,10 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
     } else if (element.type === "transport") {
       const transport = element.originalData as Transport
       return getTransportIcon(transport.transportType)
-    } else {
+    } else if (element.type === "cruise") {
       return <Sailing sx={{ color: theme.palette.primary.main }} />
+    } else {
+      return <ImageIcon sx={{ color: theme.palette.primary.main }} />
     }
   }
 
@@ -219,6 +261,35 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
         ))}
       </Box>
     )
+  }
+
+  // Handle image deletion
+  const handleImageDelete = (stepIndex: number, imageId: string) => {
+    if (onImageDelete) {
+      onImageDelete(stepIndex, imageId)
+    }
+  }
+
+  // Debug the client name value
+  console.log("Client name in Step3Review:", tripData.clientName, "Type:", typeof tripData.clientName)
+
+  // Add this function near the top of the component, before the return statement
+  const getImageUrl = (img: any): string => {
+    // Debug the image object to see what properties are available
+    console.log("Image object in Step3Review:", img)
+
+    // Check for various URL properties that might exist
+    if (img.urlInline) return img.urlInline
+    if (img.url) return img.url
+    if (img.fileName && img.id) {
+      // Try to construct a URL if we have an ID and filename
+      console.log("Attempting to construct URL from ID and filename")
+      // You might need to adjust this based on your API structure
+      return `/api/images/${img.id}`
+    }
+
+    // Fallback to placeholder
+    return "/placeholder.svg"
   }
 
   return (
@@ -345,7 +416,7 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
       </Typography>
 
       {tripData.offerSteps.map((offer, offerIndex) => {
-        const offerElements = getChronologicalOfferElements(offer)
+        const offerElements = getChronologicalOfferElements(offer, offerIndex)
 
         return (
           <Paper
@@ -388,47 +459,191 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData }) => {
                 <Grid container spacing={2}>
                   {offerElements.map((element, elementIndex) => (
                     <Grid item xs={12} key={elementIndex}>
-                      <Paper sx={{ p: 2, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
-                        {/* First row: Name, dates, locations, price */}
-                        <Box sx={{ display: "flex", alignItems: "center", mb: element.details.length > 0 ? 1 : 0 }}>
-                          <Box sx={{ mr: 1 }}>{getElementIcon(element)}</Box>
-                          <Typography variant="subtitle2" fontWeight="medium">
-                            {element.name}
-                            {element.type === "accommodation" &&
-                              renderStars((element.originalData as Accommodation).starRating)}
-                          </Typography>
-                          <Box sx={{ ml: 2 }}>
-                            {element.type === "accommodation" ? (
-                              <Typography variant="body2" color="text.secondary">
-                                {formatDate(element.startDate)} - {formatDate(element.endDate)}
-                              </Typography>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                                {element.startPlace
-                                  ? `${element.startPlace} (${formatDateTime(element.startDate)})`
-                                  : formatDateTime(element.startDate)}{" "}
-                                →{" "}
-                                {element.endPlace
-                                  ? `${element.endPlace} (${formatDateTime(element.endDate)})`
-                                  : formatDateTime(element.endDate)}
-                              </Typography>
-                            )}
-                          </Box>
-                          <Box sx={{ flexGrow: 1 }} />
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            {element.price.toFixed(2)} €
-                          </Typography>
-                        </Box>
-
-                        {/* Second row: Additional details */}
-                        {element.details.length > 0 && (
-                          <Box sx={{ display: "flex", pl: 4 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                              {element.details.join(" | ")}
+                      {element.type === "image" ? (
+                        <Paper sx={{ p: 2, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
+                          {/* Image section header */}
+                          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                            <Box sx={{ mr: 1 }}>{getElementIcon(element)}</Box>
+                            <Typography variant="subtitle2" fontWeight="medium">
+                              Nuotraukos
                             </Typography>
                           </Box>
-                        )}
-                      </Paper>
+
+                          {/* Display images in a compact grid */}
+                          {/* Combined display of all images without separate labels */}
+                          <Box sx={{ mt: 1 }}>
+                            <Grid container spacing={1}>
+                              {/* Display existing images */}
+                              {element.existingImages &&
+                                element.existingImages.length > 0 &&
+                                element.existingImages.map((img) => {
+                                  // Skip rendering if the image object is invalid
+                                  if (!img || (!img.url && !img.urlInline && !img.id)) {
+                                    console.log("Skipping invalid image object:", img)
+                                    return null
+                                  }
+
+                                  const imageUrl = getImageUrl(img)
+                                  console.log(`Image ${img.id}: Using URL: ${imageUrl}`)
+
+                                  return (
+                                    <Grid item key={img.id || `img-${Math.random()}`} xs={6} sm={4} md={3} lg={2}>
+                                      <Box
+                                        sx={{
+                                          width: "100%",
+                                          height: 100,
+                                          borderRadius: 1,
+                                          overflow: "hidden",
+                                          position: "relative",
+                                          border: "1px solid #eee",
+                                          backgroundColor: "#f5f5f5", // Add background color for empty images
+                                        }}
+                                      >
+                                        {imageUrl && imageUrl !== "/placeholder.svg" ? (
+                                          <img
+                                            src={imageUrl || "/placeholder.svg"}
+                                            alt={img.altText || "Nuotrauka"}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
+                                            }}
+                                            onError={(e) => {
+                                              console.error("Failed to load image:", imageUrl)
+                                              // Fallback to placeholder
+                                              ;(e.target as HTMLImageElement).src = "/placeholder.svg"
+                                            }}
+                                          />
+                                        ) : (
+                                          // Show placeholder with image ID for debugging
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              height: "100%",
+                                              padding: 1,
+                                              textAlign: "center",
+                                            }}
+                                          >
+                                            <ImageIcon sx={{ color: "text.secondary", mb: 1 }} />
+                                            <Typography variant="caption" color="text.secondary" noWrap>
+                                              {img.id ? `ID: ${img.id.substring(0, 8)}...` : "No image data"}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {onImageDelete && (
+                                          <IconButton
+                                            size="small"
+                                            sx={{
+                                              position: "absolute",
+                                              top: 4,
+                                              right: 4,
+                                              backgroundColor: "rgba(255, 255, 255, 0.7)",
+                                              "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.9)" },
+                                            }}
+                                            onClick={() => handleImageDelete(offerIndex, img.id)}
+                                            data-image-delete-button="true"
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </IconButton>
+                                        )}
+                                      </Box>
+                                    </Grid>
+                                  )
+                                })}
+
+                              {/* Display new images */}
+                              {element.images &&
+                                element.images.length > 0 &&
+                                element.images.map((file, idx) => (
+                                  <Grid item key={`new-${idx}`} xs={6} sm={4} md={3} lg={2}>
+                                    <Box
+                                      sx={{
+                                        width: "100%",
+                                        height: 100,
+                                        borderRadius: 1,
+                                        overflow: "hidden",
+                                        position: "relative",
+                                        border: "1px solid #eee",
+                                      }}
+                                    >
+                                      <img
+                                        src={URL.createObjectURL(file) || "/placeholder.svg"}
+                                        alt={file.name}
+                                        style={{
+                                          width: "100%",
+                                          height: "100%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    </Box>
+                                  </Grid>
+                                ))}
+                            </Grid>
+
+                            {/* Show message if no images */}
+                            {(!element.images || element.images.length === 0) &&
+                              (!element.existingImages || element.existingImages.length === 0) && (
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontStyle: "italic", color: "text.secondary", mt: 1 }}
+                                >
+                                  Nėra pridėtų nuotraukų.
+                                </Typography>
+                              )}
+                          </Box>
+                        </Paper>
+                      ) : (
+                        <Paper sx={{ p: 2, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
+                          {/* First row: Name, dates, locations, price */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mb: element.details && element.details.length > 0 ? 1 : 0,
+                            }}
+                          >
+                            <Box sx={{ mr: 1 }}>{getElementIcon(element)}</Box>
+                            <Typography variant="subtitle2" fontWeight="medium">
+                              {element.name}
+                              {element.type === "accommodation" &&
+                                renderStars((element.originalData as Accommodation).starRating)}
+                            </Typography>
+                            <Box sx={{ ml: 2 }}>
+                              {element.type === "accommodation" ? (
+                                <Typography variant="body2" color="text.secondary">
+                                  {formatDate(element.startDate)} - {formatDate(element.endDate)}
+                                </Typography>
+                              ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                  {element.startPlace
+                                    ? `${element.startPlace} (${formatDateTime(element.startDate)})`
+                                    : formatDateTime(element.startDate)}{" "}
+                                  →{" "}
+                                  {element.endPlace
+                                    ? `${element.endPlace} (${formatDateTime(element.endDate)})`
+                                    : formatDateTime(element.endDate)}
+                                </Typography>
+                              )}
+                            </Box>
+                            <Box sx={{ flexGrow: 1 }} />
+                            <Typography variant="subtitle2" fontWeight="bold">
+                              {element.price?.toFixed(2)} €
+                            </Typography>
+                          </Box>
+
+                          {/* Second row: Additional details */}
+                          {element.details && element.details.length > 0 && (
+                            <Box sx={{ display: "flex", pl: 4 }}>
+                              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                {element.details.join(" | ")}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Paper>
+                      )}
                     </Grid>
                   ))}
                 </Grid>

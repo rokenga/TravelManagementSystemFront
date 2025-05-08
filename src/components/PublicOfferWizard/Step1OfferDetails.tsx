@@ -1,52 +1,32 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useMemo } from "react"
-import {
-  Grid,
-  TextField,
-  Button,
-  Typography,
-  Box,
-  MenuItem,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  Divider,
-  Paper,
-  Alert,
-} from "@mui/material"
-import { DatePicker } from "@mui/x-date-pickers/DatePicker"
-import {
-  ArrowForward,
-  ExpandMore,
-  Delete as DeleteIcon,
-  Hotel,
-  DirectionsCar,
-  Sailing,
-} from "@mui/icons-material"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { Box, Button, Divider, Typography } from "@mui/material"
+import { ArrowForward } from "@mui/icons-material"
 import CustomSnackbar from "../CustomSnackBar"
-import ConstrainedDateTimePicker from "../ConstrainedDateTimePicker"
 import type { PublicOfferWizardData, Accommodation, Transport, Cruise } from "./CreatePublicOfferWizardForm"
 import { validateDateTimeConstraints } from "../../Utils/validationUtils"
-import OfferImageUpload from "../ClientOfferWizard/OfferImageUpload"
-import AddEventMenu from "./AddEventMenu"
-import DestinationAutocomplete from "../DestinationAutocomplete"
-import StarRating from "../StarRating"
+import TripBasicInfoForm from "./details/TripBasicInfoForm"
+import TripElementsSection from "./details/TripElementsSection"
 
 interface Step1Props {
   initialData: PublicOfferWizardData
   onSubmit: (data: Partial<PublicOfferWizardData>) => void
+  onExistingImageDelete?: (imageId: string) => void
+  isEditing?: boolean
 }
 
-const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
-  const [formData, setFormData] = useState<PublicOfferWizardData>({
+const Step1OfferDetails: React.FC<Step1Props> = ({
+  initialData,
+  onSubmit,
+  onExistingImageDelete,
+  isEditing = false,
+}) => {
+  const [formData, setFormData] = useState<PublicOfferWizardData & { showValidationErrors?: boolean }>({
     ...initialData,
     destination: initialData.destination || "",
+    showValidationErrors: false,
   })
 
   const [dateError, setDateError] = useState<string | null>(null)
@@ -69,12 +49,15 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
       setDateError(null)
     }
 
-    // Validate validUntil date is in the future
+    // Validate validUntil date is in the future and not after startDate
     if (formData.validUntil) {
       const now = new Date()
       now.setHours(0, 0, 0, 0) // Set to start of today
+
       if (formData.validUntil.toDate() < now) {
         setValidUntilError("Galiojimo data turi būti ateityje")
+      } else if (formData.startDate && formData.validUntil.isAfter(formData.startDate)) {
+        setValidUntilError("Galiojimo data negali būti vėlesnė nei kelionės pradžios data")
       } else {
         setValidUntilError(null)
       }
@@ -378,6 +361,17 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     }))
   }
 
+  // Handle existing image deletion - memoized to prevent unnecessary re-renders
+  const handleExistingImageDelete = useCallback(
+    (imageId: string) => {
+      console.log("Step1OfferDetails: Deleting image with ID:", imageId)
+      if (onExistingImageDelete) {
+        onExistingImageDelete(imageId)
+      }
+    },
+    [onExistingImageDelete],
+  )
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -401,6 +395,7 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     // Validate that all events have required fields filled
     const validationErrors = validateEventRequiredFields()
     if (validationErrors.length > 0) {
+      setFormData((prev) => ({ ...prev, showValidationErrors: true }))
       setSnackbarMessage(validationErrors[0])
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -410,6 +405,7 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     // Validate that all event dates are within the offer date range
     const dateRangeErrors = validateEventDateRanges()
     if (dateRangeErrors.length > 0) {
+      setFormData((prev) => ({ ...prev, showValidationErrors: true }))
       setSnackbarMessage(dateRangeErrors[0])
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -481,6 +477,7 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     }
 
     const offerStartDate = formData.startDate.startOf("day")
+    // Set the end date to 23:59:59 of the last day instead of 00:00
     const offerEndDate = formData.endDate.endOf("day")
 
     // Validate accommodations
@@ -516,23 +513,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
     return errors
   }
 
-  // Helper arrays for dropdowns
-  const boardBasisOptions = [
-    { value: "BedAndBreakfast", label: "Nakvynė su pusryčiais" },
-    { value: "HalfBoard", label: "Pusryčiai ir vakarienė" },
-    { value: "FullBoard", label: "Pusryčiai, pietūs ir vakarienė" },
-    { value: "AllInclusive", label: "Viskas įskaičiuota" },
-    { value: "UltraAllInclusive", label: "Ultra viskas įskaičiuota" },
-  ]
-
-  const transportTypeOptions = [
-    { value: "Flight", label: "Skrydis" },
-    { value: "Train", label: "Traukinys" },
-    { value: "Bus", label: "Autobusas" },
-    { value: "Car", label: "Automobilis" },
-    { value: "Ferry", label: "Keltas" },
-  ]
-
   const today = useMemo(() => {
     const now = new Date()
     now.setHours(0, 0, 0, 0)
@@ -541,119 +521,17 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Kelionės pavadinimas"
-            name="tripName"
-            value={formData.tripName}
-            onChange={(e) => handleInputChange("tripName", e.target.value)}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <DestinationAutocomplete
-            value={formData.destination ? { code: "", name: formData.destination } : null}
-            onChange={(country) => handleInputChange("destination", country?.name || "")}
-            label="Kelionės tikslas"
-          />
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <TextField
-            select
-            label="Kelionės kategorija"
-            value={formData.category}
-            onChange={(e) => handleInputChange("category", e.target.value)}
-            fullWidth
-          >
-            <MenuItem value="">--Nepasirinkta--</MenuItem>
-            <MenuItem value="Tourist">Turistinė</MenuItem>
-            <MenuItem value="Group">Grupinė</MenuItem>
-            <MenuItem value="Relax">Poilsinė</MenuItem>
-            <MenuItem value="Business">Verslo</MenuItem>
-            <MenuItem value="Cruise">Kruizas</MenuItem>
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-            label="Aprašymas"
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
-            multiline
-            rows={3}
-            fullWidth
-          />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <DatePicker
-            label="Kelionės pradžia"
-            value={formData.startDate}
-            onChange={(newDate) => handleDateChange("startDate", newDate)}
-            slotProps={{ textField: { fullWidth: true } }}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <DatePicker
-            label="Kelionės pabaiga"
-            value={formData.endDate}
-            onChange={(newDate) => handleDateChange("endDate", newDate)}
-            slotProps={{ textField: { fullWidth: true } }}
-          />
-          {dateError && (
-            <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
-              {dateError}
-            </Typography>
-          )}
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <DatePicker
-            label="Galioja iki"
-            value={formData.validUntil}
-            onChange={(newDate) => handleDateChange("validUntil", newDate)}
-            slotProps={{
-              textField: { fullWidth: true },
-            }}
-            disablePast
-          />
-          {validUntilError && (
-            <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
-              {validUntilError}
-            </Typography>
-          )}
-        </Grid>
-
-        <Grid item xs={6} md={3}>
-          <TextField
-            label="Suaugusių skaičius"
-            type="number"
-            value={formData.adultCount}
-            onChange={(e) => handleInputChange("adultCount", Number(e.target.value))}
-            fullWidth
-            inputProps={{ min: 0 }}
-          />
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <TextField
-            label="Vaikų skaičius"
-            type="number"
-            value={formData.childrenCount}
-            onChange={(e) => handleInputChange("childrenCount", Number(e.target.value))}
-            fullWidth
-            inputProps={{ min: 0 }}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            Pasiūlymo nuotraukos
-          </Typography>
-          <OfferImageUpload images={formData.images} onImageChange={handleImageChange} />
-        </Grid>
-      </Grid>
+      {/* Basic Trip Information */}
+      <TripBasicInfoForm
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleDateChange={handleDateChange}
+        handleImageChange={handleImageChange}
+        handleExistingImageDelete={handleExistingImageDelete}
+        dateError={dateError}
+        validUntilError={validUntilError}
+        isEditing={isEditing}
+      />
 
       {/* Divider between main info and offer details */}
       <Divider sx={{ my: 4 }}>
@@ -662,446 +540,29 @@ const Step1OfferDetails: React.FC<Step1Props> = ({ initialData, onSubmit }) => {
         </Typography>
       </Divider>
 
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        {(validateEventRequiredFields().length > 0 || validateEventDateRanges().length > 0) && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            Yra neužpildytų privalomų laukų arba datų neatitikimų. Prašome patikrinti visus įvestus duomenis.
-          </Alert>
-        )}
-        {/* Add Event Menu */}
-        <Box sx={{ mb: 4 }}>
-          <AddEventMenu
-            onAddAccommodation={handleAddAccommodation}
-            onAddTransport={handleAddTransport}
-            onAddCruise={handleAddCruise}
-          />
-        </Box>
-
-        {/* Combined events section */}
-        {formData.accommodations.length === 0 && formData.transports.length === 0 && formData.cruises.length === 0 && (
-          <Typography variant="body2" sx={{ fontStyle: "italic", color: "text.secondary", mb: 2, textAlign: "center" }}>
-            Nėra pridėtų pasiūlymo elementų. Naudokite mygtuką viršuje, kad pridėtumėte elementus.
-          </Typography>
-        )}
-
-        {/* Accommodations */}
-        {formData.accommodations.map((acc, accIndex) => (
-          <Accordion key={`acc-${accIndex}`} sx={{ mb: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Hotel sx={{ mr: 1, color: "primary.main" }} />
-                  <Typography variant="subtitle1">{acc.hotelName || `Apgyvendinimas ${accIndex + 1}`}</Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleRemoveAccommodation(accIndex)
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Viešbučio pavadinimas"
-                    value={acc.hotelName}
-                    onChange={(e) => handleAccommodationChange(accIndex, "hotelName", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Viešbučio nuoroda"
-                    placeholder="https://..."
-                    value={acc.hotelLink}
-                    onChange={(e) => handleAccommodationChange(accIndex, "hotelLink", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <ConstrainedDateTimePicker
-                    label="Atvykimo data"
-                    value={acc.checkIn}
-                    onChange={(newDate) => handleAccommodationDateChange(accIndex, "checkIn", newDate)}
-                    minDate={formData.startDate}
-                    maxDate={formData.endDate}
-                    onValidationError={(errorMessage) => {
-                      setSnackbarMessage(errorMessage)
-                      setSnackbarSeverity("error")
-                      setSnackbarOpen(true)
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <ConstrainedDateTimePicker
-                    label="Išvykimo data"
-                    value={acc.checkOut}
-                    onChange={(newDate) => handleAccommodationDateChange(accIndex, "checkOut", newDate)}
-                    minDate={acc.checkIn || formData.startDate}
-                    maxDate={formData.endDate}
-                    onValidationError={(errorMessage) => {
-                      setSnackbarMessage(errorMessage)
-                      setSnackbarSeverity("error")
-                      setSnackbarOpen(true)
-                    }}
-                  />
-                  {timeErrors[`acc-${accIndex}`] && (
-                    <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
-                      {timeErrors[`acc-${accIndex}`]}
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Maitinimo tipas</InputLabel>
-                    <Select
-                      value={acc.boardBasis}
-                      onChange={(e) => handleAccommodationChange(accIndex, "boardBasis", e.target.value)}
-                      label="Maitinimo tipas"
-                    >
-                      <MenuItem value="">-- Pasirinkite --</MenuItem>
-                      {boardBasisOptions.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Kambario tipas"
-                    value={acc.roomType}
-                    onChange={(e) => handleAccommodationChange(accIndex, "roomType", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <StarRating
-                    value={acc.starRating ?? null}
-                    onChange={(newValue) => handleAccommodationChange(accIndex, "starRating", newValue)}
-                    label="Žvaigždučių reitingas"
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Papildomas aprašymas"
-                    value={acc.description}
-                    onChange={(e) => handleAccommodationChange(accIndex, "description", e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} md={3} sx={{ ml: "auto" }}>
-                  <TextField
-                    label="Kaina (€)"
-                    type="number"
-                    InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                    value={acc.price}
-                    onChange={(e) => handleAccommodationChange(accIndex, "price", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-        ))}
-
-        {/* Transports */}
-        {formData.transports.map((trans, transIndex) => (
-          <Accordion key={`trans-${transIndex}`} sx={{ mb: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <DirectionsCar sx={{ mr: 1, color: "primary.main" }} />
-                  <Typography variant="subtitle1">{trans.transportName || `Transportas ${transIndex + 1}`}</Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleRemoveTransport(transIndex)
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Transporto tipas</InputLabel>
-                    <Select
-                      value={trans.transportType}
-                      onChange={(e) => handleTransportChange(transIndex, "transportType", e.target.value)}
-                      label="Transporto tipas"
-                    >
-                      <MenuItem value="">-- Pasirinkite --</MenuItem>
-                      {transportTypeOptions.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Kompanijos pavadinimas"
-                    value={trans.companyName}
-                    onChange={(e) => handleTransportChange(transIndex, "companyName", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Transporto pavadinimas"
-                    value={trans.transportName}
-                    onChange={(e) => handleTransportChange(transIndex, "transportName", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Transporto kodas"
-                    value={trans.transportCode}
-                    onChange={(e) => handleTransportChange(transIndex, "transportCode", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Išvykimo vieta"
-                    value={trans.departurePlace}
-                    onChange={(e) => handleTransportChange(transIndex, "departurePlace", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <ConstrainedDateTimePicker
-                    label="Išvykimo laikas"
-                    value={trans.departureTime}
-                    onChange={(newDate) => handleTransportTimeChange(transIndex, "departureTime", newDate)}
-                    minDate={formData.startDate}
-                    maxDate={formData.endDate}
-                    onValidationError={(errorMessage) => {
-                      setSnackbarMessage(errorMessage)
-                      setSnackbarSeverity("error")
-                      setSnackbarOpen(true)
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Atvykimo vieta"
-                    value={trans.arrivalPlace}
-                    onChange={(e) => handleTransportChange(transIndex, "arrivalPlace", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <ConstrainedDateTimePicker
-                    label="Atvykimo laikas"
-                    value={trans.arrivalTime}
-                    onChange={(newDate) => handleTransportTimeChange(transIndex, "arrivalTime", newDate)}
-                    minDate={trans.departureTime || formData.startDate}
-                    maxDate={formData.endDate}
-                    onValidationError={(errorMessage) => {
-                      setSnackbarMessage(errorMessage)
-                      setSnackbarSeverity("error")
-                      setSnackbarOpen(true)
-                    }}
-                  />
-                  {timeErrors[`trans-${transIndex}`] && (
-                    <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
-                      {timeErrors[`trans-${transIndex}`]}
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Aprašymas"
-                    value={trans.description}
-                    onChange={(e) => handleTransportChange(transIndex, "description", e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} md={3} sx={{ ml: "auto" }}>
-                  <TextField
-                    label="Kaina (€)"
-                    type="number"
-                    InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                    value={trans.price}
-                    onChange={(e) => handleTransportChange(transIndex, "price", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-        ))}
-
-        {/* Cruises */}
-        {formData.cruises.map((cruise, cruiseIndex) => (
-          <Accordion key={`cruise-${cruiseIndex}`} sx={{ mb: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Sailing sx={{ mr: 1, color: "primary.main" }} />
-                  <Typography variant="subtitle1">{cruise.transportName || `Kruizas ${cruiseIndex + 1}`}</Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleRemoveCruise(cruiseIndex)
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Kruizo kompanija"
-                    value={cruise.companyName}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "companyName", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Laivo pavadinimas"
-                    value={cruise.transportName}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "transportName", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Kruizo kodas"
-                    value={cruise.transportCode}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "transportCode", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Kajutės tipas"
-                    value={cruise.cabinType}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "cabinType", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Išvykimo uostas"
-                    value={cruise.departurePlace}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "departurePlace", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <ConstrainedDateTimePicker
-                    label="Išvykimo laikas"
-                    value={cruise.departureTime}
-                    onChange={(newDate) => handleCruiseTimeChange(cruiseIndex, "departureTime", newDate)}
-                    minDate={formData.startDate}
-                    maxDate={formData.endDate}
-                    onValidationError={(errorMessage) => {
-                      setSnackbarMessage(errorMessage)
-                      setSnackbarSeverity("error")
-                      setSnackbarOpen(true)
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    label="Atvykimo uostas"
-                    value={cruise.arrivalPlace}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "arrivalPlace", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <ConstrainedDateTimePicker
-                    label="Atvykimo laikas"
-                    value={cruise.arrivalTime}
-                    onChange={(newDate) => handleCruiseTimeChange(cruiseIndex, "arrivalTime", newDate)}
-                    minDate={cruise.departureTime || formData.startDate}
-                    maxDate={formData.endDate}
-                    onValidationError={(errorMessage) => {
-                      setSnackbarMessage(errorMessage)
-                      setSnackbarSeverity("error")
-                      setSnackbarOpen(true)
-                    }}
-                  />
-                  {timeErrors[`cruise-${cruiseIndex}`] && (
-                    <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
-                      {timeErrors[`cruise-${cruiseIndex}`]}
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Papildomas aprašymas"
-                    value={cruise.description}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "description", e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} md={3} sx={{ ml: "auto" }}>
-                  <TextField
-                    label="Kaina (€)"
-                    type="number"
-                    InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                    value={cruise.price}
-                    onChange={(e) => handleCruiseChange(cruiseIndex, "price", e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-        ))}
-      </Paper>
+      {/* Trip Elements Section */}
+      <TripElementsSection
+        formData={formData}
+        handleAddAccommodation={handleAddAccommodation}
+        handleAddTransport={handleAddTransport}
+        handleAddCruise={handleAddCruise}
+        handleAccommodationChange={handleAccommodationChange}
+        handleAccommodationDateChange={handleAccommodationDateChange}
+        handleRemoveAccommodation={handleRemoveAccommodation}
+        handleTransportChange={handleTransportChange}
+        handleTransportTimeChange={handleTransportTimeChange}
+        handleRemoveTransport={handleRemoveTransport}
+        handleCruiseChange={handleCruiseChange}
+        handleCruiseTimeChange={handleCruiseTimeChange}
+        handleRemoveCruise={handleRemoveCruise}
+        timeErrors={timeErrors}
+        validateEventRequiredFields={validateEventRequiredFields}
+        validateEventDateRanges={validateEventDateRanges}
+        setSnackbarMessage={setSnackbarMessage}
+        setSnackbarSeverity={setSnackbarSeverity}
+        setSnackbarOpen={setSnackbarOpen}
+        isEditing={isEditing}
+      />
 
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
         <Button

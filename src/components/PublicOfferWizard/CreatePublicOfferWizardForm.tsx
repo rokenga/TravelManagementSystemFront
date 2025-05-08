@@ -15,6 +15,7 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  CircularProgress,
 } from "@mui/material"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
@@ -27,6 +28,8 @@ import { UserContext } from "../../contexts/UserContext"
 import { TransportType, TripStatus, OfferStatus } from "../../types/Enums"
 import CustomSnackbar from "../CustomSnackBar"
 import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
+import { toLocalIso } from "../../Utils/dateSerialize"
+import { numberToStarRatingEnum } from "../../Utils/starRatingUtils"
 
 const steps = ["Pasiūlymo informacija", "Peržiūra ir patvirtinimas"]
 
@@ -39,7 +42,7 @@ export interface Accommodation {
   boardBasis: string
   roomType: string
   price: number
-  starRating?: number
+  starRating?: number | null
 }
 
 export interface Transport {
@@ -89,6 +92,7 @@ export interface PublicOfferWizardData {
   transports: Transport[]
   cruises: Cruise[]
   images: File[]
+  existingImages?: Array<{ id: string; url: string; fileName: string }>
 }
 
 interface ValidationResult {
@@ -130,31 +134,31 @@ const validateAccommodation = (accommodation: Accommodation): boolean => {
   )
 }
 
-const validateOfferData = (data: PublicOfferWizardData): ValidationResult => {
-  // Check basic trip information
-  if (
-    !data.tripName ||
-    !data.destination ||
-    !data.description ||
-    !data.startDate ||
-    !data.endDate ||
-    !data.validUntil
-  ) {
+const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): ValidationResult => {
+  // If it's a draft, no validation needed
+  if (isDraft) {
+    return {
+      isValid: true,
+      errorMessage: "",
+    }
+  }
+
+  if (!data.validUntil) {
     return {
       isValid: false,
-      errorMessage: "Prašome užpildyti visą pagrindinę kelionės informaciją (pavadinimas, aprašymas, datos)",
+      errorMessage: "Galiojimo data yra privaloma",
     }
   }
 
   // Check if at least one image is provided
-  if (!data.images || data.images.length === 0) {
+  if (!data.images || (data.images.length === 0 && (!data.existingImages || data.existingImages.length === 0))) {
     return {
       isValid: false,
       errorMessage: "Būtina įkelti bent vieną nuotrauką",
     }
   }
 
-  // Check if either accommodation or transport is provided
+  // Check if either accommodation, transport, or cruise is provided
   const hasAccommodations = data.accommodations.length > 0
   const hasTransports = data.transports.length > 0
   const hasCruises = data.cruises.length > 0
@@ -162,7 +166,7 @@ const validateOfferData = (data: PublicOfferWizardData): ValidationResult => {
   if (!hasAccommodations && !hasTransports && !hasCruises) {
     return {
       isValid: false,
-      errorMessage: "Būtina pridėti bent vieną apgyvendinimą arba transportą",
+      errorMessage: "Būtina pridėti bent vieną apgyvendinimą, transportą arba kruizą",
     }
   }
 
@@ -317,15 +321,13 @@ const CreatePublicOfferWizardForm: React.FC = () => {
    * ---------------------------------------------------
    */
   const handleSubmit = async (isDraft = false) => {
-    // If not a draft, validate the data
-    if (!isDraft) {
-      const validationResult = validateOfferData(formData)
-      if (!validationResult.isValid) {
-        setSnackbarMessage(validationResult.errorMessage)
-        setSnackbarSeverity("error")
-        setSnackbarOpen(true)
-        return
-      }
+    // Validate the data based on whether it's a draft or not
+    const validationResult = validateOfferData(formData, isDraft)
+    if (!validationResult.isValid) {
+      setSnackbarMessage(validationResult.errorMessage)
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+      return
     }
 
     setIsSaving(true)
@@ -333,8 +335,8 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     // Convert cruises to transport entries for the API
     const cruiseTransports = formData.cruises.map((cruise) => ({
       transportType: TransportType.Cruise,
-      departureTime: cruise.departureTime ? cruise.departureTime.toISOString() : null,
-      arrivalTime: cruise.arrivalTime ? cruise.arrivalTime.toISOString() : null,
+      departureTime: toLocalIso(cruise.departureTime),
+      arrivalTime: toLocalIso(cruise.arrivalTime),
       departurePlace: cruise.departurePlace,
       arrivalPlace: cruise.arrivalPlace,
       description: cruise.description,
@@ -348,8 +350,8 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     // Map transports to the format expected by the API
     const mappedTransports = formData.transports.map((transport) => ({
       transportType: transport.transportType,
-      departureTime: transport.departureTime ? transport.departureTime.toISOString() : null,
-      arrivalTime: transport.arrivalTime ? transport.arrivalTime.toISOString() : null,
+      departureTime: toLocalIso(transport.departureTime),
+      arrivalTime: toLocalIso(transport.arrivalTime),
       departurePlace: transport.departurePlace,
       arrivalPlace: transport.arrivalPlace,
       description: transport.description,
@@ -361,16 +363,16 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     }))
 
     // Map accommodations to the format expected by the API
-    const mappedAccommodations = formData.accommodations.map((accommodation) => ({
-      hotelName: accommodation.hotelName,
-      checkIn: accommodation.checkIn ? accommodation.checkIn.toISOString() : null,
-      checkOut: accommodation.checkOut ? accommodation.checkOut.toISOString() : null,
-      hotelLink: accommodation.hotelLink,
-      description: accommodation.description,
-      boardBasis: accommodation.boardBasis,
-      roomType: accommodation.roomType,
-      price: accommodation.price,
-      starRating: accommodation.starRating,
+    const mappedAccommodations = formData.accommodations.map((acc) => ({
+      hotelName: acc.hotelName,
+      checkIn: toLocalIso(acc.checkIn),
+      checkOut: toLocalIso(acc.checkOut),
+      hotelLink: acc.hotelLink,
+      description: acc.description,
+      boardBasis: acc.boardBasis,
+      roomType: acc.roomType,
+      price: acc.price,
+      starRating: numberToStarRatingEnum(acc.starRating), // Convert number to enum string
     }))
 
     // Calculate total price
@@ -378,7 +380,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
 
     // Set the trip status based on whether it's a draft or not
     const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
-    const offerStatus = isDraft ? OfferStatus.Draft : OfferStatus.Active
+    const offerStatus = isDraft ? OfferStatus.ManuallyDisabled : OfferStatus.Active
 
     // Build a final request object
     const requestPayload = {
@@ -387,9 +389,9 @@ const CreatePublicOfferWizardForm: React.FC = () => {
       description: formData.description,
       destination: formData.destination,
       category: formData.category || undefined,
-      startDate: formData.startDate ? formData.startDate.toISOString() : null,
-      endDate: formData.endDate ? formData.endDate.toISOString() : null,
-      validUntil: formData.validUntil ? formData.validUntil.toISOString() : null,
+      startDate: toLocalIso(formData.startDate),
+      endDate: toLocalIso(formData.endDate),
+      validUntil: toLocalIso(formData.validUntil),
       price: totalPrice,
       status: tripStatus,
       offerStatus: offerStatus,
@@ -485,12 +487,6 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     handleSubmit(true)
   }
 
-  // Format date for display (not crucial if you rely on the pickers)
-  const formatDate = (date: Dayjs | null): string => {
-    if (!date) return "Nenustatyta"
-    return date.format("YYYY-MM-DD HH:mm")
-  }
-
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false)
   }
@@ -542,7 +538,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
                   endIcon={<CheckCircle />}
                   sx={{ minWidth: 120 }}
                 >
-                  Patvirtinti
+                  {isSaving ? <CircularProgress size={24} color="inherit" /> : "Patvirtinti"}
                 </Button>
               </Box>
             </>

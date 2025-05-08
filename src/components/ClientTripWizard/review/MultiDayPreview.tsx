@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Box, Typography } from "@mui/material"
+import { Typography, Paper, Divider } from "@mui/material"
 import PreviewEvent from "./PreviewEvent"
 import { formatEarliestTime } from "../../../Utils/eventFormatting"
 import type { ItineraryDay, TripEvent, ValidationWarning } from "../../../types"
@@ -10,6 +10,21 @@ interface MultiDayPreviewProps {
   days: ItineraryDay[]
   warnings?: ValidationWarning[]
   hideHighlighting?: boolean
+}
+
+// Extended event type with UI-specific properties
+interface ProcessedEvent extends TripEvent {
+  timeInfo: ReturnType<typeof formatEarliestTime>
+  isArrivalEvent?: boolean
+  isCheckoutEvent?: boolean
+  isOverlapping?: boolean
+  isShortStay?: boolean
+}
+
+// Extended day type with processed events
+interface ProcessedDay extends Omit<ItineraryDay, "events"> {
+  events: ProcessedEvent[]
+  originalIndex: number // Store the original day number
 }
 
 const MultiDayPreview: React.FC<MultiDayPreviewProps> = ({ days, warnings = [], hideHighlighting = false }) => {
@@ -21,17 +36,34 @@ const MultiDayPreview: React.FC<MultiDayPreviewProps> = ({ days, warnings = [], 
     )
   }
 
-  // Create a map of all days in the itinerary
-  const allDaysMap = new Map(days.map((day) => [day.dayLabel, { ...day, events: [] }]))
+  // Helper function to format date as YYYY-MM-DD consistently
+  const formatDateToYYYYMMDD = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
 
-  // Process each day to sort events by time and handle multi-day events
+  // Create a map of all days in the itinerary
+  const daysMap = new Map<string, ProcessedDay>()
+
+  // Initialize the map with the original days
   days.forEach((day) => {
-    const processedDay = allDaysMap.get(day.dayLabel)!
+    daysMap.set(day.dayLabel, {
+      ...day,
+      events: [],
+      originalIndex: day.originalIndex || 0,
+    })
+  })
+
+  // Process each day's events and add them to the appropriate day
+  days.forEach((day) => {
+    const currentDay = daysMap.get(day.dayLabel)!
 
     // Process events to get time information
-    processedDay.events = day.events.map((evt: TripEvent) => {
+    day.events.forEach((evt) => {
       const timeInfo = formatEarliestTime(evt)
-      const processedEvent = { ...evt, timeInfo }
+      const processedEvent = { ...evt, timeInfo } as ProcessedEvent
 
       // Check for short-stay accommodations (less than 24 hours)
       if (evt.type === "accommodation" && evt.checkIn && evt.checkOut) {
@@ -42,133 +74,113 @@ const MultiDayPreview: React.FC<MultiDayPreviewProps> = ({ days, warnings = [], 
         if (durationHours < 24) {
           processedEvent.isShortStay = true
         }
-      }
 
-      return processedEvent
-    })
+        // Add checkout event to the checkout day if it's a different day
+        if (checkInDate.toDateString() !== checkOutDate.toDateString()) {
+          const checkoutDayLabel = formatDateToYYYYMMDD(checkOutDate)
 
-    // Sort events by time
-    processedDay.events.sort(
-      (a: { timeInfo: { date: { getTime: () => number } } }, b: { timeInfo: { date: { getTime: () => number } } }) => {
-        if (!a.timeInfo.date) return 1
-        if (!b.timeInfo.date) return -1
-        return a.timeInfo.date.getTime() - b.timeInfo.date.getTime()
-      },
-    )
-  })
+          if (checkoutDayLabel !== day.dayLabel) {
+            let checkoutDay = daysMap.get(checkoutDayLabel)
 
-  // Handle multi-day events by adding arrival/checkout events to the appropriate days
-  allDaysMap.forEach((day, dayLabel) => {
-    day.events.forEach(
-      (evt: {
-        type: string
-        timeInfo: { isMultiDay: any; arrivalTime: any; arrivalTimeStr: any }
-        checkIn: string | number | Date
-        checkOut: string | number | Date
-        isShortStay?: boolean
-      }) => {
-        if (
-          (evt.type === "transport" || evt.type === "cruise") &&
-          evt.timeInfo.isMultiDay &&
-          evt.timeInfo.arrivalTime
-        ) {
-          // Find the day that corresponds to the arrival date
-          const arrivalDate = new Date(evt.timeInfo.arrivalTime)
-          // Format the date as YYYY-MM-DD to match dayLabel format
-          const arrivalDayLabel = arrivalDate.toISOString().split("T")[0]
-
-          if (arrivalDayLabel !== dayLabel) {
-            let arrivalDay = allDaysMap.get(arrivalDayLabel)
-            if (!arrivalDay) {
+            if (!checkoutDay) {
               // Create a new day if it doesn't exist
-              arrivalDay = {
-                dayLabel: arrivalDayLabel,
-                events: [],
-                originalIndex: -1,
+              checkoutDay = {
+                dayLabel: checkoutDayLabel,
                 dayDescription: "",
+                events: [],
+                originalIndex: -1, // Will be calculated later
               }
-              allDaysMap.set(arrivalDayLabel, arrivalDay)
+              daysMap.set(checkoutDayLabel, checkoutDay)
             }
-            // Add arrival event to target day
-            arrivalDay.events.push({
+
+            // Add checkout event to the checkout day
+            checkoutDay.events.push({
               ...evt,
-              isArrivalEvent: true,
+              isCheckoutEvent: true,
               timeInfo: {
-                ...evt.timeInfo,
-                date: arrivalDate,
-                timeStr: evt.timeInfo.arrivalTimeStr,
+                ...timeInfo,
+                date: checkOutDate,
+                timeStr: checkOutDate.toLocaleTimeString("lt-LT", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
               },
-            })
-          }
-        } else if (evt.type === "accommodation" && evt.checkIn && evt.checkOut) {
-          const checkInDate = new Date(evt.checkIn)
-          const checkOutDate = new Date(evt.checkOut)
-
-          if (checkInDate.toDateString() !== checkOutDate.toDateString()) {
-            const checkoutDayLabel = checkOutDate.toISOString().split("T")[0]
-
-            if (checkoutDayLabel !== dayLabel) {
-              let checkoutDay = allDaysMap.get(checkoutDayLabel)
-              if (!checkoutDay) {
-                // Create a new day if it doesn't exist
-                checkoutDay = {
-                  dayLabel: checkoutDayLabel,
-                  events: [],
-                  originalIndex: -1,
-                  dayDescription: "",
-                }
-                allDaysMap.set(checkoutDayLabel, checkoutDay)
-              }
-              // Add checkout event to target day
-              checkoutDay.events.push({
-                ...evt,
-                isCheckoutEvent: true,
-                timeInfo: {
-                  ...evt.timeInfo,
-                  date: checkOutDate,
-                  timeStr: checkOutDate.toLocaleTimeString("lt-LT", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }),
-                },
-              })
-            }
+            } as ProcessedEvent)
           }
         }
-      },
-    )
+      }
+
+      // Handle multi-day transport/cruise events
+      if ((evt.type === "transport" || evt.type === "cruise") && timeInfo.isMultiDay && timeInfo.arrivalTime) {
+        const arrivalDate = new Date(timeInfo.arrivalTime)
+        const arrivalDayLabel = formatDateToYYYYMMDD(arrivalDate)
+
+        if (arrivalDayLabel !== day.dayLabel) {
+          let arrivalDay = daysMap.get(arrivalDayLabel)
+
+          if (!arrivalDay) {
+            // Create a new day if it doesn't exist
+            arrivalDay = {
+              dayLabel: arrivalDayLabel,
+              dayDescription: "",
+              events: [],
+              originalIndex: -1, // Will be calculated later
+            }
+            daysMap.set(arrivalDayLabel, arrivalDay)
+          }
+
+          // Add arrival event to the arrival day
+          arrivalDay.events.push({
+            ...evt,
+            isArrivalEvent: true,
+            timeInfo: {
+              ...timeInfo,
+              date: arrivalDate,
+              timeStr: timeInfo.arrivalTimeStr,
+            },
+          } as ProcessedEvent)
+        }
+      }
+
+      // Add the original event to its primary day
+      currentDay.events.push(processedEvent)
+    })
   })
 
-  // Convert map to array, sort by date, and calculate correct day numbers
-  const sortedDays = Array.from(allDaysMap.values())
-    .filter((day) => day.events.length > 0 || day.dayDescription)
+  // Convert map to array and sort by date
+  const sortedDays = Array.from(daysMap.values())
+    .filter((day) => day.events.length > 0 || (day.dayDescription && day.dayDescription.trim() !== ""))
     .sort((a, b) => new Date(a.dayLabel).getTime() - new Date(b.dayLabel).getTime())
 
-  // Calculate day numbers based on chronological order
+  // Calculate day numbers for days that don't have an originalIndex
   const startDate = new Date(sortedDays[0].dayLabel)
-  const finalDays = sortedDays.map((day) => {
-    const currentDate = new Date(day.dayLabel)
-    const dayNumber = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    return {
-      ...day,
-      calculatedDayNumber: dayNumber,
+  sortedDays.forEach((day) => {
+    if (day.originalIndex <= 0) {
+      const currentDate = new Date(day.dayLabel)
+      const dayNumber = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      day.originalIndex = dayNumber
     }
   })
 
   // Mark overlapping events for each day
-  finalDays.forEach((day) => {
-    const events = day.events
+  sortedDays.forEach((day) => {
+    // Sort events by time
+    day.events.sort((a, b) => {
+      if (!a.timeInfo.date) return 1
+      if (!b.timeInfo.date) return -1
+      return a.timeInfo.date.getTime() - b.timeInfo.date.getTime()
+    })
 
     // Check for overlapping events
-    for (let i = 0; i < events.length; i++) {
-      const event1 = events[i]
+    for (let i = 0; i < day.events.length; i++) {
+      const event1 = day.events[i]
       if (!event1.timeInfo.date) continue
 
       const event1Time = event1.timeInfo.date.getTime()
       const event1End = event1.timeInfo.endDate ? new Date(event1.timeInfo.endDate).getTime() : event1Time + 3600000 // Default 1 hour duration
 
-      for (let j = i + 1; j < events.length; j++) {
-        const event2 = events[j]
+      for (let j = i + 1; j < day.events.length; j++) {
+        const event2 = day.events[j]
         if (!event2.timeInfo.date) continue
 
         const event2Time = event2.timeInfo.date.getTime()
@@ -181,34 +193,40 @@ const MultiDayPreview: React.FC<MultiDayPreviewProps> = ({ days, warnings = [], 
         }
       }
     }
-
-    // Final sort of events within each day
-    day.events.sort(
-      (a: { timeInfo: { date: { getTime: () => number } } }, b: { timeInfo: { date: { getTime: () => number } } }) => {
-        if (!a.timeInfo.date) return 1
-        if (!b.timeInfo.date) return -1
-        return a.timeInfo.date.getTime() - b.timeInfo.date.getTime()
-      },
-    )
   })
 
+  // Render the days with their original day numbers
   return (
     <>
-      {finalDays.map((day) => (
-        <Box key={day.dayLabel} sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1, color: "primary.main" }}>
-            Diena {day.calculatedDayNumber} ({day.dayLabel})
+      {sortedDays.map((day) => (
+        <Paper key={day.dayLabel} elevation={1} sx={{ mb: 3, p: 2, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1, color: "primary.main", textAlign: "left" }}>
+            Diena {day.originalIndex} ({day.dayLabel})
           </Typography>
-          {day.dayDescription && <Typography sx={{ mb: 2, fontStyle: "italic" }}>{day.dayDescription}</Typography>}
 
-          {day.events.map((evt: any, idx: number) => (
+          {day.dayDescription && (
+            <Typography
+              sx={{
+                mb: 2,
+                fontStyle: hideHighlighting ? "normal" : "italic",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+                textAlign: "left",
+              }}
+            >
+              {day.dayDescription}
+            </Typography>
+          )}
+
+          <Divider sx={{ mb: 2 }} />
+
+          {day.events.map((evt, idx) => (
             <PreviewEvent evt={evt} key={idx} warnings={warnings} hideHighlighting={hideHighlighting} />
           ))}
-        </Box>
+        </Paper>
       ))}
     </>
   )
 }
 
 export default MultiDayPreview
-

@@ -1,8 +1,6 @@
-"use client"
-
 import type React from "react"
-import { Box, Typography, Grid, Avatar, Divider, Card, CardContent } from "@mui/material"
-import { Email, Flight, TrendingUp, Euro, People, PersonAdd } from "@mui/icons-material"
+import { Box, Typography, Avatar, Divider } from "@mui/material"
+import { Email as EmailIcon, Person, Cake as CakeIcon } from "@mui/icons-material"
 import type { Agent } from "../types/AdminsAgent"
 
 interface AgentCardProps {
@@ -10,141 +8,101 @@ interface AgentCardProps {
 }
 
 const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
-  // Calculate percentage increase for new trips and clients
-  const tripsPercentage = agent.totalTrips > 0 ? Math.round((agent.newTripsThisMonth / agent.totalTrips) * 100) : 0
+  // Function to get initials from name
+  const getInitials = (firstName?: string, lastName?: string): string => {
+    const firstInitial = firstName && firstName.length > 0 ? firstName.charAt(0).toUpperCase() : ""
+    const lastInitial = lastName && lastName.length > 0 ? lastName.charAt(0).toUpperCase() : ""
 
-  const clientsPercentage =
-    agent.totalClients > 0 ? Math.round((agent.newClientsThisMonth / agent.totalClients) * 100) : 0
+    if (firstInitial || lastInitial) {
+      return `${firstInitial}${lastInitial}`
+    }
+    return "?"
+  }
+
+  // Function to get avatar color based on name
+  const getAvatarColor = (name?: string): string => {
+    const colors = [
+      "#F44336",
+      "#E91E63",
+      "#9C27B0",
+      "#673AB7",
+      "#3F51B5",
+      "#2196F3",
+      "#03A9F4",
+      "#00BCD4",
+      "#009688",
+      "#4CAF50",
+      "#8BC34A",
+      "#CDDC39",
+      "#FFC107",
+      "#FF9800",
+      "#FF5722",
+    ]
+
+    if (!name || name.length === 0) {
+      return colors[0]
+    }
+
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    }
+
+    return colors[Math.abs(hash) % colors.length]
+  }
+
+  // Format birthdate
+  const formatBirthdate = (birthday?: string) => {
+    if (!birthday) return "Nenurodyta"
+
+    try {
+      return new Date(birthday).toLocaleDateString("lt-LT")
+    } catch (error) {
+      return "Neteisingas formatas"
+    }
+  }
 
   return (
     <Box>
-      {/* Agent Profile Section */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: "primary.main",
-                fontSize: "2rem",
-              }}
-            >
-              {agent.email ? agent.email.charAt(0).toUpperCase() : "?"}
-            </Avatar>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "left" }}>
-                {agent.firstName} {agent.lastName}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                <Email sx={{ fontSize: 18, mr: 1, color: "text.secondary" }} />
-                <Typography variant="body1" color="text.secondary">
-                  {agent.email}
-                </Typography>
-              </Box>
-            </Box>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+        <Avatar
+          sx={{
+            bgcolor: getAvatarColor(`${agent.firstName || ""} ${agent.lastName || ""}`),
+            width: 80,
+            height: 80,
+            fontSize: "2rem",
+            mr: 3,
+          }}
+        >
+          {agent.firstName || agent.lastName ? (
+            getInitials(agent.firstName, agent.lastName)
+          ) : (
+            <Person fontSize="large" />
+          )}
+        </Avatar>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            {agent.firstName || agent.lastName
+              ? `${agent.firstName || ""} ${agent.lastName || ""}`
+              : "Nežinomas agentas"}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+            <EmailIcon fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
+            <Typography variant="body1" color="text.secondary">
+              {agent.email || "Nėra el. pašto"}
+            </Typography>
           </Box>
-        </Grid>
-      </Grid>{" "}
-      {/* ✅ Correctly closed the Grid container */}
-      <Divider sx={{ mb: 4 }} />
-      <Grid container spacing={3}>
-        {/* Trips Stats */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: "100%",
-              boxShadow: 2,
-              transition: "transform 0.2s",
-              "&:hover": { transform: "translateY(-5px)", boxShadow: 4 },
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <Typography color="text.secondary" gutterBottom>
-                  Kelionės
-                </Typography>
-                <Avatar sx={{ bgcolor: "primary.light", width: 40, height: 40 }}>
-                  <Flight />
-                </Avatar>
-              </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: "bold", my: 1 }}>
-                {agent.totalTrips}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <TrendingUp sx={{ color: "success.main", mr: 0.5, fontSize: 18 }} />
-                <Typography variant="body2" color="success.main">
-                  +{agent.newTripsThisMonth} šį mėnesį ({tripsPercentage}%)
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+          {/* Add birthday near email with same styling */}
+          <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+            <CakeIcon fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
+            <Typography variant="body1" color="text.secondary">
+              {formatBirthdate(agent.birthday)}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
 
-        {/* Revenue Stats */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: "100%",
-              boxShadow: 2,
-              transition: "transform 0.2s",
-              "&:hover": { transform: "translateY(-5px)", boxShadow: 4 },
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <Typography color="text.secondary" gutterBottom>
-                  Pajamos
-                </Typography>
-                <Avatar sx={{ bgcolor: "success.light", width: 40, height: 40 }}>
-                  <Euro />
-                </Avatar>
-              </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: "bold", my: 1 }}>
-                €{agent.totalRevenue.toFixed(2)}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="body2" color="text.secondary">
-                  Vidutiniškai €{(agent.totalTrips > 0 ? agent.totalRevenue / agent.totalTrips : 0).toFixed(2)} per
-                  kelionę
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Clients Stats */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              height: "100%",
-              boxShadow: 2,
-              transition: "transform 0.2s",
-              "&:hover": { transform: "translateY(-5px)", boxShadow: 4 },
-            }}
-          >
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <Typography color="text.secondary" gutterBottom>
-                  Klientai
-                </Typography>
-                <Avatar sx={{ bgcolor: "info.light", width: 40, height: 40 }}>
-                  <People />
-                </Avatar>
-              </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: "bold", my: 1 }}>
-                {agent.totalClients}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <PersonAdd sx={{ color: "info.main", mr: 0.5, fontSize: 18 }} />
-                <Typography variant="body2" color="info.main">
-                  +{agent.newClientsThisMonth} šį mėnesį ({clientsPercentage}%)
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Divider sx={{ my: 2 }} />
     </Box>
   )
 }

@@ -1,31 +1,21 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import {
-  Stepper,
-  Step,
-  StepLabel,
-  Paper,
-  Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-} from "@mui/material"
+import { Stepper, Step, StepLabel, Paper, Box } from "@mui/material"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import axios from "axios"
 import { API_URL } from "../../Utils/Configuration"
 import { useNavigate } from "react-router-dom"
 import Step1TripInfo from "./Step1TripInfo"
+import { getCurrentFormData } from "./Step1TripInfo" // Import the function to get current form data
 import Step2Itinerary from "./Step2Itinerary"
+import { getCurrentItineraryData, getCurrentStepImagesData } from "./Step2Itinerary" // Import the function to get current itinerary data
 import Step2_5FileUploads from "./Step2_5FileUploads"
+import { getCurrentFileData } from "./Step2_5FileUploads" // Import the function to get current file data
 import Step3ReviewConfirm from "./Step3ReviewConfirm"
 import CustomSnackbar from "../CustomSnackBar"
-import { usePreventNavigation } from "../../hooks/usePreventNavigation"
+import { numberToStarRatingEnum } from "../../Utils/starRatingUtils"
 
 import {
   type TripFormData,
@@ -33,13 +23,18 @@ import {
   type ValidationWarning,
   type TripEvent,
   type TransportEvent,
-  type AccommodationEvent,
-  type ActivityEvent,
-  type SnackbarState,
   type WizardFormState,
   TransportType,
   type TripStatus,
+  type SnackbarState,
 } from "../../types"
+
+// Add these lines at the top of your file, after the imports
+declare global {
+  interface Window {
+    saveCreateFormAsDraft?: (destination?: string | null) => Promise<boolean>
+  }
+}
 
 const steps = ["Kelionės informacija", "Kelionės planas", "Dokumentai ir nuotraukos", "Peržiūrėti ir pateikti"]
 
@@ -80,15 +75,14 @@ function mergeItinerary(
   return merged
 }
 
-const WizardForm: React.FC = () => {
+const WizardForm = ({ onDataChange }) => {
   const navigate = useNavigate()
   const [activeStep, setActiveStep] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true)
   const [hideValidationHighlighting, setHideValidationHighlighting] = useState(false)
-  
-  // Track if any data has been entered in step 1
-  const [step1DataEntered, setStep1DataEntered] = useState(false)
+
+  // Reference to track if we're currently in the save process
+  const isSavingRef = useRef(false)
 
   const [formState, setFormState] = useState<WizardFormState>({
     tripData: {
@@ -107,6 +101,7 @@ const WizardForm: React.FC = () => {
       dayByDayItineraryNeeded: false,
       itineraryTitle: "",
       itineraryDescription: "",
+      destination: "",
     },
     itinerary: [],
     validationWarnings: [],
@@ -116,34 +111,8 @@ const WizardForm: React.FC = () => {
 
   // Clear localStorage when starting a new trip
   useEffect(() => {
-    localStorage.removeItem("nonDayByDayDescription");
-  }, []);
-
-  // Listen for changes in Step1TripInfo
-  useEffect(() => {
-    const handleStep1Change = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.hasData !== undefined) {
-        setStep1DataEntered(customEvent.detail.hasData);
-      }
-    };
-
-    window.addEventListener('step1DataChanged', handleStep1Change);
-    
-    return () => {
-      window.removeEventListener('step1DataChanged', handleStep1Change);
-    };
-  }, []);
-
-  const {
-    showDialog: showNavigationDialog,
-    handleStay,
-    handleLeave,
-    pendingLocation,
-  } = usePreventNavigation(
-    shouldBlockNavigation && 
-    (activeStep !== 0 || step1DataEntered)
-  )
+    localStorage.removeItem("nonDayByDayDescription")
+  }, [])
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -158,6 +127,46 @@ const WizardForm: React.FC = () => {
     console.log("Current formState:", formState)
   }, [formState])
 
+  // Add this effect to track changes
+  useEffect(() => {
+    // Find the window.saveCreateFormAsDraft function and update it to accept a destination parameter
+    window.saveCreateFormAsDraft = async (destination?: string | null) => {
+      try {
+        // Prevent multiple simultaneous save operations
+        if (isSavingRef.current) {
+          console.log("Save operation already in progress, skipping duplicate call")
+          return false
+        }
+
+        isSavingRef.current = true
+        setIsSaving(true)
+
+        // Use your existing handleSaveTrip function with the destination
+        const result = await handleSaveTrip("Draft", destination)
+
+        // Reset the saving flag when done
+        isSavingRef.current = false
+
+        return result
+      } catch (error) {
+        console.error("Error saving draft:", error)
+        setSnackbar({
+          open: true,
+          message: "Nepavyko išsaugoti juodraščio. Bandykite dar kartą.",
+          severity: "error",
+        })
+        setIsSaving(false)
+        isSavingRef.current = false
+        return false
+      }
+    }
+
+    // Clean up the global function when component unmounts
+    return () => {
+      delete window.saveCreateFormAsDraft
+    }
+  }, [formState]) // Add all dependencies that handleSaveTrip needs
+
   const handleNext = () => setActiveStep((prev: number) => prev + 1)
   const handleBack = () => {
     setActiveStep((prev: number) => prev - 1)
@@ -165,248 +174,6 @@ const WizardForm: React.FC = () => {
 
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false })
-  }
-
-  const handleLeaveWithSave = async () => {
-    try {
-      setIsSaving(true)
-      let currentTripData = { ...formState.tripData }
-      let currentItinerary = [...formState.itinerary]
-      let currentImages = [...formState.images]
-      let currentDocuments = [...formState.documents]
-
-      if (activeStep === 0) {
-        try {
-          const { getCurrentFormData } = await import("./Step1TripInfo")
-          const latestFormData = getCurrentFormData()
-          console.log("Got latest form data from Step1TripInfo:", latestFormData)
-
-          if (latestFormData && latestFormData.tripName !== undefined) {
-            currentTripData = latestFormData
-          }
-
-          // Check if ANY information has been entered in Step 1
-          const hasAnyInfo = 
-            currentTripData.tripName?.trim() !== "" ||
-            currentTripData.clientId?.trim() !== "" ||
-            currentTripData.startDate !== null ||
-            currentTripData.endDate !== null ||
-            currentTripData.category?.trim() !== "" ||
-            currentTripData.description?.trim() !== "" ||
-            currentTripData.adultsCount !== null ||
-            currentTripData.childrenCount !== null ||
-            currentTripData.price !== 0 ||
-            currentTripData.dayByDayItineraryNeeded !== false
-
-          if (!hasAnyInfo) {
-            console.log("No information entered in Step 1, not showing save dialog")
-            setIsSaving(false)
-            handleLeaveWithoutSaving()
-            return
-          }
-        } catch (error) {
-          console.error("Error getting current form data from Step1:", error)
-        }
-      }
-
-      if (activeStep === 1) {
-        try {
-          const { getCurrentItineraryData, validateItineraryData } = await import("./Step2Itinerary")
-
-          const latestItineraryData = getCurrentItineraryData()
-          console.log("Got latest itinerary data:", latestItineraryData)
-
-          const validationResult = validateItineraryData(latestItineraryData)
-
-          if (!validationResult.valid) {
-            setSnackbar({
-              open: true,
-              message: validationResult.message,
-              severity: "error",
-            })
-            setIsSaving(false)
-            return
-          }
-
-          if (latestItineraryData && latestItineraryData.length > 0) {
-            currentItinerary = latestItineraryData
-          }
-        } catch (error) {
-          console.error("Error getting current itinerary data from Step2:", error)
-        }
-      }
-
-      if (activeStep === 2) {
-        try {
-          const { getCurrentFilesData } = await import("./Step2_5FileUploads")
-
-          const latestFilesData = getCurrentFilesData()
-          console.log(
-            "Got latest files data - Images:",
-            latestFilesData.images.length,
-            "Documents:",
-            latestFilesData.documents.length,
-          )
-
-          if (latestFilesData) {
-            currentImages = latestFilesData.images
-            currentDocuments = latestFilesData.documents
-          }
-        } catch (error) {
-          console.error("Error getting current files data from Step2_5:", error)
-        }
-      }
-
-      // ADDED: Get the latest data from Step3 if we're on that step
-      if (activeStep === 3) {
-        // We already have the latest data in formState for Step3
-        // Just use the current state as is
-        console.log("Using current form state for Step3 save")
-      }
-
-      console.log("Saving trip with data:", currentTripData)
-      console.log("Saving itinerary with events:", currentItinerary)
-      console.log("Saving with images:", currentImages.length, "and documents:", currentDocuments.length)
-
-      const formData = new FormData()
-
-      const clientId = currentTripData.clientId ? String(currentTripData.clientId) : ""
-      formData.append("clientId", clientId)
-      formData.append("tripName", currentTripData.tripName || "")
-      formData.append("description", currentTripData.description || "")
-      formData.append("category", currentTripData.category || "")
-      formData.append("status", "Draft")
-      formData.append("paymentStatus", "Unpaid")
-      formData.append("insuranceTaken", String(currentTripData.insuranceTaken || false))
-      formData.append("destination", currentTripData.destination || "")
-
-      if (currentTripData.startDate) {
-        formData.append("startDate", new Date(currentTripData.startDate).toISOString())
-      }
-
-      if (currentTripData.endDate) {
-        formData.append("endDate", new Date(currentTripData.endDate).toISOString())
-      }
-
-      formData.append("price", String(currentTripData.price || 0))
-      formData.append("dayByDayItineraryNeeded", String(currentTripData.dayByDayItineraryNeeded))
-      formData.append("adultsCount", String(currentTripData.adultsCount || 0))
-      formData.append("childrenCount", String(currentTripData.childrenCount || 0))
-
-      // Handle itinerary steps and their images
-      const itinerarySteps = []
-      for (let i = 0; i < currentItinerary.length; i++) {
-        const day = currentItinerary[i]
-
-        const transportEvents = day.events.filter((e) => e.type === "transport" || e.type === "cruise")
-        const accommodationEvents = day.events.filter((e) => e.type === "accommodation")
-        const activityEvents = day.events.filter((e) => e.type === "activity")
-
-        const step = {
-          dayNumber: currentTripData.dayByDayItineraryNeeded ? i + 1 : null,
-          description: day.dayDescription || null,
-          transports: transportEvents.map((e) => {
-            const transportEvent = e as TransportEvent
-            const finalTransportType = e.type === "cruise" ? TransportType.Cruise : transportEvent.transportType || null
-
-            return {
-              transportType: finalTransportType,
-              departureTime: transportEvent.departureTime || null,
-              arrivalTime: transportEvent.arrivalTime || null,
-              departurePlace: transportEvent.departurePlace || null,
-              arrivalPlace: transportEvent.arrivalPlace || null,
-              description: e.description || null,
-              companyName: transportEvent.companyName || null,
-              transportName: transportEvent.transportName || null,
-              transportCode: transportEvent.transportCode || null,
-              cabinType: transportEvent.cabinType || null,
-            }
-          }),
-          accommodations: accommodationEvents.map((a) => ({
-            hotelName: a.hotelName || null,
-            hotelLink: a.hotelLink || null,
-            checkIn: a.checkIn || null,
-            checkOut: a.checkOut || null,
-            description: a.description || null,
-            boardBasis: a.boardBasis || null,
-            roomType: a.roomType || null,
-          })),
-          activities: activityEvents.map((act) => ({
-            description: act.description || null,
-            activityTime: act.activityTime || null,
-          })),
-        }
-
-        itinerarySteps.push(step)
-
-        // Append step images to FormData
-        if (stepImages[i] && stepImages[i].length > 0) {
-          stepImages[i].forEach((file) => {
-            formData.append(`StepImages_${i}`, file)
-          })
-        }
-      }
-
-      const itineraryData = {
-        title: currentTripData.itineraryTitle || "",
-        description: currentTripData.itineraryDescription || "",
-        itinerarySteps: itinerarySteps,
-      }
-
-      console.log("Formatted itinerary data for server:", JSON.stringify(itineraryData, null, 2))
-
-      formData.append("itinerary", JSON.stringify(itineraryData))
-
-      currentImages.forEach((file) => {
-        formData.append("Images", file)
-      })
-
-      currentDocuments.forEach((file) => {
-        formData.append("Documents", file)
-      })
-
-      console.log("Sending draft trip data to server...")
-
-      for (const pair of formData.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`)
-      }
-
-      const response = await axios.post(`${API_URL}/client-trips`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      })
-
-      if (response.status >= 200 && response.status < 300) {
-        console.log("Draft saved successfully:", response.data)
-        setSnackbar({
-          open: true,
-          message: "Kelionė išsaugota kaip juodraštis!",
-          severity: "success",
-        })
-
-        handleLeave(true)
-        setShouldBlockNavigation(false)
-
-        console.log("Will navigate to:", pendingLocation)
-      } else {
-        throw new Error(`Server returned status ${response.status}`)
-      }
-    } catch (error) {
-      console.error("Error saving draft:", error)
-      setSnackbar({
-        open: true,
-        message: "Nepavyko išsaugoti juodraščio. Bandykite dar kartą.",
-        severity: "error",
-      })
-      setIsSaving(false)
-    }
-  }
-
-  const handleLeaveWithoutSaving = () => {
-    setShouldBlockNavigation(false)
-    handleLeave(true)
   }
 
   const handleStep1Submit = (updatedData: TripFormData, updatedItinerary: ItineraryDay[] = []) => {
@@ -466,22 +233,26 @@ const WizardForm: React.FC = () => {
     handleNext()
   }
 
+  // Add a function to update step images
+  const handleStepImagesChange = (dayIndex: number, files: File[]) => {
+    setStepImages((prev) => ({
+      ...prev,
+      [dayIndex]: files,
+    }))
+  }
+
   const isEventValid = (event: TripEvent): boolean => {
     switch (event.type) {
       case "transport":
       case "cruise":
-        return !!(
-          (event.departureTime && event.arrivalTime && event.departurePlace && event.arrivalPlace)
-        )
+        return !!(event.departureTime && event.arrivalTime && event.departurePlace && event.arrivalPlace)
       case "accommodation":
         return !!(event.hotelName && event.checkIn && event.checkOut)
       case "activity":
         return !!(event.activityTime && event.description)
       case "images":
         // For image events, we only need to check if there are images for that day
-        const dayIndex = formState.itinerary.findIndex(day => 
-          day.events.some(e => e === event)
-        )
+        const dayIndex = formState.itinerary.findIndex((day) => day.events.some((e) => e === event))
         return !!(stepImages[dayIndex] && stepImages[dayIndex].length > 0)
       default:
         return true
@@ -501,7 +272,7 @@ const WizardForm: React.FC = () => {
           open: true,
           message: "Prašome užpildyti visus privalomus laukus: kelionės pavadinimą, klientą, datas ir kategoriją.",
           severity: "error",
-        }) 
+        })
         return { isValid: false, warnings }
       }
 
@@ -677,14 +448,51 @@ const WizardForm: React.FC = () => {
     }
   }
 
-  const handleSaveTrip = async (status: "Draft" | "Confirmed") => {
+  const handleSaveTrip = async (status: "Draft" | "Confirmed", destination?: string | null): Promise<boolean> => {
+    // Get the most up-to-date form data directly from the Step1TripInfo component
+    const latestTripData = getCurrentFormData()
+    console.log("Getting latest trip data for save:", latestTripData)
+
+    // Get the most up-to-date itinerary data directly from the Step2Itinerary component
+    const latestItinerary = getCurrentItineraryData()
+    console.log("Getting latest itinerary data for save:", latestItinerary)
+
+    // Get the most up-to-date file data from the Step2_5FileUploads component
+    const latestFileData = getCurrentFileData()
+    console.log("Getting latest file data for save:", latestFileData)
+
+    // Get the most up-to-date step images data from the Step2Itinerary component
+    const latestStepImagesData = getCurrentStepImagesData()
+    console.log("Getting latest step images data for save:", latestStepImagesData)
+
+    // Use the latest data or fall back to the current state
+    const currentTripData = latestTripData || formState.tripData
+    const currentItinerary = latestItinerary || formState.itinerary
+    const currentImages = latestFileData?.images || formState.images
+    const currentDocuments = latestFileData?.documents || formState.documents
+    const currentStepImages = latestStepImagesData?.stepImages || stepImages
+
+    // Update the formState with the latest data
+    setFormState((prev) => ({
+      ...prev,
+      tripData: currentTripData,
+      itinerary: currentItinerary,
+      images: currentImages,
+      documents: currentDocuments,
+    }))
+
+    // Update step images if available
+    if (latestStepImagesData?.stepImages) {
+      setStepImages(latestStepImagesData.stepImages)
+    }
+
     setIsSaving(true)
 
-    const validationResult = validateTrip(formState.tripData, formState.itinerary, status === "Confirmed")
+    const validationResult = validateTrip(currentTripData, currentItinerary, status === "Confirmed")
 
     if (!validationResult.isValid) {
       setIsSaving(false)
-      return
+      return false
     }
 
     setFormState((prev) => ({
@@ -693,47 +501,47 @@ const WizardForm: React.FC = () => {
     }))
 
     try {
-      const itineraryTitle = formState.tripData.itineraryTitle || ""
-      const itineraryDescription = formState.tripData.itineraryDescription || ""
+      const itineraryTitle = currentTripData.itineraryTitle || ""
+      const itineraryDescription = currentTripData.itineraryDescription || ""
 
-      const clientId = formState.tripData.clientId ? String(formState.tripData.clientId) : null
+      const clientId = currentTripData.clientId ? String(currentTripData.clientId) : null
       console.log("Final clientId before API call:", clientId, "Type:", typeof clientId)
 
       const formData = new FormData()
 
       formData.append("clientId", clientId || "")
-      formData.append("tripName", formState.tripData.tripName || "")
-      formData.append("description", formState.tripData.description || "")
-      formData.append("category", formState.tripData.category || "")
+      formData.append("tripName", currentTripData.tripName || "")
+      formData.append("description", currentTripData.description || "")
+      formData.append("category", currentTripData.category || "")
       formData.append("status", status)
       formData.append("paymentStatus", "Unpaid")
-      formData.append("insuranceTaken", String(formState.tripData.insuranceTaken || false))
-      formData.append("destination", formState.tripData.destination || "")
+      formData.append("insuranceTaken", String(currentTripData.insuranceTaken || false))
+      formData.append("destination", currentTripData.destination || "")
 
-      if (formState.tripData.startDate) {
-        formData.append("startDate", new Date(formState.tripData.startDate).toISOString())
+      if (currentTripData.startDate) {
+        formData.append("startDate", new Date(currentTripData.startDate).toISOString())
       }
 
-      if (formState.tripData.endDate) {
-        formData.append("endDate", new Date(formState.tripData.endDate).toISOString())
+      if (currentTripData.endDate) {
+        formData.append("endDate", new Date(currentTripData.endDate).toISOString())
       }
 
-      formData.append("price", String(formState.tripData.price || 0))
-      formData.append("dayByDayItineraryNeeded", String(formState.tripData.dayByDayItineraryNeeded))
-      formData.append("adultsCount", String(formState.tripData.adultsCount || 0))
-      formData.append("childrenCount", String(formState.tripData.childrenCount || 0))
+      formData.append("price", String(currentTripData.price || 0))
+      formData.append("dayByDayItineraryNeeded", String(currentTripData.dayByDayItineraryNeeded))
+      formData.append("adultsCount", String(currentTripData.adultsCount || 0))
+      formData.append("childrenCount", String(currentTripData.childrenCount || 0))
 
       // Handle itinerary steps and their images
       const itinerarySteps = []
-      for (let i = 0; i < formState.itinerary.length; i++) {
-        const day = formState.itinerary[i]
+      for (let i = 0; i < currentItinerary.length; i++) {
+        const day = currentItinerary[i]
 
         const transportEvents = day.events.filter((e) => e.type === "transport" || e.type === "cruise")
         const accommodationEvents = day.events.filter((e) => e.type === "accommodation")
         const activityEvents = day.events.filter((e) => e.type === "activity")
 
         const step = {
-          dayNumber: formState.tripData.dayByDayItineraryNeeded ? i + 1 : null,
+          dayNumber: currentTripData.dayByDayItineraryNeeded ? i + 1 : null,
           description: day.dayDescription || null,
           transports: transportEvents.map((e) => {
             const transportEvent = e as TransportEvent
@@ -752,15 +560,22 @@ const WizardForm: React.FC = () => {
               cabinType: transportEvent.cabinType || null,
             }
           }),
-          accommodations: accommodationEvents.map((a) => ({
-            hotelName: a.hotelName || null,
-            hotelLink: a.hotelLink || null,
-            checkIn: a.checkIn || null,
-            checkOut: a.checkOut || null,
-            description: a.description || null,
-            boardBasis: a.boardBasis || null,
-            roomType: a.roomType || null,
-          })),
+          accommodations: accommodationEvents.map((a) => {
+            // Convert numeric star rating to enum string before saving
+            const starRatingEnum =
+              typeof a.starRating === "number" ? numberToStarRatingEnum(a.starRating) : a.starRating
+
+            return {
+              hotelName: a.hotelName || null,
+              hotelLink: a.hotelLink || null,
+              checkIn: a.checkIn || null,
+              checkOut: a.checkOut || null,
+              description: a.description || null,
+              boardBasis: a.boardBasis || null,
+              roomType: a.roomType || null,
+              starRating: starRatingEnum, // Add this line to include star rating
+            }
+          }),
           activities: activityEvents.map((act) => ({
             description: act.description || null,
             activityTime: act.activityTime || null,
@@ -770,8 +585,8 @@ const WizardForm: React.FC = () => {
         itinerarySteps.push(step)
 
         // Append step images to FormData
-        if (stepImages[i] && stepImages[i].length > 0) {
-          stepImages[i].forEach((file) => {
+        if (currentStepImages[i] && currentStepImages[i].length > 0) {
+          currentStepImages[i].forEach((file) => {
             formData.append(`StepImages_${i}`, file)
           })
         }
@@ -787,11 +602,11 @@ const WizardForm: React.FC = () => {
 
       formData.append("itinerary", JSON.stringify(itineraryData))
 
-      formState.images.forEach((file) => {
+      currentImages.forEach((file) => {
         formData.append("Images", file)
       })
 
-      formState.documents.forEach((file) => {
+      currentDocuments.forEach((file) => {
         formData.append("Documents", file)
       })
 
@@ -816,13 +631,17 @@ const WizardForm: React.FC = () => {
           severity: "success",
         })
 
-        setShouldBlockNavigation(false)
-
-        if (tripId) {
+        // If we have a specific destination, navigate there
+        if (destination) {
+          setTimeout(() => navigate(destination), 1500)
+        } else if (tripId) {
+          // Otherwise, navigate to the trip detail page
           setTimeout(() => {
             navigate(`/admin-trip-list/${tripId}`)
           }, 1500)
         }
+
+        return true
       } else {
         setSnackbar({
           open: true,
@@ -830,6 +649,7 @@ const WizardForm: React.FC = () => {
           severity: "error",
         })
         setIsSaving(false)
+        return false
       }
     } catch (error) {
       console.error("Error saving trip:", error)
@@ -839,15 +659,13 @@ const WizardForm: React.FC = () => {
         severity: "error",
       })
       setIsSaving(false)
+      return false
     }
   }
 
-  // Add a function to update step images
-  const handleStepImagesChange = (dayIndex: number, files: File[]) => {
-    setStepImages((prev) => ({
-      ...prev,
-      [dayIndex]: files,
-    }))
+  // Function to handle data changes in Step1
+  const handleStep1DataChange = (hasData) => {
+    if (onDataChange) onDataChange(hasData)
   }
 
   return (
@@ -868,7 +686,7 @@ const WizardForm: React.FC = () => {
               onSubmit={handleStep1Submit}
               currentItinerary={formState.itinerary}
               data-wizard-navigation="true"
-              onDataChange={setStep1DataEntered}
+              onDataChange={handleStep1DataChange}
             />
           )}
 
@@ -876,13 +694,7 @@ const WizardForm: React.FC = () => {
             <Step2Itinerary
               tripData={formState.tripData}
               itinerary={formState.itinerary}
-              onSubmit={(data) => {
-                setFormState((prev) => ({
-                  ...prev,
-                  itinerary: data,
-                }))
-                handleNext()
-              }}
+              onSubmit={handleStep2Submit}
               onBack={handleBack}
               stepImages={stepImages}
               onStepImagesChange={handleStepImagesChange}
@@ -910,36 +722,12 @@ const WizardForm: React.FC = () => {
               isSaving={isSaving}
               hideHighlighting={hideValidationHighlighting}
               onHideHighlightingChange={setHideValidationHighlighting}
+              stepImages={stepImages}
               data-wizard-navigation="true"
             />
           )}
         </Paper>
       </Box>
-
-      <Dialog
-        open={showNavigationDialog}
-        onClose={handleStay}
-        aria-labelledby="leave-dialog-title"
-        aria-describedby="leave-dialog-description"
-      >
-        <DialogTitle id="leave-dialog-title">Išsaugoti kaip juodraštį?</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="leave-dialog-description">
-            Ar norite išsaugoti šią kelionę kaip juodraštį prieš išeidami? Jei ne, pakeitimai bus prarasti.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleStay} color="primary">
-            Likti
-          </Button>
-          <Button onClick={handleLeaveWithoutSaving} color="error">
-            Išeiti be išsaugojimo
-          </Button>
-          <Button onClick={handleLeaveWithSave} color="primary" variant="contained">
-            Išsaugoti ir išeiti
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <CustomSnackbar
         open={snackbar.open}

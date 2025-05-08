@@ -248,13 +248,13 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
         setSelectedCountry(null)
       }
 
-      // Close modal first
-      onClose()
-
-      // Then call success callback with the response data
+      // Call success callback first with the response data
       if (onSuccess && response.data) {
         onSuccess(response.data)
       }
+
+      // Then close the modal
+      onClose()
     } catch (err: any) {
       console.error(`Failed to ${isEditing ? "update" : "create"} partner:`, err)
 

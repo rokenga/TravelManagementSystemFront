@@ -2,11 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Grid, Button, Box } from "@mui/material"
+import { Grid, Button, Box, Typography } from "@mui/material"
+import { ArrowForward } from "@mui/icons-material"
 import dayjs from "dayjs"
 import axios from "axios"
 import { API_URL } from "../../Utils/Configuration"
 import ConfirmationDialog from "../ConfirmationDialog"
+import CustomSnackbar from "../CustomSnackBar"
 
 // Import types
 import type { Client, TripFormData, ItineraryDay } from "../../types"
@@ -138,6 +140,11 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   const [dateError, setDateError] = useState<string | null>(null)
   const [eventsOutsideRange, setEventsOutsideRange] = useState<any[]>([])
   const [destination, setDestination] = useState<Country | null>(initialDestination)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
+  // Store the pending checkbox state
+  const [pendingDayByDayState, setPendingDayByDayState] = useState<boolean | null>(null)
 
   // Check if we're in edit mode by looking at the URL
   const isEditMode = window.location.pathname.includes("/edit")
@@ -304,6 +311,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       startDate: newDate ? newDate.format("YYYY-MM-DD") : null,
     }))
 
+    if (endDate && newDate && endDate.isBefore(newDate)) {
+      setSnackbarMessage("Pabaigos data negali būti ankstesnė už pradžios datą")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    }
+
     // Notify parent component directly about changes
     if (onDataChange) {
       onDataChange(true)
@@ -316,6 +329,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       ...prev,
       endDate: newDate ? newDate.format("YYYY-MM-DD") : null,
     }))
+
+    if (startDate && newDate && newDate.isBefore(startDate)) {
+      setSnackbarMessage("Pabaigos data negali būti ankstesnė už pradžios datą")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    }
 
     // Notify parent component directly about changes
     if (onDataChange) {
@@ -334,16 +353,28 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     const newEnd = endDate ? endDate.format("YYYY-MM-DD") : null
     const newDayByDay = formData.dayByDayItineraryNeeded
 
-    // Check if dates have actually changed from the initial data
-    const datesChanged =
-      newStart !== initialData.startDate ||
-      newEnd !== initialData.endDate ||
-      newDayByDay !== initialData.dayByDayItineraryNeeded
+    // Check if only the dates have changed (not the day-by-day setting)
+    const onlyDatesChanged =
+      ((newStart !== initialData.startDate && initialData.startDate !== null) ||
+        (newEnd !== initialData.endDate && initialData.endDate !== null)) &&
+      newDayByDay === initialData.dayByDayItineraryNeeded
 
-    // Only check for events outside range if dates have actually changed
-    if (datesChanged) {
+    // Add debug logging
+    console.log("Submit check:", {
+      newStart,
+      initialStart: initialData.startDate,
+      newEnd,
+      initialEnd: initialData.endDate,
+      newDayByDay,
+      initialDayByDay: initialData.dayByDayItineraryNeeded,
+      onlyDatesChanged,
+    })
+
+    // Only check for events outside range if only the dates have changed
+    if (onlyDatesChanged) {
       // Check if any events would be lost due to date changes
       const eventsOutsideRange = checkEventsOutsideRange(currentItinerary, newStart, newEnd, newDayByDay)
+      console.log("Events outside range:", eventsOutsideRange)
 
       if (eventsOutsideRange.length > 0) {
         // Show warning dialog about events that would be lost
@@ -369,6 +400,15 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     const startDate = new Date(newStart)
     const endDate = new Date(newEnd)
     const eventsOutsideRange: any[] = []
+
+    console.log("Checking events outside range:", {
+      itinerary,
+      newStart,
+      newEnd,
+      isDayByDay,
+      startDate,
+      endDate,
+    })
 
     itinerary.forEach((day) => {
       const dayDate = new Date(day.dayLabel)
@@ -449,20 +489,48 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   }
 
   function handleDayByDayChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (currentItinerary.some((d: any) => d.events?.length > 0) && e.target.checked) {
-      // Show warning dialog
+    const newCheckedState = e.target.checked
+    const hasEvents = currentItinerary.some((d: any) => d.events?.length > 0)
+
+    console.log("Day by day change triggered", {
+      checked: newCheckedState,
+      hasEvents,
+      currentItinerary,
+    })
+
+    // If there are events and we're changing the state, show a confirmation dialog
+    if (hasEvents) {
+      // Store the pending state that the user wants to change to
+      setPendingDayByDayState(newCheckedState)
       setWarningDialogType("dayByDay")
       setShowWarningDialog(true)
     } else {
-      // Directly update the state if no itinerary exists
-      handleInputChange("dayByDayItineraryNeeded", e.target.checked)
+      // If no events, directly update the state
+      handleInputChange("dayByDayItineraryNeeded", newCheckedState)
+
+      // If unchecking, clear the itinerary title and description
+      if (!newCheckedState) {
+        handleInputChange("itineraryTitle", "")
+        handleInputChange("itineraryDescription", "")
+      }
     }
   }
 
   function handleConfirmChange() {
     if (warningDialogType === "dayByDay") {
-      // If user says "Yes," we disable dayByDay
-      handleInputChange("dayByDayItineraryNeeded", false)
+      // If user confirms, apply the pending state change
+      if (pendingDayByDayState !== null) {
+        handleInputChange("dayByDayItineraryNeeded", pendingDayByDayState)
+
+        // If unchecking, clear the itinerary title and description
+        if (pendingDayByDayState === false) {
+          handleInputChange("itineraryTitle", "")
+          handleInputChange("itineraryDescription", "")
+        }
+
+        // Reset the pending state
+        setPendingDayByDayState(null)
+      }
     } else if (warningDialogType === "dateChange") {
       // If user confirms date change, proceed with submission
       const newStart = startDate ? startDate.format("YYYY-MM-DD") : null
@@ -472,6 +540,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       proceedWithSubmit(newStart, newEnd, newDayByDay)
     }
 
+    setShowWarningDialog(false)
+  }
+
+  function handleCancelChange() {
+    // Reset the pending state without applying it
+    setPendingDayByDayState(null)
     setShowWarningDialog(false)
   }
 
@@ -517,9 +591,20 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     return all
   }
 
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false)
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <Grid container spacing={3}>
+        {/* Basic Trip Info Section */}
+        <Grid item xs={12}>
+          <Typography variant="h6" gutterBottom>
+            Pagrindinė informacija
+          </Typography>
+        </Grid>
+
         <BasicTripInfo
           tripName={formData.tripName}
           clientId={formData.clientId}
@@ -533,6 +618,13 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           onClientChange={handleClientChange}
           onDestinationChange={handleDestinationChange}
         />
+
+        {/* Trip Details Section */}
+        <Grid item xs={12}>
+          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+            Kelionės detalės
+          </Typography>
+        </Grid>
 
         <TripDetails
           category={formData.category}
@@ -548,6 +640,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           onEndDateChange={handleEndDateChange}
         />
 
+        {/* Itinerary Options Section */}
         <ItineraryOptions
           isMultipleDays={isMultipleDays}
           dayByDayItineraryNeeded={formData.dayByDayItineraryNeeded}
@@ -557,15 +650,25 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           onInputChange={handleInputChange}
         />
 
+        {/* Submit Button */}
         <Grid item xs={12}>
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-            <Button type="submit" variant="contained" color="primary" size="large" disabled={!!dateError}>
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              size="large"
+              disabled={!!dateError}
+              endIcon={<ArrowForward />}
+              sx={{ minWidth: 120 }}
+            >
               Toliau
             </Button>
           </Box>
         </Grid>
       </Grid>
 
+      {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={showWarningDialog}
         title={warningDialogType === "dayByDay" ? "Dėmesio" : "Įspėjimas dėl datų keitimo"}
@@ -577,7 +680,15 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
               : `Pakeitus kelionės datas, ${eventsOutsideRange.length} įvykiai nebepateks į kelionės intervalą. Prašome pataisyti įvykių datas arba kelionės intervalą. Ar tikrai norite tęsti?`
         }
         onConfirm={handleConfirmChange}
-        onCancel={() => setShowWarningDialog(false)}
+        onCancel={handleCancelChange}
+      />
+
+      {/* Snackbar for notifications */}
+      <CustomSnackbar
+        open={snackbarOpen}
+        message={snackbarMessage}
+        severity={snackbarSeverity}
+        onClose={handleCloseSnackbar}
       />
     </form>
   )

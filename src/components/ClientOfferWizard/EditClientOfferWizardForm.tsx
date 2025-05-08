@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect, useContext, useRef, forwardRef, useImperativeHandle } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Stepper,
@@ -31,13 +31,18 @@ import { TransportType, TripStatus, type BoardBasisType, type TripCategory } fro
 import CustomSnackbar from "../CustomSnackBar"
 import Step3Review from "./Step3ReviewConfirm"
 import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
-import type { OfferWizardData, OfferStep, Accommodation, Transport, Cruise } from "./CreateClientOfferWizardForm"
+import type { OfferWizardData, Accommodation, Transport, Cruise } from "./CreateClientOfferWizardForm"
 import type { Country } from "../DestinationAutocomplete"
+import { getCurrentStepData } from "./Step2Offers"
+
+// Add this import at the top of the file, with the other imports
+import { toLocalIso } from "../../Utils/dateSerialize"
 
 // Define proper types that match the backend
 interface FileResponse {
   id: string
   url: string
+  urlInline?: string
   fileName?: string
   altText?: string
 }
@@ -109,10 +114,29 @@ interface ClientTripOfferResponse {
   destination?: string // Backend expects just the country name as a string
 }
 
+// 1. Update the OfferStep interface (same as in CreateClientOfferWizardForm.tsx)
+export interface OfferStep {
+  id?: string // <–– NEW
+  name: string
+  accommodations: Accommodation[]
+  transports: Transport[]
+  cruises: Cruise[]
+  isExpanded: boolean
+  stepImages?: File[]
+  existingStepImages?: Array<{
+    id: string
+    url: string
+    altText?: string
+  }>
+  destination?: Country | null
+}
+
 const steps = ["Pagrindinė informacija", "Pasiūlymo variantai", "Peržiūra ir patvirtinimas"]
 
 interface EditClientOfferWizardFormProps {
   tripId: string
+  onDataChange?: (hasData: boolean) => void
+  ref?: React.Ref<any>
 }
 
 // Import the full countries list to find matching country data
@@ -145,14 +169,40 @@ const stringToCountry = (destination?: string): Country | null => {
   }
 }
 
-const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ tripId }) => {
+// Helper function to get the best URL for an image
+export const getImageUrl = (img: any): string => {
+  // Try urlInline first (which might be used in some API responses)
+  if (img.urlInline) return img.urlInline
+  // Then try url
+  if (img.url) return img.url
+  // Fallback to placeholder
+  return "/placeholder.svg"
+}
+
+const EditClientOfferWizardForm = forwardRef<any, EditClientOfferWizardFormProps>(({ tripId, onDataChange }, ref) => {
   const navigate = useNavigate()
   const [activeStep, setActiveStep] = useState(0)
   const [showNavigationDialog, setShowNavigationDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const isSavingRef = useRef(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true)
+
+  // Refs for Step components
+  const step1Ref = useRef<any>(null)
+  const step2Ref = useRef<any>(null)
+
+  // Store refs globally for access from outside
+  useEffect(() => {
+    window.__step1Ref = step1Ref.current
+    window.__step2Ref = step2Ref.current
+
+    return () => {
+      window.__step1Ref = undefined
+      window.__step2Ref = undefined
+    }
+  }, [step1Ref.current, step2Ref.current])
 
   // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false)
@@ -190,8 +240,59 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
     destination: null,
   })
 
-  // Store original step IDs to preserve them during update
-  const [originalStepIds, setOriginalStepIds] = useState<Record<number, string>>({})
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    collectCurrentFormData: async () => {
+      // Based on the active step, collect data from the appropriate component
+      if (activeStep === 0 && step1Ref.current && step1Ref.current.collectFormData) {
+        const step1Data = await step1Ref.current.collectFormData()
+        console.log("Collected Step 1 data:", step1Data)
+        if (step1Data) {
+          setFormData((prev) => ({
+            ...prev,
+            ...step1Data,
+          }))
+        }
+      } else if (activeStep === 1 && step2Ref.current && step2Ref.current.collectFormData) {
+        const step2Data = await step2Ref.current.collectFormData()
+        console.log("Collected Step 2 data:", step2Data)
+        if (step2Data) {
+          setFormData((prev) => ({
+            ...prev,
+            offerSteps: step2Data,
+          }))
+        }
+      }
+      return formData
+    },
+    saveAsDraft: async (destination?: string | null) => {
+      // First collect current form data from the active step
+      await ref.current?.collectCurrentFormData()
+
+      // Get the latest data from Step2 if we're on that step
+      if (activeStep === 1) {
+        const latestStepData = getCurrentStepData()
+        if (latestStepData) {
+          setFormData((prev) => ({
+            ...prev,
+            offerSteps: latestStepData,
+          }))
+        }
+      }
+
+      // Then save as draft with the destination
+      try {
+        const result = await handleSubmit(true, destination)
+        return result
+      } catch (error) {
+        console.error("Error saving draft:", error)
+        return false
+      }
+    },
+  }))
+
+  // 3. Delete the originalStepIds state
+  // const [originalStepIds, setOriginalStepIds] = useState<Record<number, string>>({})
 
   // Step images state
   const [stepImages, setStepImages] = useState<Record<number, File[]>>({})
@@ -224,15 +325,15 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         console.log("Possible destination properties:", possibleDestinationProps)
 
         // Store original step IDs
-        const stepIds: Record<number, string> = {}
-        if (offerData.itinerary?.itinerarySteps) {
-          offerData.itinerary.itinerarySteps.forEach((step) => {
-            if (step.dayNumber !== undefined && step.id) {
-              stepIds[step.dayNumber - 1] = step.id
-            }
-          })
-        }
-        setOriginalStepIds(stepIds)
+        // const stepIds: Record<number, string> = {}
+        // if (offerData.itinerary?.itinerarySteps) {
+        //   offerData.itinerary.itinerarySteps.forEach((step) => {
+        //     if (step.dayNumber !== undefined && step.id) {
+        //       stepIds[step.dayNumber - 1] = step.id
+        //     }
+        //   })
+        // }
+        // setOriginalStepIds(stepIds)
 
         // Convert itinerary steps to offer steps
         const offerSteps: OfferStep[] = []
@@ -320,8 +421,9 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
               }
             }
 
-            // Create the base offer step without stepImages
+            // 2. Update the offerStep creation in the sortedSteps.forEach loop
             const offerStep: OfferStep = {
+              id: step.id, // <–– NEW
               name: step.description || `Pasiūlymas ${index + 1}`,
               accommodations,
               transports,
@@ -332,10 +434,13 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 
             // If the step has images, add them to the step
             if (step.images && step.images.length > 0) {
+              console.log(`Step ${index} has ${step.images.length} images:`, step.images)
+
               // Create a proper structure for existing images
               const existingImages = step.images.map((img) => ({
                 id: img.id,
                 url: img.url,
+                urlInline: img.urlInline || img.url, // Ensure urlInline is available
                 fileName: img.fileName || "",
                 altText: img.altText || "",
               }))
@@ -380,19 +485,6 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         const mainDestinationObj = stringToCountry(mainDestination)
         console.log("Converted main destination:", mainDestinationObj)
 
-        // For testing purposes, let's hardcode a destination if none is found
-        // This is just to verify if the UI can display it correctly
-        const testDestination =
-          mainDestinationObj ||
-          (fullCountriesList.length > 0
-            ? {
-                name: fullCountriesList[0].name,
-                code: fullCountriesList[0].code,
-              }
-            : null)
-
-        console.log("Test destination (remove in production):", testDestination)
-
         // Set the form data
         setFormData({
           tripName: offerData.tripName || "",
@@ -405,10 +497,10 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
           childrenCount: offerData.childrenCount || 0,
           offerSteps,
           category: offerData.category?.toString() || "",
-          price: offerData.price || "",
+          price: offerData.price?.toString() || "",
           description: offerData.description || "",
           insuranceTaken: false, // Default value
-          destination: testDestination, // Use test destination for now
+          destination: mainDestinationObj, // Use the converted destination
         })
 
         setIsLoading(false)
@@ -421,6 +513,29 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 
     fetchOfferData()
   }, [tripId, token])
+
+  // Add window beforeunload event listener to prevent accidental navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (shouldBlockNavigation) {
+        e.preventDefault()
+        e.returnValue = ""
+        return ""
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [shouldBlockNavigation])
+
+  // Notify parent of data changes
+  useEffect(() => {
+    if (onDataChange) {
+      onDataChange(true)
+    }
+  }, [formData, onDataChange])
 
   /**
    * STEPPER NAVIGATION
@@ -440,14 +555,24 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
   const handleLeaveWithoutSaving = () => {
     setShouldBlockNavigation(false)
     setShowNavigationDialog(false)
-    // You might do a route change here
+    navigate(`/special-offers/${tripId}`)
   }
   const handleLeaveWithSave = async () => {
     setIsSaving(true)
-    // Save logic
-    setShouldBlockNavigation(false)
-    setShowNavigationDialog(false)
-    setIsSaving(false)
+    try {
+      // Save as draft
+      await handleSubmit(true)
+      setShouldBlockNavigation(false)
+      setShowNavigationDialog(false)
+      navigate(`/special-offers/${tripId}`)
+    } catch (error) {
+      console.error("Error saving draft:", error)
+      setSnackbarMessage("Nepavyko išsaugoti juodraščio. Bandykite dar kartą.")
+      setSnackbarSeverity("error")
+      setSnackbarOpen(true)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   /**
@@ -512,16 +637,29 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
    * Handle image changes for a step
    */
   const handleStepImagesChange = (stepIndex: number, files: File[]) => {
+    console.log(`Adding ${files.length} new images to step ${stepIndex}`)
     setStepImages((prev) => ({
       ...prev,
       [stepIndex]: files,
     }))
+
+    // Also update the form data
+    setFormData((prev) => {
+      const newFormData = { ...prev }
+      const step = newFormData.offerSteps[stepIndex]
+      if (step) {
+        step.stepImages = files
+      }
+      return newFormData
+    })
   }
 
   /**
    * Handle deleting an existing image
    */
   const handleStepImageDelete = (stepIndex: number, imageId: string) => {
+    console.log(`Parent: Deleting image with ID: ${imageId} from step ${stepIndex}`)
+
     // Add the image ID to the list of images to delete
     setStepImagesToDelete((prev) => {
       const newImagesToDelete = { ...prev }
@@ -544,89 +682,192 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
   }
 
   /**
+   * Validate form data before submission
+   */
+  const validateFormData = (isDraft: boolean): { isValid: boolean; message: string } => {
+    // If it's a draft, we don't need to validate
+    if (isDraft) {
+      return { isValid: true, message: "" }
+    }
+
+    // Check if there's at least one offer step
+    if (!formData.offerSteps || formData.offerSteps.length === 0) {
+      return { isValid: false, message: "Būtina pridėti bent vieną pasiūlymą" }
+    }
+
+    // Check if each offer step has at least one accommodation, transport, or cruise
+    for (let i = 0; i < formData.offerSteps.length; i++) {
+      const step = formData.offerSteps[i]
+      const hasAccommodations = step.accommodations && step.accommodations.length > 0
+      const hasTransports = step.transports && step.transports.length > 0
+      const hasCruises = step.cruises && step.cruises.length > 0
+
+      if (!hasAccommodations && !hasTransports && !hasCruises) {
+        return {
+          isValid: false,
+          message: `Pasiūlyme "${step.name}" būtina pridėti bent vieną apgyvendinimą, transportą arba kruizą`,
+        }
+      }
+    }
+
+    return { isValid: true, message: "" }
+  }
+
+  /**
    * ---------------------------------------------------
    * FINAL SUBMIT: Post to your backend
    * ---------------------------------------------------
    */
-  const handleSubmit = async (isDraft = false) => {
-    setIsSaving(true)
-
-    // Map the steps to the format expected by the API
-    const mappedSteps = formData.offerSteps.map((step, index) => {
-      // Map accommodations with converted star ratings
-      const mappedAccommodations = step.accommodations.map((acc) => ({
-        ...acc,
-        starRating: typeof acc.starRating === "number" ? numberToStarRatingEnum(acc.starRating) : acc.starRating,
-      }))
-
-      // Convert cruises to transport entries
-      const cruiseTransports = step.cruises.map((cruise) => ({
-        transportType: TransportType.Cruise,
-        departureTime: cruise.departureTime,
-        arrivalTime: cruise.arrivalTime,
-        departurePlace: cruise.departurePlace,
-        arrivalPlace: cruise.arrivalPlace,
-        description: cruise.description,
-        companyName: cruise.companyName,
-        transportName: cruise.transportName,
-        transportCode: cruise.transportCode,
-        cabinType: cruise.cabinType,
-        price: cruise.price,
-      }))
-
-      // Calculate total price for this step
-      const stepTotal =
-        step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0) +
-        step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0) +
-        (step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0)
-
-      // Include hasImages flag to indicate if this step has images
-      return {
-        id: originalStepIds[index] || undefined, // Include original ID if available
-        dayNumber: index + 1,
-        description: step.name,
-        transports: [...step.transports, ...cruiseTransports],
-        accommodations: mappedAccommodations,
-        price: stepTotal, // Save the accumulated price for this step
-        hasImages: step.stepImages && step.stepImages.length > 0, // Add flag for images
-        destination: step.destination?.name || null, // Just send the country name string
-      }
-    })
-
-    // Set the trip status based on whether it's a draft or not
-    const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
-
-    // Build a final request object
-    const requestPayload = {
-      id: tripId, // Include the trip ID for update
-      agentId: user?.id || "", // or however you store your agent/user ID
-      clientId: formData.clientId || undefined,
-      tripName: formData.tripName,
-      description: formData.description,
-      clientWishes: formData.clientWishes,
-      tripType: 2, // 2 = ClientSpecialOffer
-      category: formData.category || undefined,
-      startDate: formData.startDate ? formData.startDate.toDate() : null,
-      endDate: formData.endDate ? formData.endDate.toDate() : null,
-      // Remove price from the main payload - we'll use the accumulated prices from each step
-      status: tripStatus, // Set the status based on isDraft
-      destination: formData.destination?.name || null, // Just send the country name string
-      itinerary: {
-        title: "Multi-Option Itinerary", // or formData.whatever
-        description: "Choose your option",
-        itinerarySteps: mappedSteps,
-      },
-      childrenCount: formData.childrenCount,
-      adultsCount: formData.adultCount,
-      // We are ignoring images / documents for now
-      images: null,
-      documents: null,
+  const handleSubmit = async (isDraft = false, destination?: string | null): Promise<boolean> => {
+    // Prevent multiple simultaneous save operations
+    if (isSavingRef.current) {
+      console.log("Save operation already in progress, skipping duplicate call")
+      return false
     }
 
-    // For demonstration, we do a console log
-    console.log("Sending this offer to the backend:", requestPayload)
+    isSavingRef.current = true
+    setIsSaving(true)
 
     try {
+      // First try to collect the current form data based on the active step
+      let currentFormData = { ...formData } // Start with a copy of the current state
+
+      // Get the latest data from the steps based on active step
+      if (activeStep === 0 && window.__step1Ref && window.__step1Ref.collectFormData) {
+        try {
+          const step1Data = await window.__step1Ref.collectFormData()
+          if (step1Data) {
+            // Update our local copy with the latest data
+            currentFormData = { ...currentFormData, ...step1Data }
+
+            // Also update the state for future reference
+            setFormData((prev) => ({
+              ...prev,
+              ...step1Data,
+            }))
+          }
+        } catch (error) {
+          console.error("Error collecting Step 1 data:", error)
+        }
+      } else if (activeStep === 1) {
+        try {
+          const latestStepData = getCurrentStepData()
+          if (latestStepData) {
+            // Update our local copy with the latest data
+            currentFormData = { ...currentFormData, offerSteps: latestStepData }
+
+            // Also update the state for future reference
+            setFormData((prev) => ({
+              ...prev,
+              offerSteps: latestStepData,
+            }))
+          }
+        } catch (error) {
+          console.error("Error collecting Step 2 data:", error)
+        }
+      }
+
+      // Validate form data if not a draft
+      if (!isDraft) {
+        const validation = validateFormData(isDraft)
+        if (!validation.isValid) {
+          setSnackbarMessage(validation.message)
+          setSnackbarSeverity("error")
+          setSnackbarOpen(true)
+          isSavingRef.current = false
+          setIsSaving(false)
+          return false
+        }
+      }
+
+      // Map the steps to the format expected by the API - using currentFormData instead of formData
+      const mappedSteps = currentFormData.offerSteps.map((step, index) => {
+        // Map accommodations with converted star ratings and proper date formatting
+        const mappedAccommodations = step.accommodations.map((acc) => ({
+          ...acc,
+          checkIn: toLocalIso(acc.checkIn),
+          checkOut: toLocalIso(acc.checkOut),
+          starRating: typeof acc.starRating === "number" ? numberToStarRatingEnum(acc.starRating) : acc.starRating,
+        }))
+
+        // Map transports with proper date formatting
+        const mappedTransports = step.transports.map((trans) => ({
+          ...trans,
+          departureTime: toLocalIso(trans.departureTime),
+          arrivalTime: toLocalIso(trans.arrivalTime),
+        }))
+
+        // Convert cruises to transport entries with proper date formatting
+        const cruiseTransports = step.cruises.map((cruise) => ({
+          transportType: TransportType.Cruise,
+          departureTime: toLocalIso(cruise.departureTime),
+          arrivalTime: toLocalIso(cruise.arrivalTime),
+          departurePlace: cruise.departurePlace,
+          arrivalPlace: cruise.arrivalPlace,
+          description: cruise.description,
+          companyName: cruise.companyName,
+          transportName: cruise.transportName,
+          transportCode: cruise.transportCode,
+          cabinType: cruise.cabinType,
+          price: cruise.price,
+        }))
+
+        // Calculate total price for this step
+        const stepTotal =
+          step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0) +
+          step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0) +
+          (step.cruises ? step.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0) : 0)
+
+        // Include hasImages flag to indicate if this step has images
+        // 5. Update the mappedSteps in handleSubmit to use step.id
+        return {
+          id: step.id, // was originalStepIds[index]
+          dayNumber: index + 1,
+          description: step.name,
+          transports: [...mappedTransports, ...cruiseTransports],
+          accommodations: mappedAccommodations,
+          price: stepTotal,
+          hasImages: step.stepImages && step.stepImages.length > 0,
+          destination: step.destination?.name || null,
+        }
+      })
+
+      // Set the trip status based on whether it's a draft or not
+      const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
+
+      // Calculate total price for the entire trip
+      const totalPrice = calculateTotalPrice(currentFormData.offerSteps)
+
+      // Build a final request object using currentFormData instead of formData
+      const requestPayload = {
+        id: tripId, // Include the trip ID for update
+        agentId: user?.id || "", // or however you store your agent/user ID
+        clientId: currentFormData.clientId || undefined,
+        tripName: currentFormData.tripName,
+        description: currentFormData.description,
+        clientWishes: currentFormData.clientWishes,
+        tripType: 2, // 2 = ClientSpecialOffer
+        category: currentFormData.category || undefined,
+        startDate: toLocalIso(currentFormData.startDate),
+        endDate: toLocalIso(currentFormData.endDate),
+        price: totalPrice, // Include the calculated total price
+        status: tripStatus, // Set the status based on isDraft
+        destination: currentFormData.destination?.name || null, // Just send the country name string
+        itinerary: {
+          title: currentFormData.tripName || "Multi-Option Itinerary",
+          description: currentFormData.description || "Choose your option",
+          itinerarySteps: mappedSteps,
+        },
+        childrenCount: currentFormData.childrenCount,
+        adultsCount: currentFormData.adultCount,
+        // We are ignoring images / documents for now
+        images: null,
+        documents: null,
+      }
+
+      // For demonstration, we do a console log
+      console.log("Sending this offer to the backend:", requestPayload)
+
       // Create a FormData object for multipart/form-data submission
       const formDataPayload = new FormData()
 
@@ -654,8 +895,8 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
       // FormData requires stringified JSON
       formDataPayload.append("data", JSON.stringify(fullPayload))
 
-      // Append step images from formData.offerSteps directly
-      formData.offerSteps.forEach((step, index) => {
+      // Append step images from currentFormData.offerSteps directly
+      currentFormData.offerSteps.forEach((step, index) => {
         if (step.stepImages && step.stepImages.length > 0) {
           step.stepImages.forEach((file) => {
             formDataPayload.append(`NewStepImages_${index}`, file)
@@ -663,12 +904,47 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
         }
       })
 
-      // Append images to delete
-      Object.entries(stepImagesToDelete).forEach(([stepIndex, imageIds]) => {
+      // Log the images to delete before appending them
+      console.log("Images to delete by step:", stepImagesToDelete)
+
+      // Inside handleSubmit, before creating the FormData
+      // Collect deleted images from Step2 if we're on that step
+      const allImagesToDelete = { ...stepImagesToDelete }
+      if (activeStep === 1 && step2Ref.current && step2Ref.current.getDeletedImages) {
+        const step2DeletedImages = step2Ref.current.getDeletedImages()
+        console.log("Deleted images from Step2:", step2DeletedImages)
+
+        // Merge with the form-level tracking
+        Object.entries(step2DeletedImages).forEach(([stepIdx, imageIds]) => {
+          if (!allImagesToDelete[stepIdx]) {
+            allImagesToDelete[stepIdx] = []
+          }
+
+          // Add any image IDs that aren't already in the list
+          imageIds.forEach((id) => {
+            if (!allImagesToDelete[stepIdx].includes(id)) {
+              allImagesToDelete[stepIdx].push(id)
+            }
+          })
+        })
+      }
+
+      console.log("All images to delete after merging:", allImagesToDelete)
+
+      // Then use allImagesToDelete instead of stepImagesToDelete when appending to FormData
+      Object.entries(allImagesToDelete).forEach(([stepIndex, imageIds]) => {
+        console.log(`Processing deletion for step ${stepIndex}:`, imageIds)
         imageIds.forEach((imageId) => {
+          console.log(`Appending image ID ${imageId} for deletion from step ${stepIndex}`)
           formDataPayload.append(`StepImagesToDelete_${stepIndex}`, imageId)
         })
       })
+
+      // Log the final FormData contents for debugging
+      console.log("FormData contents before submission:")
+      for (const pair of formDataPayload.entries()) {
+        console.log(pair[0], pair[1])
+      }
 
       // Now send it
       const response = await axios.put(`${API_URL}/ClientTripOfferFacade/${tripId}`, formDataPayload, {
@@ -687,19 +963,44 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Wait for 1 second after getting the response before redirecting
-      setTimeout(() => {
-        navigate(`/special-offers/${response.data.id}`)
-      }, 1000)
+      // If we have a specific destination, navigate there
+      if (destination) {
+        console.log("Navigating to destination:", destination)
+        setTimeout(() => {
+          navigate(destination)
+        }, 1000)
+      } else if (!isDraft) {
+        // Otherwise, navigate to the offer detail page if not a draft
+        setTimeout(() => {
+          navigate(`/special-offers/${response.data.id}`)
+        }, 1000)
+      }
+
+      isSavingRef.current = false
+      setIsSaving(false)
+      return true
     } catch (err: any) {
       console.error("Failed to update the offer:", err)
 
+      // Extract error message from response if available
+      let errorMessage = "Nepavyko atnaujinti pasiūlymo."
+      if (err.response?.data) {
+        if (typeof err.response.data === "string") {
+          errorMessage = err.response.data
+        } else if (err.response.data.message) {
+          errorMessage = err.response.data.message
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error
+        }
+      }
+
       // Show error message
-      setSnackbarMessage("Nepavyko atnaujinti pasiūlymo. Patikrinkite konsolę klaidos informacijai.")
+      setSnackbarMessage(errorMessage)
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
-    } finally {
+      isSavingRef.current = false
       setIsSaving(false)
+      return false
     }
   }
 
@@ -716,6 +1017,15 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
 
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false)
+  }
+
+  // Handle navigation away from the form
+  const handleNavigateAway = () => {
+    if (shouldBlockNavigation) {
+      setShowNavigationDialog(true)
+    } else {
+      navigate(`/special-offers/${tripId}`)
+    }
   }
 
   if (isLoading) {
@@ -749,12 +1059,14 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
           {activeStep === 0 && (
             <>
               {console.log("Passing to Step1TripInfo:", formData)}
-              <Step1TripInfo initialData={formData} onSubmit={handleStep1Submit} />
+              <Step1TripInfo initialData={formData} onSubmit={handleStep1Submit} ref={step1Ref} />
             </>
           )}
 
           {activeStep === 1 && (
+            // 4. Remove originalStepIds from Step2Offers props
             <Step2Offers
+              ref={step2Ref}
               tripData={formData}
               steps={formData.offerSteps}
               onSubmit={handleStep2Submit}
@@ -762,6 +1074,7 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
               formatDate={formatDate}
               onStepImagesChange={handleStepImagesChange}
               onStepImageDelete={handleStepImageDelete}
+              onDataChange={onDataChange}
             />
           )}
 
@@ -786,6 +1099,7 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
                   type="button"
                   startIcon={<Save />}
                   sx={{ minWidth: 160 }}
+                  data-save-button="true"
                 >
                   Išsaugoti juodraštį
                 </Button>
@@ -797,8 +1111,9 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
                   type="button"
                   endIcon={<CheckCircle />}
                   sx={{ minWidth: 120 }}
+                  data-save-button="true"
                 >
-                  Patvirtinti
+                  {isSaving ? <CircularProgress size={24} color="inherit" /> : "Patvirtinti"}
                 </Button>
               </Box>
             </>
@@ -825,8 +1140,14 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
           <Button onClick={handleLeaveWithoutSaving} color="error" startIcon={<ExitToApp />}>
             Išeiti be išsaugojimo
           </Button>
-          <Button onClick={handleLeaveWithSave} color="primary" variant="contained" startIcon={<Save />}>
-            Išsaugoti ir išeiti
+          <Button
+            onClick={handleLeaveWithSave}
+            color="primary"
+            variant="contained"
+            startIcon={<Save />}
+            disabled={isSaving}
+          >
+            {isSaving ? <CircularProgress size={24} color="inherit" /> : "Išsaugoti ir išeiti"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -840,6 +1161,6 @@ const EditClientOfferWizardForm: React.FC<EditClientOfferWizardFormProps> = ({ t
       />
     </LocalizationProvider>
   )
-}
+})
 
 export default EditClientOfferWizardForm

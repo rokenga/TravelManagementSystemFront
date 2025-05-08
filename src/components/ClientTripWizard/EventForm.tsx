@@ -15,6 +15,8 @@ import {
   LocationOn,
 } from "@mui/icons-material"
 import CustomDateTimePicker from "../CustomDatePicker"
+import StarRating from "../StarRating"
+import { starRatingEnumToNumber } from "../../Utils/starRatingUtils"
 
 interface EventCardProps {
   event: any
@@ -380,6 +382,21 @@ const EventCard: React.FC<EventCardProps> = ({
                   size="small"
                 />
               </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                  <StarRating
+                    label="Žvaigždučių reitingas"
+                    value={
+                      typeof event.starRating === "string"
+                        ? starRatingEnumToNumber(event.starRating as string)
+                        : event.starRating
+                    }
+                    onChange={(value) => onChange("starRating", value)}
+                    size="medium"
+                  />
+                </Box>
+              </Grid>
             </Grid>
           </Grid>
 
@@ -589,4 +606,3 @@ const EventCard: React.FC<EventCardProps> = ({
 }
 
 export default EventCard
-

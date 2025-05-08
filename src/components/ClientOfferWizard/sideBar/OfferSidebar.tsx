@@ -12,7 +12,10 @@ interface OfferSidebarProps {
   sidebarWidth: number
   onDragStart: (e: React.DragEvent, stepIndex: number) => void
   onDragOver: (e: React.DragEvent, stepIndex: number) => void
-  onDragEnd: () => void
+  onDragEnter: (e: React.DragEvent) => void
+  onDragLeave: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent, stepIndex: number) => void
+  onDragEnd: (e: React.DragEvent) => void
   draggedStepIndex: number | null
   onAddOffer: () => void
 }
@@ -24,13 +27,15 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
   sidebarWidth,
   onDragStart,
   onDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop,
   onDragEnd,
   draggedStepIndex,
   onAddOffer,
 }) => {
   const theme = useTheme()
 
-  // Calculate total price for an offer
   const calculateOfferTotal = (offer: OfferStep): number => {
     const accommodationTotal = offer.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
     const transportTotal = offer.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
@@ -38,17 +43,17 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
     return accommodationTotal + transportTotal + cruiseTotal
   }
 
-  // Count total items in an offer
+  // Update the countOfferItems function to count image sections even when empty
   const countOfferItems = (offer: OfferStep): number => {
-    const accommodationsCount = offer.accommodations?.length || 0;
-    const transportsCount = offer.transports?.length || 0;
-    const cruisesCount = offer.cruises?.length || 0;
-    const imagesCount = offer.stepImages?.length || 0;
-    
-    return accommodationsCount + transportsCount + cruisesCount + (imagesCount > 0 ? 1 : 0);
+    const accommodationsCount = offer.accommodations?.length || 0
+    const transportsCount = offer.transports?.length || 0
+    const cruisesCount = offer.cruises?.length || 0
+    // Count image section if it exists (is an array), regardless of whether it has images
+    const hasImageSection = Array.isArray(offer.stepImages)
+
+    return accommodationsCount + transportsCount + cruisesCount + (hasImageSection ? 1 : 0)
   }
 
-  // Function to truncate text to 100 characters
   const truncateText = (text: string, maxLength = 100): string => {
     if (!text) return ""
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text
@@ -85,6 +90,7 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
         <IconButton
           size="small"
           onClick={onAddOffer}
+          data-tab-button="true"
           sx={{
             color: theme.palette.primary.contrastText,
             bgcolor: "rgba(255, 255, 255, 0.1)",
@@ -111,16 +117,20 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
               draggable
               onDragStart={(e) => onDragStart(e, idx)}
               onDragOver={(e) => onDragOver(e, idx)}
+              onDragEnter={(e) => onDragEnter(e)}
+              onDragLeave={(e) => onDragLeave(e)}
+              onDrop={(e) => onDrop(e, idx)}
               onDragEnd={onDragEnd}
+              data-tab-button="true"
               sx={{
                 py: 2,
-                cursor: 'pointer',
+                cursor: "pointer",
                 borderLeft:
                   selectedOfferIndex === idx ? `4px solid ${theme.palette.primary.main}` : "4px solid transparent",
                 border: draggedStepIndex === idx ? `2px dashed ${theme.palette.success.main}` : undefined,
-                backgroundColor: selectedOfferIndex === idx ? 'action.selected' : 'inherit',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
+                backgroundColor: selectedOfferIndex === idx ? "action.selected" : "inherit",
+                "&:hover": {
+                  backgroundColor: "action.hover",
                 },
               }}
             >
@@ -164,4 +174,3 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
 }
 
 export default OfferSidebar
-

@@ -17,6 +17,7 @@ import RateReviewIcon from "@mui/icons-material/RateReview"
 import VisibilityIcon from "@mui/icons-material/Visibility"
 import { useNavigate } from "react-router-dom"
 import { useNavigation } from "../contexts/NavigationContext"
+import SecurityIcon from "@mui/icons-material/Security"
 
 interface MenuItem {
   key: string
@@ -58,6 +59,10 @@ interface ActionBarProps {
   hasReview?: boolean
   onCreateReview?: () => void
   onViewReview?: () => void
+  showReset2FAButton?: boolean
+  onReset2FA?: () => void
+  showReservationsButton?: boolean
+  onViewReservations?: () => void
 }
 
 const ActionBar: React.FC<ActionBarProps> = ({
@@ -90,6 +95,10 @@ const ActionBar: React.FC<ActionBarProps> = ({
   hasReview = false,
   onCreateReview,
   onViewReview,
+  showReset2FAButton = false,
+  onReset2FA,
+  showReservationsButton = false,
+  onViewReservations,
 }) => {
   const navigate = useNavigate()
   const { navigateBack, previousPath } = useNavigation()
@@ -125,6 +134,15 @@ const ActionBar: React.FC<ActionBarProps> = ({
   // Helper function to create menu items
   const getMenuItems = () => {
     const items = []
+
+    if (showReset2FAButton && onReset2FA) {
+      items.push({
+        key: "reset-2fa",
+        label: "Atstatyti 2FA",
+        icon: <SecurityIcon fontSize="small" />,
+        onClick: onReset2FA,
+      })
+    }
 
     // Secondary actions first
     if (showReviewButton) {
@@ -177,6 +195,16 @@ const ActionBar: React.FC<ActionBarProps> = ({
         label: "Keisti statusą",
         icon: <UpdateIcon fontSize="small" />,
         onClick: onChangeStatus,
+      })
+    }
+
+    // Add the reservations button right after the change status button
+    if (showReservationsButton && onViewReservations) {
+      items.push({
+        key: "view-reservations",
+        label: "Rezervacijos",
+        icon: <VisibilityIcon fontSize="small" />,
+        onClick: onViewReservations,
       })
     }
 

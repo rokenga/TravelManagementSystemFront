@@ -35,6 +35,27 @@ import type {
   ActivityEvent,
 } from "../../types"
 
+// Declare global window properties
+declare global {
+  interface Window {
+    __currentStepImagesData: {
+      stepImages: { [key: number]: File[] }
+      stepImagesToDelete: { [key: number]: string[] }
+    } | null
+    __currentItineraryData: ItineraryDay[] | null
+  }
+}
+
+// Add global state management functions
+export function getCurrentStepImagesData() {
+  return window.__currentStepImagesData || null
+}
+
+// Export a function to get the current itinerary data
+export function getCurrentItineraryData() {
+  return window.__currentItineraryData || null
+}
+
 interface Step2Props {
   tripData: TripFormData
   itinerary: ItineraryDay[]
@@ -48,21 +69,11 @@ interface Step2Props {
 
 const SIDEBAR_WIDTH = 240
 
-// Global variable to store the current itinerary data
-let currentItineraryData: ItineraryDay[] = []
-
 // Generate a unique key for localStorage based on trip ID or name
 function getStorageKey(tripData: TripFormData): string {
   // Use trip ID if available, otherwise use name + start date
   const identifier = tripData.id || `${tripData.tripName || "unnamed"}_${tripData.startDate || "nodate"}`
   return `nonDayByDayDescription_${identifier}`
-}
-
-// Export a function to get the current itinerary data
-export function getCurrentItineraryData(): ItineraryDay[] {
-  console.log("Getting current itinerary data:", currentItineraryData)
-  // Create a deep copy to ensure we don't have reference issues
-  return JSON.parse(JSON.stringify(currentItineraryData))
 }
 
 // Export a function to validate the itinerary data
@@ -76,6 +87,74 @@ export function validateItineraryData(itinerary: ItineraryDay[]): { valid: boole
 
   // Validate that all events have valid dates
   return validateAllEvents(itinerary)
+}
+
+// Helper function to check if an event's date matches its day's date
+function checkEventDateMatchesDay(event: any, dayDate: string): boolean {
+  if (!dayDate) return true // If no day date, can't validate
+
+  const dayStart = dayjs(dayDate).startOf("day")
+  const dayEnd = dayjs(dayDate).endOf("day")
+
+  // Check based on event type
+  if (event.type === "transport" || event.type === "cruise") {
+    // For transport and cruise, check departure time
+    if (event.departureTime) {
+      const departureTime = dayjs(event.departureTime)
+      if (departureTime.isBefore(dayStart) || departureTime.isAfter(dayEnd)) {
+        return false
+      }
+    }
+  } else if (event.type === "accommodation") {
+    // For accommodation, check check-in time
+    if (event.checkIn) {
+      const checkInTime = dayjs(event.checkIn)
+      if (checkInTime.isBefore(dayStart) || checkInTime.isAfter(dayEnd)) {
+        return false
+      }
+    }
+  } else if (event.type === "activity") {
+    // For activity, check activity time
+    if (event.activityTime) {
+      const activityTime = dayjs(event.activityTime)
+      if (activityTime.isBefore(dayStart) || activityTime.isAfter(dayEnd)) {
+        return false
+      }
+    }
+  }
+
+  return true
+}
+
+// Function to validate that all events in day-by-day mode have dates matching their day
+function validateDayByDayEventDates(itinerary: ItineraryDay[]): {
+  valid: boolean
+  message: string
+  mismatchedEvents: Array<{ dayIndex: number; eventIndex: number; eventType: string }>
+} {
+  const mismatchedEvents: Array<{ dayIndex: number; eventIndex: number; eventType: string }> = []
+
+  itinerary.forEach((day, dayIndex) => {
+    day.events.forEach((event, eventIndex) => {
+      if (!checkEventDateMatchesDay(event, day.dayLabel)) {
+        mismatchedEvents.push({
+          dayIndex,
+          eventIndex,
+          eventType: event.type,
+        })
+      }
+    })
+  })
+
+  if (mismatchedEvents.length > 0) {
+    return {
+      valid: false,
+      message: `Rasta ${mismatchedEvents.length} įvykių, kurių datos nesutampa su dienos data. Prašome pataisyti įvykių datas arba perkelti juos į tinkamą dieną.`,
+      mismatchedEvents,
+    }
+  }
+
+  return { valid: true, message: "", mismatchedEvents: [] }
 }
 
 const Step2Itinerary: React.FC<Step2Props> = ({
@@ -102,6 +181,12 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     severity: "error",
   })
   const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const [addMenuAnchorEl, setAddMenuAnchorEl] = useState<null | HTMLElement>(null)
+
+  // Add new state variables for step images management
+  const [currentStepImages, setCurrentStepImages] = useState(stepImages || {})
+  const [stepImagesToDelete, setStepImagesToDelete] = useState<{ [key: number]: string[] }>({})
+  const [existingStepImagesState, setExistingStepImages] = useState(existingStepImages || {})
 
   // Get a unique storage key for this trip
   const storageKey = getStorageKey(tripData)
@@ -148,14 +233,14 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         ...day,
         dayDescription: nonDayByDayDescription,
       }))
-      currentItineraryData = [...updatedItinerary]
+      window.__currentItineraryData = [...updatedItinerary]
     } else {
-      currentItineraryData = [...localItinerary]
+      window.__currentItineraryData = [...localItinerary]
     }
-    console.log("Updated current itinerary data:", currentItineraryData)
+    console.log("Updated current itinerary data:", window.__currentItineraryData)
 
     // Notify parent component about changes if the itinerary has changed from the initial state
-    if (JSON.stringify(currentItineraryData) !== JSON.stringify(itinerary)) {
+    if (JSON.stringify(window.__currentItineraryData) !== JSON.stringify(itinerary)) {
       console.log("Itinerary changed, notifying parent")
       // This will trigger the hasChanges state in the parent
       if (onSubmit) {
@@ -175,8 +260,18 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     stepImages,
   ])
 
-  // Add menu anchor for dropdown
-  const [addMenuAnchorEl, setAddMenuAnchorEl] = useState<null | HTMLElement>(null)
+  // Store the current step images data in a global variable for access from outside
+  useEffect(() => {
+    window.__currentStepImagesData = {
+      stepImages: currentStepImages,
+      stepImagesToDelete,
+    }
+
+    // Clean up when component unmounts
+    return () => {
+      window.__currentStepImagesData = null
+    }
+  }, [currentStepImages, stepImagesToDelete])
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
@@ -193,8 +288,8 @@ const Step2Itinerary: React.FC<Step2Props> = ({
   const hasImageEvent = currentDay.events.some((event) => event.type === "images")
 
   // Get existing image URLs for the current day
-  const currentDayExistingImages = existingStepImages[selectedDayIndex] || []
-  const currentDayExistingImageUrls = currentDayExistingImages.map((img) => img.url)
+  const currentDayExistingImages = existingStepImagesState[selectedDayIndex] || []
+  const currentDayExistingImageUrls = currentDayExistingImages.map((img) => img.url || img.urlInline).filter(Boolean)
 
   // Add more detailed logging
   console.log("Step2Itinerary - currentDayExistingImages:", currentDayExistingImages)
@@ -204,18 +299,80 @@ const Step2Itinerary: React.FC<Step2Props> = ({
   console.log("Step2Itinerary - currentDay:", currentDay)
   console.log("Step2Itinerary - selectedDayIndex:", selectedDayIndex)
 
-  // Update handleImageChange to use the parent's handler
-  const handleImageChange = (files: File[]) => {
-    console.log("Step2Itinerary - handleImageChange called with files:", files)
-    onStepImagesChange(selectedDayIndex, files)
+  // Handle step image change
+  const handleStepImagesChange = (dayIndex: number, files: File[]) => {
+    setCurrentStepImages((prev) => {
+      const updated = {
+        ...prev,
+        [dayIndex]: files,
+      }
+
+      // Call the parent handler
+      if (onStepImagesChange) {
+        onStepImagesChange(dayIndex, files)
+      }
+
+      return updated
+    })
   }
 
-  // Handle deleting an existing image
+  // Handle step image delete
+  const handleStepImageDelete = (dayIndex: number, imageIdOrUrl: string) => {
+    console.log(`Step2Itinerary - handleStepImageDelete called with imageIdOrUrl:`, imageIdOrUrl)
+
+    // Find the image in existingStepImages by URL or ID
+    const images = existingStepImagesState[dayIndex] || []
+    const imageToDelete = images.find((img) => img.url === imageIdOrUrl || img.id === imageIdOrUrl)
+
+    if (imageToDelete) {
+      console.log(`Found image to delete:`, imageToDelete)
+
+      // Add the image ID to the list of images to delete
+      setStepImagesToDelete((prev) => {
+        const current = prev[dayIndex] || []
+        const updated = {
+          ...prev,
+          [dayIndex]: [...current, imageToDelete.id],
+        }
+
+        // Call the parent handler
+        if (onStepImageDelete) {
+          onStepImageDelete(dayIndex, imageToDelete.id)
+        }
+
+        return updated
+      })
+
+      // Also remove it from the existingStepImages array in local state
+      setExistingStepImages((prev) => {
+        const updatedImages = [...(prev[dayIndex] || [])].filter(
+          (img) => img.id !== imageToDelete.id && img.url !== imageIdOrUrl,
+        )
+        return {
+          ...prev,
+          [dayIndex]: updatedImages,
+        }
+      })
+    } else {
+      console.warn(`Could not find image with ID or URL: ${imageIdOrUrl} in day ${dayIndex}`)
+
+      // If we can't find the image by ID, try to delete it directly
+      if (onStepImageDelete) {
+        onStepImageDelete(dayIndex, imageIdOrUrl)
+      }
+    }
+  }
+
+  // Update the existing handleImageChange to use the new handler
+  const handleImageChange = (files: File[]) => {
+    console.log("Step2Itinerary - handleImageChange called with files:", files)
+    handleStepImagesChange(selectedDayIndex, files)
+  }
+
+  // Update the existing handleExistingImageDelete to use the new handler
   const handleExistingImageDelete = (imageIdOrUrl: string) => {
     console.log("Step2Itinerary - handleExistingImageDelete called with imageIdOrUrl:", imageIdOrUrl)
-    if (onStepImageDelete) {
-      onStepImageDelete(selectedDayIndex, imageIdOrUrl)
-    }
+    handleStepImageDelete(selectedDayIndex, imageIdOrUrl)
   }
 
   // Day description
@@ -251,6 +408,17 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         ...day,
         dayDescription: nonDayByDayDescription,
       }))
+    } else {
+      // In day-by-day mode, check if all events have dates matching their day
+      const dayByDayValidation = validateDayByDayEventDates(finalItinerary)
+      if (!dayByDayValidation.valid) {
+        setSnackbar({
+          open: true,
+          message: dayByDayValidation.message,
+          severity: "error",
+        })
+        return
+      }
     }
 
     // First validate that all events have valid dates
@@ -274,7 +442,7 @@ const Step2Itinerary: React.FC<Step2Props> = ({
           ? {
               ...event,
               stepImages: stepImages[dayIndex] || [],
-              existingImageUrls: (existingStepImages[dayIndex] || []).map((img) => img.url),
+              existingImageUrls: (existingStepImagesState[dayIndex] || []).map((img) => img.url),
             }
           : event,
       ),
@@ -423,12 +591,41 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     const updated = [...localItinerary]
     const eventToRemove = updated[selectedDayIndex].events[eventIndex]
 
-    // If removing an image event, also clear the images for this day
+    // If removing an image event, mark all existing images for deletion
     if (eventToRemove.type === "images") {
-      // Clear the images for this day
-      onStepImagesChange(selectedDayIndex, [])
+      // Get all existing images for this day
+      const existingImages = existingStepImagesState[selectedDayIndex] || []
+
+      // Mark all existing images for deletion
+      if (existingImages.length > 0) {
+        console.log(`Marking all ${existingImages.length} images for deletion in day ${selectedDayIndex}`)
+
+        // Add all image IDs to the stepImagesToDelete array
+        const imageIds = existingImages.map((img) => img.id)
+        setStepImagesToDelete((prev) => ({
+          ...prev,
+          [selectedDayIndex]: [...(prev[selectedDayIndex] || []), ...imageIds],
+        }))
+
+        // Call onStepImageDelete for each image
+        if (onStepImageDelete) {
+          existingImages.forEach((img) => {
+            onStepImageDelete(selectedDayIndex, img.id)
+          })
+        }
+
+        // Clear the existing images for this day
+        setExistingStepImages((prev) => ({
+          ...prev,
+          [selectedDayIndex]: [],
+        }))
+      }
+
+      // Clear the new images for this day
+      handleStepImagesChange(selectedDayIndex, [])
     }
 
+    // Remove the event
     updated[selectedDayIndex].events.splice(eventIndex, 1)
     setLocalItinerary(updated)
 
@@ -640,4 +837,3 @@ const Step2Itinerary: React.FC<Step2Props> = ({
 }
 
 export default Step2Itinerary
-

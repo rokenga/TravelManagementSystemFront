@@ -170,23 +170,21 @@ const PublicOfferCard: React.FC<PublicOfferCardProps> = ({ offer, onClick, isTop
   useEffect(() => {
     setLoading(true)
 
-    // First check if the offer already has files with images
-    if (offer.files && offer.files.length > 0) {
-      const imageFile = offer.files.find((file) => file.type === "Image")
-      if (imageFile) {
-        setCoverImage(imageFile.url)
-        setLoading(false)
-        return
-      }
-    }
+    // // First check if the offer already has files with images
+    // if (offer.files && offer.files.length > 0) {
+    //   const imageFile = offer.files.find((file) => file.type === "Image")
+    //   if (imageFile) {
+    //     setCoverImage(imageFile.url)
+    //     setLoading(false)
+    //     return
+    //   }
+    // }
 
     // If no files in the offer, fetch them separately
     const fetchImages = async () => {
       try {
-        const response = await axios.get(`${API_URL}/File/trip/${offer.id}/Image`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
+        const response = await axios.get(`${API_URL}/File/public-offer/${offer.id}/Image`, {
+
         })
 
         if (response.data && response.data.length > 0) {

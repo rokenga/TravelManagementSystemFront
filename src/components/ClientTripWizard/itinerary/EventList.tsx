@@ -61,6 +61,7 @@ const EventList: React.FC<EventListProps> = ({
     const newExpandedState: Record<number, boolean> = {}
     events.forEach((_, index) => {
       // If we already have a state for this index, keep it, otherwise default to false (collapsed)
+      // Auto-expand mismatched events
       newExpandedState[index] = expandedState[index] !== undefined ? expandedState[index] : false
     })
     setExpandedState(newExpandedState)
@@ -184,6 +185,9 @@ const EventList: React.FC<EventListProps> = ({
             console.log(`EventList - First image URL:`, existingImageUrls[0])
           }
         }
+
+        // Check if this event has a date mismatch
+        const hasMismatch = false
 
         return (
           <Grid item xs={12} key={eIndex}>

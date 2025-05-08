@@ -19,7 +19,6 @@ import {
 import axios from "axios"
 import { API_URL } from "../../Utils/Configuration"
 
-// Define the tag category enum to match backend
 enum TagCategory {
   TravelFrequency = 1,
   TravelPreference = 2,
@@ -28,7 +27,6 @@ enum TagCategory {
   Other = 5,
 }
 
-// Interface for a single tag
 interface ClientTag {
   id: string
   name: string
@@ -36,13 +34,11 @@ interface ClientTag {
   createdByAgentId: string
 }
 
-// Interface for grouped tags - updated to match actual API response
 interface GroupedTagItem {
   category: string
   tags: ClientTag[]
 }
 
-// Interface for category filter that will be sent to backend
 export interface CategoryTagFilter {
   category: TagCategory
   tagIds: string[]
@@ -57,10 +53,9 @@ interface ClientFilterPanelProps {
   onClose: () => void
   onApplyFilters: (filters: ClientFilters) => void
   initialFilters?: ClientFilters
-  refreshTrigger?: boolean
+  refreshTrigger?: boolean | number
 }
 
-// Helper function to get category enum from string
 const getCategoryEnum = (categoryStr: string): TagCategory => {
   switch (categoryStr) {
     case "TravelFrequency":
@@ -78,17 +73,16 @@ const getCategoryEnum = (categoryStr: string): TagCategory => {
   }
 }
 
-// Helper function to get category name in Lithuanian
 const getCategoryName = (categoryStr: string): string => {
   switch (categoryStr) {
     case "TravelFrequency":
       return "Kelionių dažnumas"
     case "TravelPreference":
-      return "Kelionių preferencijos"
+      return "Kelionių pomėgiai"
     case "DestinationInterest":
-      return "Domina kryptys"
+      return "Mėgstamos vietos"
     case "SpecialRequirements":
-      return "Specialūs reikalavimai"
+      return "Specialūs pageidavimai"
     case "Other":
       return "Kita"
     default:
@@ -110,8 +104,8 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
   const [selectedTags, setSelectedTags] = useState<{ [key: string]: boolean }>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasFilters, setHasFilters] = useState(false)
 
-  // Fetch grouped tags on component mount and when refreshTrigger changes
   useEffect(() => {
     fetchGroupedTags()
   }, [refreshTrigger])
@@ -124,28 +118,31 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      // Log the response to see its structure
-      console.log("Grouped tags response:", response.data)
+      const tags = response.data || []
+      setGroupedTags(tags)
 
-      // Ensure we're setting the data in the correct format
-      setGroupedTags(response.data || [])
+      // Check if there are any tags available to filter by
+      const hasTags = tags.some((group: GroupedTagItem) => group.tags && group.tags.length > 0)
+      setHasFilters(hasTags)
     } catch (err) {
       console.error("Failed to fetch grouped tags:", err)
       setError("Nepavyko gauti žymeklių.")
+      setHasFilters(false)
     } finally {
       setLoading(false)
     }
   }
 
-  // Initialize selected tags from initialFilters
   useEffect(() => {
     const newSelectedTags: { [key: string]: boolean } = {}
 
-    initialFilters.categoryFilters.forEach((filter) => {
-      filter.tagIds.forEach((tagId) => {
-        newSelectedTags[tagId] = true
+    if (initialFilters && initialFilters.categoryFilters) {
+      initialFilters.categoryFilters.forEach((filter) => {
+        filter.tagIds.forEach((tagId) => {
+          newSelectedTags[tagId] = true
+        })
       })
-    })
+    }
 
     setSelectedTags(newSelectedTags)
   }, [initialFilters])
@@ -158,18 +155,12 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
   }
 
   const handleApply = () => {
-    // Construct the CategoryFilters array for the backend
     const categoryFilters: CategoryTagFilter[] = []
 
-    // For each category that has tags
     groupedTags.forEach((group) => {
-      // Get the category enum from the string
       const category = getCategoryEnum(group.category)
-
-      // Get all selected tag IDs for this category
       const selectedTagIds = group.tags.filter((tag) => selectedTags[tag.id]).map((tag) => tag.id)
 
-      // Only add the category if at least one tag is selected
       if (selectedTagIds.length > 0) {
         categoryFilters.push({
           category,
@@ -188,10 +179,17 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
     setSelectedTags({})
   }
 
+  // If there are no filters and we're not loading, don't render the panel at all
+  if (!hasFilters && !loading && !isMobile) {
+    return null
+  }
+
   const filterContent = (
     <Box sx={{ p: 2, width: isMobile ? "auto" : "300px" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="h6">Filtrai</Typography>
+        <Typography variant="h6" sx={{ textAlign: "left" }}>
+          Filtrai
+        </Typography>
         <Button size="small" onClick={handleReset}>
           Išvalyti
         </Button>
@@ -204,18 +202,17 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
           <CircularProgress size={24} />
         </Box>
       ) : error ? (
-        <Typography color="error" align="center" my={4}>
+        <Typography color="error" align="left" my={4}>
           {error}
         </Typography>
       ) : groupedTags.length === 0 ? (
-        <Typography align="center" my={4}>
+        <Typography align="left" my={4}>
           Nėra žymeklių
         </Typography>
       ) : (
-        // Render each category and its tags
         groupedTags.map((group, index) => (
           <Box key={index} sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
               {getCategoryName(group.category)}
             </Typography>
             <FormGroup sx={{ mb: 2 }}>
@@ -224,10 +221,17 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
                   key={tag.id}
                   control={<Checkbox checked={!!selectedTags[tag.id]} onChange={() => handleTagChange(tag.id)} />}
                   label={tag.name}
+                  sx={{
+                    textAlign: "left",
+                    ".MuiFormControlLabel-label": {
+                      textAlign: "left",
+                      display: "block",
+                    },
+                  }}
                 />
               ))}
             </FormGroup>
-            <Divider sx={{ mt: 2 }} />
+            {index < groupedTags.length - 1 && <Divider sx={{ mt: 2 }} />}
           </Box>
         ))
       )}
@@ -243,11 +247,10 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
       {filterContent}
     </Drawer>
   ) : (
-    <Paper elevation={2} sx={{ borderRadius: 2 }}>
+    <Paper elevation={2} sx={{ borderRadius: 2, height: "fit-content", alignSelf: "flex-start" }}>
       {filterContent}
     </Paper>
   )
 }
 
 export default ClientFilterPanel
-
