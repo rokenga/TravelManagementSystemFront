@@ -58,7 +58,6 @@ interface ClientTagAssignment {
   assignedByAgentId: string
 }
 
-// Add the categoryColors object for tag styling
 const categoryColors: Record<TagCategory, string> = {
   [TagCategory.DestinationInterest]: "#FFA726",
   [TagCategory.Other]: "#66BB6A",
@@ -67,7 +66,6 @@ const categoryColors: Record<TagCategory, string> = {
   [TagCategory.TravelPreference]: "#AB47BC",
 }
 
-// Now update the StyledCard component to make it more visually appealing
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(3),
   boxShadow: theme.shadows[3],
@@ -79,7 +77,6 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }))
 
-// Update the Client interface to match what we need
 interface Client {
   id: string
   name: string
@@ -92,14 +89,12 @@ interface Client {
   createdAt: string
 }
 
-// Define the client detail state interface
 interface ClientDetailState {
   clientId: string
   tabValue: number
   scrollPosition: number
 }
 
-// TabPanel component
 interface TabPanelProps {
   children?: React.ReactNode
   index: any
@@ -122,14 +117,12 @@ function TabPanel(props: TabPanelProps) {
   )
 }
 
-// Helper function to check if a date is valid (not 0001-01-01)
 const isValidDate = (dateString: string | null): boolean => {
   if (!dateString) return false
   const date = new Date(dateString)
   return date.getFullYear() > 1
 }
 
-// Now let's update the ClientDetail component to include tag functionality
 const ClientDetail: React.FC = () => {
   const user = useContext(UserContext)
   const { clientId } = useParams<{ clientId: string }>()
@@ -151,36 +144,29 @@ const ClientDetail: React.FC = () => {
     severity: "success" as "success" | "error" | "info" | "warning",
   })
 
-  // Separate loading states for each tab
   const [isTripsLoading, setIsTripsLoading] = useState<boolean>(false)
   const [isOffersLoading, setIsOffersLoading] = useState<boolean>(false)
 
-  // Data states
   const [clientTrips, setClientTrips] = useState<ClientTripListResponse[]>([])
   const [clientSpecialOffers, setClientSpecialOffers] = useState<TripResponse[]>([])
 
-  // Pagination state for trips
   const [tripPageNumber, setTripPageNumber] = useState(1)
   const [tripPageSize, setTripPageSize] = useState(10)
   const [tripTotalCount, setTripTotalCount] = useState(0)
 
-  // Pagination state for offers
   const [offerPageNumber, setOfferPageNumber] = useState(1)
   const [offerPageSize, setOfferPageSize] = useState(10)
   const [offerTotalCount, setOfferTotalCount] = useState(0)
 
   const pageSizeOptions = [5, 10, 25, 50]
 
-  // Refs for tab content scroll positions
   const tripsTabScrollPos = useRef(0)
   const offersTabScrollPos = useRef(0)
   const historyTabScrollPos = useRef(0)
 
-  // Track if data has been loaded for each tab
   const [tripsLoaded, setTripsLoaded] = useState(false)
   const [offersLoaded, setOffersLoaded] = useState(false)
 
-  // Save current state to be restored when coming back
   const saveCurrentState = useCallback(() => {
     if (!clientId) return
 
@@ -205,7 +191,6 @@ const ClientDetail: React.FC = () => {
 
       setClient(response.data)
     } catch (err: any) {
-      console.error("Error fetching client data:", err)
       setError("Nepavyko gauti kliento duomenų.")
     } finally {
       setIsClientLoading(false)
@@ -235,14 +220,12 @@ const ClientDetail: React.FC = () => {
       setTripTotalCount(response.data.totalCount)
       setTripsLoaded(true)
     } catch (error) {
-      console.error("Failed to fetch client trips:", error)
       setError("Nepavyko gauti kliento kelionių.")
     } finally {
       setIsTripsLoading(false)
     }
   }, [clientId, tripPageNumber, tripPageSize])
 
-  // Add a function to fetch client tags
   const fetchClientTags = useCallback(async () => {
     if (!clientId) return
 
@@ -252,7 +235,7 @@ const ClientDetail: React.FC = () => {
       })
       setClientTags(response.data)
     } catch (error) {
-      console.error("Failed to fetch client tags:", error)
+      setError("Nepavyko gauti kliento žymų.")
     }
   }, [clientId])
 
@@ -279,14 +262,12 @@ const ClientDetail: React.FC = () => {
       setOfferTotalCount(response.data.totalCount)
       setOffersLoaded(true)
     } catch (error) {
-      console.error("Failed to fetch client special offers:", error)
       setError("Nepavyko gauti kliento specialių pasiūlymų.")
     } finally {
       setIsOffersLoading(false)
     }
   }, [clientId, offerPageNumber, offerPageSize])
 
-  // Restore state only once when component mounts
   useEffect(() => {
     if (!clientId || initialStateLoaded) return
 
@@ -307,7 +288,6 @@ const ClientDetail: React.FC = () => {
     }
   }, [clientId, fetchClientData, fetchClientTags])
 
-  // Prefetch data for all tabs on initial load
   useEffect(() => {
     if (clientId && !tripsLoaded) {
       fetchClientTrips()
@@ -320,28 +300,24 @@ const ClientDetail: React.FC = () => {
     }
   }, [clientId, fetchClientSpecialOffers, offersLoaded])
 
-  // Fetch client trips when pagination changes
   useEffect(() => {
     if (clientId && tripsLoaded && tabValue === 0) {
       fetchClientTrips()
     }
   }, [clientId, fetchClientTrips, tabValue, tripPageNumber, tripPageSize, tripsLoaded])
 
-  // Fetch client offers when pagination changes
   useEffect(() => {
     if (clientId && offersLoaded && tabValue === 1) {
       fetchClientSpecialOffers()
     }
   }, [clientId, fetchClientSpecialOffers, tabValue, offerPageNumber, offerPageSize, offersLoaded])
 
-  // Save state when component unmounts
   useEffect(() => {
     return () => {
       saveCurrentState()
     }
   }, [saveCurrentState])
 
-  // Save scroll position when switching tabs
   const saveScrollPosition = useCallback(() => {
     const currentScrollPos = window.scrollY
 
@@ -355,32 +331,27 @@ const ClientDetail: React.FC = () => {
   }, [tabValue])
 
   const handleDeleteClient = async () => {
+    if (!clientId) return
+
     try {
       await axios.delete(`${API_URL}/Client/${clientId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       })
 
-      // Show success message
       setSnackbar({
         open: true,
-        message: "Klientas sėkmingai ištrintas!",
+        message: "Klientas sėkmingai ištrintas",
         severity: "success",
       })
 
-      // Add a small delay before navigation to ensure the snackbar is seen
-      setTimeout(() => {
-        navigate("/admin-client-list")
-      }, 1500) // 1.5 second delay
+      navigateBack()
     } catch (err: any) {
-      console.error("Error deleting client:", err)
-
+      setError("Nepavyko ištrinti kliento.")
       setSnackbar({
         open: true,
-        message: err.response?.data?.message || "Nepavyko ištrinti kliento.",
+        message: "Nepavyko ištrinti kliento",
         severity: "error",
       })
-
-      setDeleteDialogOpen(false)
     }
   }
 
@@ -389,7 +360,6 @@ const ClientDetail: React.FC = () => {
   }
 
   const handleEditSuccess = () => {
-    // Refresh client data after successful edit
     fetchClientData()
   }
 
@@ -401,13 +371,10 @@ const ClientDetail: React.FC = () => {
   const closeDeleteDialog = () => setDeleteDialogOpen(false)
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    // Save current scroll position before changing tabs
     saveScrollPosition()
 
-    // Change tab
     setTabValue(newValue)
 
-    // Restore scroll position for the selected tab after a short delay
     setTimeout(() => {
       if (newValue === 0) {
         window.scrollTo(0, tripsTabScrollPos.current)
@@ -424,34 +391,26 @@ const ClientDetail: React.FC = () => {
   }
 
   const handleTripClick = (tripId: string) => {
-    // Save the current state before navigating
     saveCurrentState()
 
-    // Set the navigation source to identify where we came from
     setNavigationSource("client-details")
 
-    // Save the client ID as the source
     if (clientId) {
       setSourceClientId(clientId)
     }
 
-    // Navigate to the trip detail page
     navigate(`/admin-trip-list/${tripId}`)
   }
 
   const handleSpecialOfferClick = (offerId: string) => {
-    // Save the current state before navigating
     saveCurrentState()
 
-    // Set the navigation source to identify where we came from
     setNavigationSource("client-details")
 
-    // Save the client ID as the source
     if (clientId) {
       setSourceClientId(clientId)
     }
 
-    // Navigate to the special offer detail page
     navigate(`/special-offers/${offerId}`)
   }
 
@@ -465,24 +424,22 @@ const ClientDetail: React.FC = () => {
     }
   }
 
-  // Trip pagination handlers
   const handleTripPageChange = (newPage: number) => {
     setTripPageNumber(newPage)
   }
 
   const handleTripPageSizeChange = (newPageSize: number) => {
     setTripPageSize(newPageSize)
-    setTripPageNumber(1) // Reset to first page when changing page size
+    setTripPageNumber(1) 
   }
 
-  // Offer pagination handlers
   const handleOfferPageChange = (newPage: number) => {
     setOfferPageNumber(newPage)
   }
 
   const handleOfferPageSizeChange = (newPageSize: number) => {
     setOfferPageSize(newPageSize)
-    setOfferPageNumber(1) // Reset to first page when changing page size
+    setOfferPageNumber(1) 
   }
 
   const tripTotalPages = Math.ceil(tripTotalCount / tripPageSize)
@@ -498,7 +455,6 @@ const ClientDetail: React.FC = () => {
         <Typography color="error">{error}</Typography>
       ) : client ? (
         <>
-          {/* Action Bar */}
           <ActionBar
             backUrl="/admin-client-list"
             showBackButton={true}
@@ -529,7 +485,6 @@ const ClientDetail: React.FC = () => {
                     </Typography>
                   </Box>
 
-                  {/* Contact Information - Now as regular text with icons */}
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <PhoneIcon color="primary" fontSize="small" />
@@ -553,7 +508,6 @@ const ClientDetail: React.FC = () => {
                     )}
                   </Box>
 
-                  {/* Display client tags without heading */}
                   {clientTags.length > 0 && (
                     <Box sx={{ mb: 3, display: "flex", flexWrap: "wrap", gap: 1 }}>
                       {clientTags.map((tag) => (
@@ -575,7 +529,6 @@ const ClientDetail: React.FC = () => {
                     </Box>
                   )}
 
-                  {/* Notes without heading */}
                   {client.notes && (
                     <>
                       <Divider sx={{ my: 2 }} />
@@ -598,7 +551,6 @@ const ClientDetail: React.FC = () => {
             </CardContent>
           </StyledCard>
 
-          {/* Tabs Section */}
           <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
             <Tabs
               value={tabValue}
@@ -618,10 +570,8 @@ const ClientDetail: React.FC = () => {
               <Tab icon={<HistoryIcon />} iconPosition="start" label="Istorija" />
             </Tabs>
 
-            {/* Client Trips Tab */}
             <TabPanel value={tabValue} index={0}>
               <Box sx={{ width: "100%" }}>
-                {/* Page Size Selector */}
                 <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
                   <PageSizeSelector
                     pageSize={tripPageSize}
@@ -630,7 +580,6 @@ const ClientDetail: React.FC = () => {
                   />
                 </Box>
 
-                {/* Client Trips List with local loading state */}
                 {isTripsLoading ? (
                   <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                     <CircularProgress size={30} />
@@ -641,7 +590,6 @@ const ClientDetail: React.FC = () => {
                       <ClientsTripListCard key={trip.id} trip={trip} onClick={handleTripClick} />
                     ))}
 
-                    {/* Pagination */}
                     <Box sx={{ mt: 4, mb: 2 }}>
                       <Pagination
                         currentPage={tripPageNumber}
@@ -658,10 +606,8 @@ const ClientDetail: React.FC = () => {
               </Box>
             </TabPanel>
 
-            {/* Special Offers Tab - Updated with pagination */}
             <TabPanel value={tabValue} index={1}>
               <Box sx={{ width: "100%" }}>
-                {/* Page Size Selector */}
                 <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
                   <PageSizeSelector
                     pageSize={offerPageSize}
@@ -670,7 +616,6 @@ const ClientDetail: React.FC = () => {
                   />
                 </Box>
 
-                {/* Client Special Offers List with local loading state */}
                 {isOffersLoading ? (
                   <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                     <CircularProgress size={30} />
@@ -685,7 +630,6 @@ const ClientDetail: React.FC = () => {
                       ))}
                     </Grid>
 
-                    {/* Pagination */}
                     <Box sx={{ mt: 4, mb: 2 }}>
                       <Pagination
                         currentPage={offerPageNumber}
@@ -712,7 +656,6 @@ const ClientDetail: React.FC = () => {
             </TabPanel>
           </Paper>
 
-          {/* Custom Confirmation Dialog for Delete */}
           <ConfirmationDialog
             open={deleteDialogOpen}
             title="Ištrinti klientą"
@@ -721,7 +664,6 @@ const ClientDetail: React.FC = () => {
             onCancel={closeDeleteDialog}
           />
 
-          {/* Add Tag Management Modal */}
           <TagManagementModal
             open={isTagModalOpen}
             onClose={() => setIsTagModalOpen(false)}
@@ -734,7 +676,6 @@ const ClientDetail: React.FC = () => {
             onTagsUpdated={fetchClientTags}
           />
 
-          {/* Client Edit Modal */}
           <ClientFormModal
             open={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
@@ -742,7 +683,6 @@ const ClientDetail: React.FC = () => {
             clientId={clientId}
           />
 
-          {/* Snackbar for notifications */}
           <CustomSnackbar
             open={snackbar.open}
             message={snackbar.message}

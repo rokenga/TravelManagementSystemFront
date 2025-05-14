@@ -10,7 +10,6 @@ interface AgentSummaryCardsProps {
 }
 
 const AgentSummaryCards: React.FC<AgentSummaryCardsProps> = ({ agent }) => {
-  // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("lt-LT", {
       style: "currency",

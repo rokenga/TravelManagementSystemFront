@@ -46,28 +46,21 @@ const EventList: React.FC<EventListProps> = ({
   existingImageUrls = [],
   onExistingImageDelete,
 }) => {
-  // Add console logs to debug
-  console.log("EventList - events:", events)
-  console.log("EventList - stepImages:", stepImages)
-  console.log("EventList - existingImageUrls:", existingImageUrls)
+
 
   const theme = useTheme()
 
-  // State to track expanded state of each accordion
   const [expandedState, setExpandedState] = useState<Record<number, boolean>>({})
 
-  // Initialize expanded state when events change
   useEffect(() => {
     const newExpandedState: Record<number, boolean> = {}
     events.forEach((_, index) => {
-      // If we already have a state for this index, keep it, otherwise default to false (collapsed)
-      // Auto-expand mismatched events
+
       newExpandedState[index] = expandedState[index] !== undefined ? expandedState[index] : false
     })
     setExpandedState(newExpandedState)
   }, [events.length])
 
-  // Handle accordion expansion change
   const handleAccordionChange = (index: number) => (event: React.SyntheticEvent, isExpanded: boolean) => {
     setExpandedState((prev) => ({
       ...prev,
@@ -87,7 +80,6 @@ const EventList: React.FC<EventListProps> = ({
     )
   }
 
-  // Helper function to get the appropriate icon for each event type
   const getEventIcon = (eventType: string, transportType?: string) => {
     if (eventType === "transport") {
       switch (transportType) {
@@ -116,7 +108,6 @@ const EventList: React.FC<EventListProps> = ({
     return <DirectionsCar sx={{ mr: 1, color: "primary.main" }} />
   }
 
-  // Helper function to get a title for the event
   const getEventTitle = (evt: any) => {
     if (evt.type === "transport") {
       const transportTypeLabels: Record<string, string> = {
@@ -145,7 +136,6 @@ const EventList: React.FC<EventListProps> = ({
     return "Įvykis"
   }
 
-  // Helper function to format date for display
   const formatEventDate = (evt: any) => {
     const formatTime = (time: string) => {
       if (!time) return "nenustatyta"
@@ -172,21 +162,6 @@ const EventList: React.FC<EventListProps> = ({
   return (
     <>
       {events.map((evt, eIndex) => {
-        // Add console log for each event
-        console.log(`EventList - Event ${eIndex}:`, evt)
-
-        // For image events, log the props being passed
-        if (evt.type === "images") {
-          console.log(`EventList - Image event ${eIndex} - stepImages:`, stepImages)
-          console.log(`EventList - Image event ${eIndex} - existingImageUrls:`, existingImageUrls)
-          console.log(`EventList - Image event ${eIndex} - existingImageUrls length:`, existingImageUrls.length)
-
-          if (existingImageUrls.length > 0) {
-            console.log(`EventList - First image URL:`, existingImageUrls[0])
-          }
-        }
-
-        // Check if this event has a date mismatch
         const hasMismatch = false
 
         return (
@@ -195,7 +170,7 @@ const EventList: React.FC<EventListProps> = ({
               expanded={expandedState[eIndex] || false}
               onChange={handleAccordionChange(eIndex)}
               sx={{
-                mb: 0.5, // Minimal spacing between accordions
+                mb: 0.5, 
                 border: "1px solid",
                 borderColor: "divider",
                 borderRadius: 2,
@@ -212,9 +187,9 @@ const EventList: React.FC<EventListProps> = ({
                 sx={{
                   bgcolor: "background.paper",
                   borderBottom: expandedState[eIndex] ? "1px solid rgba(0, 0, 0, 0.12)" : "none",
-                  minHeight: "48px", // Reduced height
+                  minHeight: "48px", 
                   "& .MuiAccordionSummary-content": {
-                    margin: "6px 0", // Reduced vertical padding
+                    margin: "6px 0", 
                   },
                 }}
               >
@@ -237,7 +212,7 @@ const EventList: React.FC<EventListProps> = ({
                       display: "flex",
                       alignItems: "center",
                       ml: 2,
-                      pr: 4, // Space for delete button
+                      pr: 4, 
                     }}
                   >
                     <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -266,11 +241,6 @@ const EventList: React.FC<EventListProps> = ({
               <AccordionDetails sx={{ p: 2, bgcolor: "background.default" }}>
                 {evt.type === "images" ? (
                   <>
-                    {console.log("Rendering ImageUploadForm with:", {
-                      stepImages,
-                      existingImageUrls,
-                      hasExistingImageDelete: !!onExistingImageDelete,
-                    })}
                     <ImageUploadForm
                       images={stepImages || []}
                       onImageChange={onImageChange || (() => {})}

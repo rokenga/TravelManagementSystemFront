@@ -1,11 +1,8 @@
-// Types for trip data
 
 import type { TripCategory, TripStatus, PaymentStatus } from "./Enums"
 import type { Itinerary, ItineraryDay } from "./Itinerary"
 
-// Form data used in the wizard
 export interface TripFormData {
-  //new one
   id: string
   tripName: string
   clientId: string
@@ -31,7 +28,6 @@ export interface TripFormData {
   existingDocuments?: Array<{ id: string; url: string; fileName: string }>
 }
 
-// State for the wizard form
 export interface WizardFormState {
   tripData: TripFormData
   itinerary: ItineraryDay[]
@@ -40,7 +36,6 @@ export interface WizardFormState {
   documents: File[]
 }
 
-// Request to create or update a trip
 export interface TripRequest {
   agentId?: string | null
   clientId?: string | null
@@ -61,8 +56,6 @@ export interface TripRequest {
   images?: File[]
   documents?: File[]
 }
-
-// Response from the server
 export interface TripResponse {
   id: string
   agentId?: string
@@ -85,6 +78,5 @@ export interface TripResponse {
   destination?: string
 }
 
-// Import ValidationWarning
 import type { ValidationWarning } from "./Common"
 

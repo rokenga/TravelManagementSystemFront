@@ -55,7 +55,6 @@ const ForgotPassword: React.FC = () => {
       await axios.post(`${API_URL}/Auth/forgot-password`, { email })
       setSuccess(true)
     } catch (err: any) {
-      console.error("Error requesting password reset:", err)
       setError("Įvyko klaida siunčiant slaptažodžio atstatymo nuorodą. Patikrinkite el. paštą ir bandykite dar kartą.")
     } finally {
       setIsLoading(false)

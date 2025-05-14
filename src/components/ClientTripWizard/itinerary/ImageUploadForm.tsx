@@ -14,8 +14,7 @@ interface ImageUploadFormProps {
   onExistingImageDelete?: (imageId: string) => void
 }
 
-// Constants for file upload restrictions
-const MAX_FILE_SIZE_MB = 2 // 2MB per day
+const MAX_FILE_SIZE_MB = 2 
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
 
@@ -25,22 +24,13 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
   existingImageUrls = [],
   onExistingImageDelete,
 }) => {
-  // Add console logs to debug
-  console.log("ImageUploadForm - images:", images)
-  console.log("ImageUploadForm - existingImageUrls:", existingImageUrls)
-  console.log("ImageUploadForm - existingImageUrls type:", typeof existingImageUrls)
-  console.log("ImageUploadForm - existingImageUrls is array:", Array.isArray(existingImageUrls))
 
-  // State to track which images failed to load
+
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
 
-  // Log when component mounts or updates
   useEffect(() => {
-    console.log("ImageUploadForm - Component mounted/updated")
-    console.log("ImageUploadForm - Current existingImageUrls:", existingImageUrls)
   }, [existingImageUrls])
 
-  // State for snackbar
   const [snackbar, setSnackbar] = useState<{
     open: boolean
     message: string
@@ -51,11 +41,9 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
     severity: "error",
   })
 
-  // Calculate total size of current images
   const totalSizeMB = images.reduce((total, file) => total + file.size, 0) / (1024 * 1024)
   const isOverSizeLimit = totalSizeMB > MAX_FILE_SIZE_MB
 
-  // Show snackbar message
   const showSnackbar = (message: string, severity: AlertColor = "error") => {
     setSnackbar({
       open: true,
@@ -64,7 +52,6 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
     })
   }
 
-  // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({
       ...prev,
@@ -72,23 +59,18 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
     }))
   }
 
-  // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    // Convert FileList to array
     const fileArray = Array.from(files)
 
-    // Validate files
     const validFiles: File[] = []
     const invalidFiles: string[] = []
 
-    // Calculate new total size
     const newTotalSize =
       images.reduce((total, file) => total + file.size, 0) + fileArray.reduce((total, file) => total + file.size, 0)
 
-    // Check if adding these files would exceed the limit
     if (newTotalSize > MAX_FILE_SIZE_BYTES) {
       showSnackbar(`Viršytas maksimalus dydis (${MAX_FILE_SIZE_MB}MB). Pasirinkite mažesnius failus.`)
       event.target.value = ""
@@ -96,14 +78,12 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
     }
 
     fileArray.forEach((file) => {
-      // Check file extension
       const extension = `.${file.name.split(".").pop()?.toLowerCase()}`
       if (!ALLOWED_EXTENSIONS.includes(extension)) {
         invalidFiles.push(`${file.name} (netinkamas formatas)`)
         return
       }
 
-      // Check individual file size (optional additional check)
       if (file.size > MAX_FILE_SIZE_BYTES) {
         invalidFiles.push(`${file.name} (per didelis failas, max ${MAX_FILE_SIZE_MB}MB)`)
         return
@@ -112,65 +92,49 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
       validFiles.push(file)
     })
 
-    // Show error if there are invalid files
     if (invalidFiles.length > 0) {
       showSnackbar(`Kai kurie failai nebuvo įkelti: ${invalidFiles.join(", ")}`)
     }
 
-    // Add valid files to state
     if (validFiles.length > 0) {
       onImageChange([...images, ...validFiles])
     }
 
-    // Reset the input
     event.target.value = ""
   }
 
-  // Handle deleting an existing image
   const handleDeleteExistingImage = (imageUrl: string) => {
-    console.log("Deleting existing image:", imageUrl)
     if (onExistingImageDelete) {
-      // Pass the URL to the parent component
       onExistingImageDelete(imageUrl)
     }
   }
 
-  // Handle image load error
   const handleImageError = (url: string) => {
-    console.error(`Image failed to load:`, url)
     setFailedImages((prev) => ({
       ...prev,
       [url]: true,
     }))
   }
 
-  // Check if we have any images (new or existing)
   const hasImages = images.length > 0 || (Array.isArray(existingImageUrls) && existingImageUrls.length > 0)
 
-  // Function to extract filename from URL for display
   const getFilenameFromUrl = (url: string) => {
     try {
       if (!url) return "Image"
 
-      // Extract the filename from the URL
       const urlParts = url.split("/")
       const filenameWithParams = urlParts[urlParts.length - 1]
-      // Remove query parameters
       const filename = filenameWithParams.split("?")[0]
-      // Decode URI components
       return decodeURIComponent(filename)
     } catch (e) {
       return "Image"
     }
   }
 
-  // Calculate if we have an even number of images
   const totalImageCount = images.length + (Array.isArray(existingImageUrls) ? existingImageUrls.length : 0)
   const hasEvenNumberOfImages = totalImageCount % 2 === 0
 
-  // Add this useEffect to clean up object URLs when component unmounts
   useEffect(() => {
-    // Clean up function to revoke object URLs when component unmounts
     return () => {
       images.forEach((file) => {
         if (file && URL.createObjectURL) {
@@ -180,11 +144,7 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
     }
   }, [images])
 
-  // Ensure existingImageUrls is an array and filter out null values
   const safeExistingImageUrls = Array.isArray(existingImageUrls) ? existingImageUrls.filter(Boolean) : []
-
-  // Add debug log to see what URLs we're actually using
-  console.log("ImageUploadForm - safeExistingImageUrls after filtering:", safeExistingImageUrls)
 
   return (
     <Box>
@@ -355,7 +315,6 @@ const ImageUploadForm: React.FC<ImageUploadFormProps> = ({
         </Box>
       )}
 
-      {/* Custom Snackbar for notifications */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

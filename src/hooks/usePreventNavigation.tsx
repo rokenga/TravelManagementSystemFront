@@ -56,7 +56,6 @@ export function usePreventNavigation(hasChanges: boolean) {
         navigationAttemptedRef.current = true
 
         const fullPath = location.pathname + location.search
-        console.log("Storing pending location from history change:", fullPath)
         setPendingLocation(fullPath)
         originalTargetRef.current = fullPath
 
@@ -146,7 +145,6 @@ export function usePreventNavigation(hasChanges: boolean) {
         return
       }
 
-      // Skip delete buttons in step 2 and save buttons in step 3
       if (target.closest('[data-delete-offer-button="true"]') !== null) return
       if (target.closest('[data-save-button="true"]') !== null) return
 
@@ -183,26 +181,18 @@ export function usePreventNavigation(hasChanges: boolean) {
 
         if (navigationElement instanceof HTMLAnchorElement) {
           targetPath = navigationElement.pathname + (navigationElement.search || "")
-          console.log("Storing pending location from link click:", targetPath)
         } else if (navigationElement.hasAttribute("data-href")) {
           targetPath = navigationElement.getAttribute("data-href") || "/"
-          console.log("Storing pending location from data-href:", targetPath)
         } else if (navigationElement.hasAttribute("data-path")) {
           targetPath = navigationElement.getAttribute("data-path") || "/"
-          console.log("Storing pending location from data-path:", targetPath)
         } else if (navigationElement.hasAttribute("to")) {
           targetPath = navigationElement.getAttribute("to") || "/"
-          console.log("Storing pending location from to attribute:", targetPath)
         } else if ((navigationElement as HTMLElement).dataset?.destination) {
           targetPath = (navigationElement as HTMLElement).dataset.destination
-          console.log("Storing pending location from data-destination:", targetPath)
         } else {
           const parentLink = navigationElement.closest("a")
           if (parentLink && parentLink.pathname) {
             targetPath = parentLink.pathname + (parentLink.search || "")
-            console.log("Storing pending location from parent link:", targetPath)
-          } else {
-            console.log("Could not determine navigation path, using default:", targetPath)
           }
         }
 
@@ -234,12 +224,9 @@ export function usePreventNavigation(hasChanges: boolean) {
         const targetLocation = originalTargetRef.current || pendingLocation
 
         if (targetLocation) {
-          console.log("Navigating to target location:", targetLocation)
           setTimeout(() => {
             navigate(targetLocation)
           }, 200)
-        } else {
-          console.warn("No target location to navigate to")
         }
       }
     },

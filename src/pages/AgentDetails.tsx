@@ -20,7 +20,6 @@ import { API_URL } from "../Utils/Configuration"
 import ConfirmationDialog from "../components/ConfirmationDialog"
 import CustomSnackbar from "../components/CustomSnackBar"
 
-// Define the PaginatedResponse interface
 interface PaginatedResponse<T> {
   items: T[]
   totalCount: number
@@ -35,12 +34,10 @@ const AgentDetails: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0)
   const [agent, setAgent] = useState<Agent | null>(null)
 
-  // Update state to store paginated responses
   const [clientsData, setClientsData] = useState<PaginatedResponse<ClientResponse> | null>(null)
   const [tripsData, setTripsData] = useState<PaginatedResponse<TripResponse> | null>(null)
   const [offersData, setOffersData] = useState<PaginatedResponse<TripResponse> | null>(null)
 
-  // Pagination state for each tab
   const [clientsPage, setClientsPage] = useState(1)
   const [clientsPageSize, setClientsPageSize] = useState(25)
   const [tripsPage, setTripsPage] = useState(1)
@@ -50,15 +47,15 @@ const AgentDetails: React.FC = () => {
 
   const [loading, setLoading] = useState(true)
   const [tabsLoading, setTabsLoading] = useState<{ [key: number]: boolean }>({
-    0: true, // Clients tab
-    1: false, // Trips tab
-    2: false, // Special offers tab
+    0: true, 
+    1: false, 
+    2: false, 
   })
   const [error, setError] = useState<string | null>(null)
   const [tabErrors, setTabErrors] = useState<{ [key: number]: string | null }>({
-    0: null, // Clients tab
-    1: null, // Trips tab
-    2: null, // Special offers tab
+    0: null, 
+    1: null, 
+    2: null, 
   })
   const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false)
   const [deleteWizardOpen, setDeleteWizardOpen] = useState(false)
@@ -71,21 +68,18 @@ const AgentDetails: React.FC = () => {
     fetchAgentDetails()
   }, [id])
 
-  // Load clients data when component mounts or when pagination changes
   useEffect(() => {
     if (agent && activeTab === 0) {
       fetchClients(clientsPage, clientsPageSize)
     }
   }, [agent, activeTab, clientsPage, clientsPageSize])
 
-  // Load trips data when tab changes or pagination changes
   useEffect(() => {
     if (agent && activeTab === 1) {
       fetchTrips(tripsPage, tripsPageSize)
     }
   }, [agent, activeTab, tripsPage, tripsPageSize])
 
-  // Load offers data when tab changes or pagination changes
   useEffect(() => {
     if (agent && activeTab === 2) {
       fetchOffers(offersPage, offersPageSize)
@@ -99,18 +93,15 @@ const AgentDetails: React.FC = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       })
 
-      // Map backend response to our Agent interface
       const agentData = {
         ...agentResponse.data,
-        // Map the backend field names to our interface field names if needed
         newTripsThisMonth: agentResponse.data.newClientTripsThisMonth,
-        totalRevenue: agentResponse.data.thisMonthsRevenue || 0, // Fallback for compatibility
+        totalRevenue: agentResponse.data.thisMonthsRevenue || 0, 
       }
 
       setAgent(agentData)
     } catch (err) {
       setError("Nepavyko gauti agento informacijos.")
-      console.error("Error fetching agent details:", err)
     } finally {
       setLoading(false)
     }
@@ -129,7 +120,6 @@ const AgentDetails: React.FC = () => {
       )
       setClientsData(response.data)
     } catch (err) {
-      console.error("Failed to fetch clients:", err)
       setTabErrors((prev) => ({ ...prev, 0: "Nepavyko gauti klientų sąrašo." }))
     } finally {
       setTabsLoading((prev) => ({ ...prev, 0: false }))
@@ -149,7 +139,6 @@ const AgentDetails: React.FC = () => {
       )
       setTripsData(response.data)
     } catch (err) {
-      console.error("Failed to fetch trips:", err)
       setTabErrors((prev) => ({ ...prev, 1: "Nepavyko gauti kelionių sąrašo." }))
     } finally {
       setTabsLoading((prev) => ({ ...prev, 1: false }))
@@ -169,7 +158,6 @@ const AgentDetails: React.FC = () => {
       )
       setOffersData(response.data)
     } catch (err) {
-      console.error("Failed to fetch offers:", err)
       setTabErrors((prev) => ({ ...prev, 2: "Nepavyko gauti specialių pasiūlymų sąrašo." }))
     } finally {
       setTabsLoading((prev) => ({ ...prev, 2: false }))
@@ -179,7 +167,6 @@ const AgentDetails: React.FC = () => {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue)
 
-    // Load data for the selected tab if it hasn't been loaded yet
     if (newValue === 0 && !clientsData) {
       fetchClients(clientsPage, clientsPageSize)
     } else if (newValue === 1 && !tripsData) {
@@ -219,14 +206,13 @@ const AgentDetails: React.FC = () => {
     return `${agent.firstName || ""} ${agent.lastName || ""}`.trim() || agent.email
   }
 
-  // Handlers for pagination
   const handleClientsPageChange = (page: number) => {
     setClientsPage(page)
   }
 
   const handleClientsPageSizeChange = (pageSize: number) => {
     setClientsPageSize(pageSize)
-    setClientsPage(1) // Reset to first page when changing page size
+    setClientsPage(1) 
   }
 
   const handleTripsPageChange = (page: number) => {
@@ -235,7 +221,7 @@ const AgentDetails: React.FC = () => {
 
   const handleTripsPageSizeChange = (pageSize: number) => {
     setTripsPageSize(pageSize)
-    setTripsPage(1) // Reset to first page when changing page size
+    setTripsPage(1) 
   }
 
   const handleOffersPageChange = (page: number) => {
@@ -244,14 +230,13 @@ const AgentDetails: React.FC = () => {
 
   const handleOffersPageSizeChange = (pageSize: number) => {
     setOffersPageSize(pageSize)
-    setOffersPage(1) // Reset to first page when changing page size
+    setOffersPage(1) 
   }
 
   const handleReset2FAClick = () => {
     setReset2FAConfirmDialogOpen(true)
   }
 
-  // Add handler for reset 2FA confirmation
   const handleReset2FAConfirm = async () => {
     if (!id) return
 
@@ -271,7 +256,6 @@ const AgentDetails: React.FC = () => {
         severity: "success",
       })
     } catch (err) {
-      console.error("Failed to reset 2FA:", err)
       setSnackbar({
         open: true,
         message: "Nepavyko atstatyti 2FA. Bandykite dar kartą vėliau.",
@@ -283,7 +267,6 @@ const AgentDetails: React.FC = () => {
     }
   }
 
-  // Add handler for snackbar close
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false })
   }
@@ -314,7 +297,6 @@ const AgentDetails: React.FC = () => {
             <AgentCard agent={agent} />
           </Paper>
 
-          {/* Add the new summary cards */}
           <Box sx={{ mb: 4 }}>
             <AgentSummaryCards agent={agent} />
           </Box>
@@ -388,7 +370,6 @@ const AgentDetails: React.FC = () => {
             </Box>
           </Paper>
 
-          {/* Initial Delete Confirmation Dialog */}
           <ConfirmationDialog
             open={deleteConfirmDialogOpen}
             title="Ištrinti agentą"
@@ -397,7 +378,6 @@ const AgentDetails: React.FC = () => {
             onCancel={() => setDeleteConfirmDialogOpen(false)}
           />
 
-          {/* Delete Agent Wizard */}
           <DeleteAgentWizard
             open={deleteWizardOpen}
             onClose={() => setDeleteWizardOpen(false)}
@@ -405,7 +385,6 @@ const AgentDetails: React.FC = () => {
             agentName={getAgentFullName()}
           />
 
-          {/* Reset 2FA Confirmation Dialog */}
           <ConfirmationDialog
             open={reset2FAConfirmDialogOpen}
             title="Atstatyti 2FA"
@@ -414,7 +393,6 @@ const AgentDetails: React.FC = () => {
             onCancel={() => setReset2FAConfirmDialogOpen(false)}
           />
 
-          {/* Snackbar for notifications */}
           <CustomSnackbar
             open={snackbar.open}
             message={snackbar.message}

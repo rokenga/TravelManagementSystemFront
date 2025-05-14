@@ -5,8 +5,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import "./App.css"
 import Login from "./pages/Login"
 import Home from "./pages/Home"
-import Register from "./pages/Register"
-import Records from "./pages/Records"
 import Navbar from "./components/Navbar"
 import Footer from "./components/Footer"
 import axios from "axios"
@@ -14,22 +12,15 @@ import { API_URL } from "./Utils/Configuration"
 import UserContext from "./contexts/UserContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 import { CssBaseline } from "@mui/material"
-import CreateRecord from "./pages/CreateRecord"
-import Record from "./pages/Record"
-import EditRecord from "./pages/EditRecord"
 import SpecialOffers from "./pages/SpecialOffers"
 import SpecialOfferDetails from "./pages/SpecialOfferDetails"
 import { ThemeProvider } from "@mui/material/styles"
 import theme from "./Theme"
 import AdminClientList from "./pages/AdminClientList"
 import AdminTripList from "./pages/AdminTripList"
-import SpecialOfferCreate from "./pages/CreateSpecialOfferTrip"
-import CruiseTripCreate from "./pages/CreateCruiseTrip"
 import ClientTrip from "./pages/ClientTrip"
 import ProfilePage from "./pages/ProfilePage"
 import Workspace from "./pages/Workspace"
-import CreateClient from "./pages/CreateClient"
-import AdminEditClient from "./pages/AdminEditClient"
 
 import WizardForm from "./pages/CreateTripWizardPage"
 import ClientDetail from "./pages/ClientDetail"
@@ -37,16 +28,12 @@ import SpecialOfferReservation from "./pages/SpecialOfferReservation"
 
 import AdminAgentList from "./pages/AdminAgentList"
 import AgentDetail from "./pages/AgentDetails"
-import ChangePassword from "./pages/ChangePassword"
-import CompleteProfile from "./pages/CompleteProfile"
-// Import the new WizardEditFormPage instead of directly using EditTripWizardForm
 import WizardEditFormPage from "./pages/EditTripWizardPage"
 import ClientSpecialOfferCreation from "./pages/CreateClientOfferWizardPage"
 import ClientSpecialOffer from "./pages/ClientSpecialOffer"
 import { NavigationProvider } from "./contexts/NavigationContext"
 import EditClientOfferWizardPage from "./pages/EditClientOfferWizardPage"
 import PublicOfferCreationForm from "./pages/CreatePublicOfferWizardPage"
-import PublicSpecialOffer from "./pages/PublicSpecialOffer"
 import AdminClientSpecialOffers from "./pages/AdminClientSpecialOffers"
 import AdminPublicSpecialOffers from "./pages/AdminPublicSpecialOffers"
 import PartnerList from "./pages/PartnerList"
@@ -65,7 +52,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState({ id: "", email: "", role: null })
 
-  // Check login status
   useEffect(() => {
     const checkLoginStatus = async () => {
       setIsLoading(true)
@@ -128,36 +114,23 @@ function App() {
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
 
-                    <Route path="/records" element={<Records />} />
-                    <Route path="/records/:recordId" element={<Record />} />
                     <Route path="/specialOffers" element={<SpecialOffers />} />
-                    <Route path="/complete-profile" element={<CompleteProfile />} />
 
                     <Route path="/specialOfferDetails/:id" element={<SpecialOfferDetails />} />
                     <Route path="/reserve-special-offer/:id" element={<SpecialOfferReservation />} />
 
                     <Route path="/2fa-setup" element={<TwoFactorSetup />} />
 
-                    {/* Admin and Agent Only */}
                     <Route element={<ProtectedRoute requiredRoles={["Admin", "Agent"]} />}>
                       <Route path="/profile-page" element={<ProfilePage />} />
-                      <Route path="/change-password" element={<ChangePassword />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/records/create" element={<CreateRecord />} />
-                      <Route path="/records/edit/:recordId" element={<EditRecord />} />
                       <Route path="/admin-client-list" element={<AdminClientList />} />
                       <Route path="/admin-client-list/:clientId" element={<ClientDetail />} />
-                      <Route path="/clients/edit/:clientId" element={<AdminEditClient />} />
                       <Route path="/admin-trip-list" element={<AdminTripList />} />
                       <Route path="/admin-trip-list/:tripId" element={<ClientTrip />} />
-                      {/* CHANGE THIS LINE: Replace WizardEditForm with WizardEditFormPage */}
                       <Route path="/admin-trip-list/:tripId/edit" element={<WizardEditFormPage />} />
                       <Route path="/admin-trip-list/create" element={<WizardForm />} />
                       <Route path="/partner-list" element={<PartnerList />} />
                       <Route path="/partner-list/:partnerId" element={<PartnerDetails />} />
-                      <Route path="/trips/special-offer" element={<SpecialOfferCreate />} />
-                      <Route path="/trips/cruise" element={<CruiseTripCreate />} />
-                      <Route path="/clients/create" element={<CreateClient />} />
                       <Route path="/special-offers" element={<AdminClientSpecialOffers />} />
                       <Route path="/public-offers" element={<AdminPublicSpecialOffers />} />
                       <Route path="/special-offers/create" element={<ClientSpecialOfferCreation />} />
@@ -171,7 +144,6 @@ function App() {
                         element={<AdminPublicSpecialOfferReservations />}
                       />
                       <Route path="/public-offers/:tripId/edit" element={<EditPublicOfferWizardPage />} />
-                      <Route path="/public-offers" element={<PublicSpecialOffer />} />
                       <Route path="/2fa-verify" element={<TwoFactorAuth />} />
                       <Route path="/agent-onboarding" element={<AgentOnboarding />} />
                     </Route>
@@ -181,7 +153,6 @@ function App() {
                       <Route path="/agents/:id" element={<AgentDetail />} />
                     </Route>
 
-                    {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </div>

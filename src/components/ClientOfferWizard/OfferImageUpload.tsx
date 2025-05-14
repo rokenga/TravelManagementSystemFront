@@ -14,11 +14,10 @@ interface OfferImageUploadProps {
   onExistingImageDelete?: (imageId: string) => void
 }
 
-const MAX_FILE_SIZE_MB = 5 // 5MB per offer step
+const MAX_FILE_SIZE_MB = 5 
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
 
-// Using memo to prevent unnecessary re-renders
 const OfferImageUpload: React.FC<OfferImageUploadProps> = memo(
   ({ images, onImageChange, existingImages = [], onExistingImageDelete }) => {
     const [snackbar, setSnackbar] = useState<{
@@ -31,7 +30,6 @@ const OfferImageUpload: React.FC<OfferImageUploadProps> = memo(
       severity: "error",
     })
 
-    // State to track images that have been deleted locally
     const [deletedImageIds, setDeletedImageIds] = useState<string[]>([])
 
     const totalSizeMB = images.reduce((total, file) => total + file.size, 0) / (1024 * 1024)
@@ -71,14 +69,12 @@ const OfferImageUpload: React.FC<OfferImageUploadProps> = memo(
       }
 
       fileArray.forEach((file) => {
-        // Check file extension
         const extension = `.${file.name.split(".").pop()?.toLowerCase()}`
         if (!ALLOWED_EXTENSIONS.includes(extension)) {
           invalidFiles.push(`${file.name} (netinkamas formatas)`)
           return
         }
 
-        // Check individual file size (optional additional check)
         if (file.size > MAX_FILE_SIZE_BYTES) {
           invalidFiles.push(`${file.name} (per didelis failas, max ${MAX_FILE_SIZE_MB}MB)`)
           return
@@ -87,37 +83,28 @@ const OfferImageUpload: React.FC<OfferImageUploadProps> = memo(
         validFiles.push(file)
       })
 
-      // Show error if there are invalid files
       if (invalidFiles.length > 0) {
         showSnackbar(`Kai kurie failai nebuvo įkelti: ${invalidFiles.join(", ")}`)
       }
 
-      // Add valid files to state
       if (validFiles.length > 0) {
         onImageChange([...images, ...validFiles])
       }
 
-      // Reset the input
       event.target.value = ""
     }
 
-    // Handle existing image deletion
     const handleExistingImageDelete = (imageId: string) => {
-      console.log("Delete button clicked for image:", imageId)
 
-      // Add to local tracking of deleted images
       setDeletedImageIds((prev) => [...prev, imageId])
 
-      // Call the parent component's delete handler
       if (onExistingImageDelete) {
         onExistingImageDelete(imageId)
       }
     }
 
-    // Filter out deleted images from the display
     const filteredExistingImages = existingImages.filter((img) => !deletedImageIds.includes(img.id))
 
-    // Check if we have any images (new or existing)
     const hasImages = images.length > 0 || filteredExistingImages.length > 0
 
     return (
@@ -275,7 +262,6 @@ const OfferImageUpload: React.FC<OfferImageUploadProps> = memo(
           </Box>
         )}
 
-        {/* Custom Snackbar for notifications */}
         <CustomSnackbar
           open={snackbar.open}
           message={snackbar.message}

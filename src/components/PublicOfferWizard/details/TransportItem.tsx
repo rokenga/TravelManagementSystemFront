@@ -66,13 +66,11 @@ const TransportItem: React.FC<TransportItemProps> = ({
     { value: "Ferry", label: "Keltas", icon: <Sailing /> },
   ]
 
-  // Format date for display in the header
   const formatDate = (date: any) => {
     if (!date) return "Nenustatyta"
     return date.format("YYYY-MM-DD")
   }
 
-  // Get transport type icon
   const getTransportTypeIcon = (type: string) => {
     switch (type) {
       case "Flight":
@@ -90,7 +88,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
     }
   }
 
-  // Get transport type label
   const getTransportTypeLabel = (type: string): string => {
     const option = transportTypeOptions.find((opt) => opt.value === type)
     return option ? option.label : type
@@ -157,7 +154,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Type, Company, Name, Code */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
@@ -208,7 +204,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Second row: Departure and arrival places and times */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -263,7 +258,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Third row: Description */}
         <TextField
           label="Aprašymas"
           value={transport.description}
@@ -275,7 +269,6 @@ const TransportItem: React.FC<TransportItemProps> = ({
           sx={{ mb: 2 }}
         />
 
-        {/* Fourth row: Price */}
         <Grid container spacing={2}>
           <Grid item xs={12} md={9}></Grid>
           <Grid item xs={12} md={3}>

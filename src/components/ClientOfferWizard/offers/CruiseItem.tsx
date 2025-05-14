@@ -212,7 +212,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
         {(tripStartDate || tripEndDate) && (
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              {/* We don't show explicit error messages, just rely on the date picker color */}
             </Grid>
           </Grid>
         )}

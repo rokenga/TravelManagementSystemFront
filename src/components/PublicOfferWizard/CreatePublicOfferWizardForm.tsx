@@ -3,20 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useContext } from "react"
 import { useNavigate } from "react-router-dom"
-import {
-  Stepper,
-  Step as MuiStep,
-  StepLabel,
-  Paper,
-  Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  CircularProgress,
-} from "@mui/material"
+import { Stepper, Step as MuiStep, StepLabel, Paper, Box, Button, CircularProgress } from "@mui/material"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import type { Dayjs } from "dayjs"
@@ -27,9 +14,15 @@ import { API_URL } from "../../Utils/Configuration"
 import { UserContext } from "../../contexts/UserContext"
 import { TransportType, TripStatus, OfferStatus } from "../../types/Enums"
 import CustomSnackbar from "../CustomSnackBar"
-import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
+import { ArrowBack, CheckCircle, Save } from "@mui/icons-material"
 import { toLocalIso } from "../../Utils/dateSerialize"
 import { numberToStarRatingEnum } from "../../Utils/starRatingUtils"
+
+declare global {
+  interface Window {
+    saveCreateOfferAsDraft?: (destination?: string | null) => Promise<boolean>
+  }
+}
 
 const steps = ["Pasiūlymo informacija", "Peržiūra ir patvirtinimas"]
 
@@ -72,9 +65,6 @@ export interface Cruise {
   price: number
 }
 
-/**
- * Main state shape for the entire form.
- */
 export interface PublicOfferWizardData {
   tripName: string
   description: string
@@ -135,7 +125,6 @@ const validateAccommodation = (accommodation: Accommodation): boolean => {
 }
 
 const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): ValidationResult => {
-  // If it's a draft, no validation needed
   if (isDraft) {
     return {
       isValid: true,
@@ -150,7 +139,6 @@ const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): Valid
     }
   }
 
-  // Check if at least one image is provided
   if (!data.images || (data.images.length === 0 && (!data.existingImages || data.existingImages.length === 0))) {
     return {
       isValid: false,
@@ -158,7 +146,6 @@ const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): Valid
     }
   }
 
-  // Check if either accommodation, transport, or cruise is provided
   const hasAccommodations = data.accommodations.length > 0
   const hasTransports = data.transports.length > 0
   const hasCruises = data.cruises.length > 0
@@ -170,7 +157,6 @@ const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): Valid
     }
   }
 
-  // Validate all accommodations if any exist
   if (hasAccommodations) {
     const invalidAccommodation = data.accommodations.find((acc) => !validateAccommodation(acc))
     if (invalidAccommodation) {
@@ -181,7 +167,6 @@ const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): Valid
     }
   }
 
-  // Validate all transports if any exist
   if (hasTransports) {
     const invalidTransport = data.transports.find((trans) => !validateTransport(trans))
     if (invalidTransport) {
@@ -192,7 +177,6 @@ const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): Valid
     }
   }
 
-  // Validate all cruises if any exist
   if (hasCruises) {
     const invalidCruise = data.cruises.find((cruise) => !validateCruise(cruise))
     if (invalidCruise) {
@@ -209,28 +193,25 @@ const validateOfferData = (data: PublicOfferWizardData, isDraft: boolean): Valid
   }
 }
 
-/**
- * --------------------------------------------------
- * MAIN WIZARD COMPONENT
- * --------------------------------------------------
- */
-const CreatePublicOfferWizardForm: React.FC = () => {
+interface CreatePublicOfferWizardFormProps {
+  onDataChange?: (hasChanges: boolean) => void
+}
+
+const CreatePublicOfferWizardForm: React.FC<CreatePublicOfferWizardFormProps> = ({ onDataChange }) => {
   const navigate = useNavigate()
   const [activeStep, setActiveStep] = useState(0)
   const [showNavigationDialog, setShowNavigationDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true)
+  const [hasFormChanges, setHasFormChanges] = useState(false)
 
-  // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
 
-  // If you have a user context that has e.g. userId or agentId:
   const user = useContext(UserContext)
   const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null
 
-  // Initialize form data
   const [formData, setFormData] = useState<PublicOfferWizardData>({
     tripName: "",
     description: "",
@@ -250,27 +231,70 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     images: [],
   })
 
-  // Load localStorage data on mount
   useEffect(() => {
     const savedData = localStorage.getItem("publicOfferWizardData")
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData)
         setFormData(parsedData)
+        if (onDataChange) {
+          onDataChange(true)
+        }
+        setHasFormChanges(true)
       } catch (error) {
-        console.error("Failed to parse saved form data:", error)
       }
     }
-  }, [])
+  }, [onDataChange])
 
-  // Save changes to localStorage
   useEffect(() => {
     localStorage.setItem("publicOfferWizardData", JSON.stringify(formData))
-  }, [formData])
 
-  /**
-   * STEPPER NAVIGATION
-   */
+    if (onDataChange) {
+      const hasData =
+        formData.tripName.trim() !== "" ||
+        formData.description.trim() !== "" ||
+        formData.destination.trim() !== "" ||
+        formData.startDate !== null ||
+        formData.endDate !== null ||
+        formData.validUntil !== null ||
+        formData.accommodations.length > 0 ||
+        formData.transports.length > 0 ||
+        formData.cruises.length > 0 ||
+        formData.images.length > 0
+
+      onDataChange(hasData)
+      setHasFormChanges(hasData)
+    }
+  }, [formData, onDataChange])
+
+  useEffect(() => {
+    window.saveCreateOfferAsDraft = async (destination?: string | null) => {
+      try {
+        if (isSaving) {
+          return false
+        }
+
+        setIsSaving(true)
+
+        const result = await handleSubmit(true, destination)
+
+        setIsSaving(false)
+
+        return result
+      } catch (error) {
+        setSnackbarMessage("Nepavyko išsaugoti juodraščio. Bandykite dar kartą.")
+        setSnackbarSeverity("error")
+        setSnackbarOpen(true)
+        setIsSaving(false)
+        return false
+      }
+    }
+
+    return () => {
+      delete window.saveCreateOfferAsDraft
+    }
+  }, [formData, isSaving])
+
   const handleNext = () => {
     setActiveStep((prev) => prev + 1)
   }
@@ -280,34 +304,11 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     setActiveStep(activeStep - 1)
   }
 
-  /**
-   * DIALOG HANDLERS (If you want to intercept navigation away)
-   */
-  const handleStay = () => setShowNavigationDialog(false)
-  const handleLeaveWithoutSaving = () => {
-    setShouldBlockNavigation(false)
-    setShowNavigationDialog(false)
-    // You might do a route change here
-  }
-  const handleLeaveWithSave = async () => {
-    setIsSaving(true)
-    // Save logic
-    setShouldBlockNavigation(false)
-    setShowNavigationDialog(false)
-    setIsSaving(false)
-  }
-
-  /**
-   * STEPS SUBMISSION
-   */
   const handleStep1Submit = (updatedData: Partial<PublicOfferWizardData>) => {
     setFormData((prev) => ({ ...prev, ...updatedData }))
     handleNext()
   }
 
-  /**
-   * Calculate total price for the offer
-   */
   const calculateTotalPrice = (): number => {
     const accommodationTotal = formData.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
     const transportTotal = formData.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
@@ -315,24 +316,17 @@ const CreatePublicOfferWizardForm: React.FC = () => {
     return accommodationTotal + transportTotal + cruiseTotal
   }
 
-  /**
-   * ---------------------------------------------------
-   * FINAL SUBMIT: Post to your backend
-   * ---------------------------------------------------
-   */
-  const handleSubmit = async (isDraft = false) => {
-    // Validate the data based on whether it's a draft or not
+  const handleSubmit = async (isDraft = false, destination?: string | null): Promise<boolean> => {
     const validationResult = validateOfferData(formData, isDraft)
     if (!validationResult.isValid) {
       setSnackbarMessage(validationResult.errorMessage)
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
-      return
+      return false
     }
 
     setIsSaving(true)
 
-    // Convert cruises to transport entries for the API
     const cruiseTransports = formData.cruises.map((cruise) => ({
       transportType: TransportType.Cruise,
       departureTime: toLocalIso(cruise.departureTime),
@@ -347,7 +341,6 @@ const CreatePublicOfferWizardForm: React.FC = () => {
       price: cruise.price,
     }))
 
-    // Map transports to the format expected by the API
     const mappedTransports = formData.transports.map((transport) => ({
       transportType: transport.transportType,
       departureTime: toLocalIso(transport.departureTime),
@@ -362,7 +355,6 @@ const CreatePublicOfferWizardForm: React.FC = () => {
       price: transport.price,
     }))
 
-    // Map accommodations to the format expected by the API
     const mappedAccommodations = formData.accommodations.map((acc) => ({
       hotelName: acc.hotelName,
       checkIn: toLocalIso(acc.checkIn),
@@ -372,19 +364,16 @@ const CreatePublicOfferWizardForm: React.FC = () => {
       boardBasis: acc.boardBasis,
       roomType: acc.roomType,
       price: acc.price,
-      starRating: numberToStarRatingEnum(acc.starRating), // Convert number to enum string
+      starRating: numberToStarRatingEnum(acc.starRating), 
     }))
 
-    // Calculate total price
     const totalPrice = calculateTotalPrice()
 
-    // Set the trip status based on whether it's a draft or not
     const tripStatus = isDraft ? TripStatus.Draft : TripStatus.Confirmed
     const offerStatus = isDraft ? OfferStatus.ManuallyDisabled : OfferStatus.Active
 
-    // Build a final request object
     const requestPayload = {
-      agentId: user?.id || "", // or however you store your agent/user ID
+      agentId: user?.id || "", 
       tripName: formData.tripName,
       description: formData.description,
       destination: formData.destination,
@@ -411,42 +400,33 @@ const CreatePublicOfferWizardForm: React.FC = () => {
       },
     }
 
-    console.log("Sending this public offer to the backend:", requestPayload)
 
     try {
-      // Create a FormData object for multipart/form-data submission
       const formDataPayload = new FormData()
 
-      // FormData requires stringified JSON
       formDataPayload.append("data", JSON.stringify(requestPayload))
 
-      // Append images
       if (formData.images && formData.images.length > 0) {
         formData.images.forEach((file) => {
           formDataPayload.append("images", file)
         })
       }
 
-      // Now send it
       const response = await axios.post(`${API_URL}/PublicTripOfferFacade/agent`, formDataPayload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       })
 
-      console.log("Successfully created the public offer:", response.data)
 
-      // Show success message
       setSnackbarMessage(
         isDraft ? "Pasiūlymas sėkmingai išsaugotas kaip juodraštis!" : "Pasiūlymas sėkmingai sukurtas!",
       )
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Clear localStorage after success
       localStorage.removeItem("publicOfferWizardData")
 
-      // Reset form
       setFormData({
         tripName: "",
         description: "",
@@ -466,23 +446,32 @@ const CreatePublicOfferWizardForm: React.FC = () => {
         images: [],
       })
 
-      // Wait for 1 second after getting the response before redirecting
-      setTimeout(() => {
-        navigate(`/public-offers/${response.data.id}`)
-      }, 1000)
-    } catch (err: any) {
-      console.error("Failed to create the public offer:", err)
+      if (onDataChange) {
+        onDataChange(false)
+      }
+      setHasFormChanges(false)
 
-      // Show error message
+      setTimeout(() => {
+        if (destination) {
+          navigate(destination)
+        } else {
+          navigate(`/public-offers/${response.data.id}`)
+        }
+      }, 1000)
+
+      return true
+    } catch (err: any) {
+
       setSnackbarMessage("Nepavyko sukurti pasiūlymo. Patikrinkite konsolę klaidos informacijai.")
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
+      setIsSaving(false)
+      return false
     } finally {
       setIsSaving(false)
     }
   }
 
-  // Save as draft function
   const handleSaveAsDraft = () => {
     handleSubmit(true)
   }
@@ -493,7 +482,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="lt">
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%" }} data-wizard-form="true">
         <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
           {steps.map((label) => (
             <MuiStep key={label}>
@@ -516,6 +505,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
                   type="button"
                   startIcon={<ArrowBack />}
                   sx={{ minWidth: 120 }}
+                  data-wizard-navigation="true"
                 >
                   Atgal
                 </Button>
@@ -526,6 +516,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
                   type="button"
                   startIcon={<Save />}
                   sx={{ minWidth: 160 }}
+                  data-save-button="true"
                 >
                   Išsaugoti juodraštį
                 </Button>
@@ -537,6 +528,7 @@ const CreatePublicOfferWizardForm: React.FC = () => {
                   type="button"
                   endIcon={<CheckCircle />}
                   sx={{ minWidth: 120 }}
+                  data-save-button="true"
                 >
                   {isSaving ? <CircularProgress size={24} color="inherit" /> : "Patvirtinti"}
                 </Button>
@@ -546,32 +538,6 @@ const CreatePublicOfferWizardForm: React.FC = () => {
         </Paper>
       </Box>
 
-      <Dialog
-        open={showNavigationDialog}
-        onClose={handleStay}
-        aria-labelledby="leave-dialog-title"
-        aria-describedby="leave-dialog-description"
-      >
-        <DialogTitle id="leave-dialog-title">Išsaugoti kaip juodraštį?</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="leave-dialog-description">
-            Ar norite išsaugoti šį pasiūlymą kaip juodraštį prieš išeidami? Jei ne, pakeitimai bus prarasti.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleStay} color="primary">
-            Likti
-          </Button>
-          <Button onClick={handleLeaveWithoutSaving} color="error" startIcon={<ExitToApp />}>
-            Išeiti be išsaugojimo
-          </Button>
-          <Button onClick={handleLeaveWithSave} color="primary" variant="contained" startIcon={<Save />}>
-            Išsaugoti ir išeiti
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Custom Snackbar for notifications */}
       <CustomSnackbar
         open={snackbarOpen}
         message={snackbarMessage}

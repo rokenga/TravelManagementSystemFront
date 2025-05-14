@@ -8,6 +8,8 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Box,
+  CircularProgress,
 } from "@mui/material"
 import CreateClientOfferWizardForm from "../components/ClientOfferWizard/CreateClientOfferWizardForm"
 import { usePreventNavigation } from "../hooks/usePreventNavigation"
@@ -18,6 +20,7 @@ import { getCurrentStepData } from "../components/ClientOfferWizard/Step2Offers"
 export default function SpecialOfferCreationForm() {
   const [hasChanges, setHasChanges] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const formRef = useRef<any>(null)
 
   const {
@@ -29,6 +32,11 @@ export default function SpecialOfferCreationForm() {
 
   useEffect(() => {
     setHasChanges(true)
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false)
+    }, 1000)
+
+    return () => clearTimeout(timer)
   }, [])
 
   const handleDataChange = (hasData: boolean) => {
@@ -41,10 +49,7 @@ export default function SpecialOfferCreationForm() {
     if (window.saveClientOfferAsDraft) {
       try {
         const latestFormData = getCurrentFormData()
-        console.log("Getting latest form data for save:", latestFormData)
-
         const latestStepData = getCurrentStepData()
-        console.log("Getting latest step data for save:", latestStepData)
 
         if (formRef.current && formRef.current.collectCurrentFormData) {
           await formRef.current.collectCurrentFormData()
@@ -55,15 +60,12 @@ export default function SpecialOfferCreationForm() {
         if (saveResult) {
           handleLeave(true)
         } else {
-          console.error("Save function returned false, not navigating")
           setIsSaving(false)
         }
       } catch (error) {
-        console.error("Error saving draft:", error)
         setIsSaving(false)
       }
     } else {
-      console.warn("saveClientOfferAsDraft function not available")
       handleLeave(true)
     }
   }
@@ -73,7 +75,13 @@ export default function SpecialOfferCreationForm() {
       <Typography variant="h4" component="h1" gutterBottom>
         Kelionės pasiūlymas klientui
       </Typography>
-      <CreateClientOfferWizardForm onDataChange={handleDataChange} ref={formRef} />
+      {isInitialLoading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <CreateClientOfferWizardForm onDataChange={handleDataChange} ref={formRef} />
+      )}
 
       <Dialog
         open={showNavigationDialog}

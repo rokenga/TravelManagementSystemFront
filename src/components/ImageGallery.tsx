@@ -22,8 +22,8 @@ import {
 
 export interface ImageItem {
   id: string
-  url?: string // Attachment SAS URL (forces browser to download)
-  urlInline?: string // Inline SAS URL (for <img> or <iframe>)
+  url?: string 
+  urlInline?: string 
   altText?: string
   fileName?: string
 }
@@ -64,16 +64,13 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   }
 
   const handleDownload = (image: ImageItem) => {
-    // Use the download URL (Url) if available, otherwise fall back to urlInline
     const downloadUrl = image.url || image.urlInline
 
     if (downloadUrl) {
-      // Open in a new tab to force download
       window.open(downloadUrl, "_blank")
     }
   }
 
-  // Handle keyboard navigation
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "ArrowLeft") {
       handlePrevImage()
@@ -84,9 +81,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     }
   }
 
-  // Get the appropriate URL for display
   const getDisplayUrl = (image: ImageItem): string => {
-    // Use urlInline for display if available, otherwise fall back to url
     return image.urlInline || image.url || "/placeholder.svg"
   }
 

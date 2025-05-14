@@ -6,7 +6,6 @@ import { Typography, Box, Paper, Button, Grid, Divider, Alert } from "@mui/mater
 import { ArrowBack, ArrowForward } from "@mui/icons-material"
 import { FileUploadManager, type ExistingFile } from "./FileUploadManager"
 
-// Declare global window properties
 declare global {
   interface Window {
     __currentFileData: {
@@ -16,7 +15,6 @@ declare global {
       documentsToDelete: string[]
     } | null
 
-    // Global variables for edit mode
     globalNewImages?: File[]
     globalNewDocuments?: File[]
     globalImagesToDelete?: string[]
@@ -24,7 +22,6 @@ declare global {
   }
 }
 
-// Create a context to store the current file data
 const FileDataContext = createContext<{
   newImages: File[]
   newDocuments: File[]
@@ -32,14 +29,11 @@ const FileDataContext = createContext<{
   documentsToDelete: string[]
 } | null>(null)
 
-// Export a function to get the current file data
 export function getCurrentFileData() {
-  // First try to get from window.__currentFileData
   if (window.__currentFileData) {
     return window.__currentFileData
   }
 
-  // If not available, try to get from global variables (edit mode)
   if (typeof window.globalNewImages !== "undefined") {
     return {
       newImages: window.globalNewImages || [],
@@ -49,7 +43,6 @@ export function getCurrentFileData() {
     }
   }
 
-  // If nothing is available, return empty arrays
   return {
     newImages: [],
     newDocuments: [],
@@ -59,13 +52,10 @@ export function getCurrentFileData() {
 }
 
 interface UnifiedFileUploadStepProps {
-  // For new files
   initialImages: File[]
   initialDocuments: File[]
-  // For existing files (edit mode)
   existingImages?: ExistingFile[]
   existingDocuments?: ExistingFile[]
-  // Callbacks
   onSubmit: (images: File[], documents: File[], imagesToDelete?: string[], documentsToDelete?: string[]) => void
   onBack: () => void
   isEditMode?: boolean
@@ -80,7 +70,6 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
   onBack,
   isEditMode = false,
 }) => {
-  // Initialize state with values from global variables if in edit mode
   const [newImages, setNewImages] = useState<File[]>(() => {
     if (isEditMode && window.globalNewImages) {
       return window.globalNewImages
@@ -95,7 +84,6 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
     return initialDocuments || []
   })
 
-  // State for tracking files to delete
   const [imagesToDelete, setImagesToDelete] = useState<string[]>(() => {
     if (isEditMode && window.globalImagesToDelete) {
       return window.globalImagesToDelete
@@ -112,9 +100,7 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
 
   const [error, setError] = useState<string | null>(null)
 
-  // Store the current file data in global variables
   useEffect(() => {
-    // Store in window.__currentFileData for create mode
     window.__currentFileData = {
       newImages,
       newDocuments,
@@ -122,7 +108,6 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
       documentsToDelete,
     }
 
-    // Also store in global variables for edit mode
     if (isEditMode) {
       window.globalNewImages = newImages
       window.globalNewDocuments = newDocuments
@@ -130,44 +115,22 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
       window.globalDocumentsToDelete = documentsToDelete
     }
 
-    console.log("UnifiedFileUploadStep - Updated global state:", {
-      newImages: newImages.length,
-      newDocuments: newDocuments.length,
-      imagesToDelete: imagesToDelete.length,
-      documentsToDelete: documentsToDelete.length,
-      isEditMode,
-    })
-
-    // Clean up when component unmounts
     return () => {
-      // Don't clear global variables in edit mode to preserve state between steps
       if (!isEditMode) {
         window.__currentFileData = null
       }
     }
   }, [newImages, newDocuments, imagesToDelete, documentsToDelete, isEditMode])
 
-  // Handle deleting existing images
   const handleDeleteExistingImage = (id: string) => {
-    console.log("UnifiedFileUploadStep - Deleting existing image:", id)
     setImagesToDelete((prev) => [...prev, id])
   }
 
-  // Handle deleting existing documents
   const handleDeleteExistingDocument = (id: string) => {
-    console.log("UnifiedFileUploadStep - Deleting existing document:", id)
     setDocumentsToDelete((prev) => [...prev, id])
   }
 
-  // Handle next button click
   const handleNext = () => {
-    console.log("UnifiedFileUploadStep - Submitting:", {
-      images: newImages.length,
-      documents: newDocuments.length,
-      imagesToDelete: imagesToDelete.length,
-      documentsToDelete: documentsToDelete.length,
-    })
-
     onSubmit(
       newImages,
       newDocuments,
@@ -176,7 +139,6 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
     )
   }
 
-  // Filter out existing files that are marked for deletion
   const filteredExistingImages = existingImages.filter((img) => !imagesToDelete.includes(img.id))
   const filteredExistingDocuments = existingDocuments.filter((doc) => !documentsToDelete.includes(doc.id))
 
@@ -209,7 +171,6 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
           )}
 
           <Grid container spacing={4}>
-            {/* Images Section */}
             <Grid item xs={12} md={6}>
               <FileUploadManager
                 newFiles={newImages}
@@ -220,7 +181,6 @@ const UnifiedFileUploadStep: React.FC<UnifiedFileUploadStepProps> = ({
               />
             </Grid>
 
-            {/* Documents Section */}
             <Grid item xs={12} md={6}>
               <FileUploadManager
                 newFiles={newDocuments}

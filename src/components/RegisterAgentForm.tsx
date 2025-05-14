@@ -69,7 +69,6 @@ const RegisterAgentForm: React.FC<Props> = ({ onClose, onSuccess }) => {
         onClose()
       }, 1500)
     } catch (err) {
-      console.error("Failed to register agent:", err)
       if (axios.isAxiosError(err) && err.response?.status === 409) {
         setError("Šis el. pašto adresas jau užregistruotas")
       } else {

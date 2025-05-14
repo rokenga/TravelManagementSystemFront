@@ -1,7 +1,6 @@
 import type { TransportEvent, AccommodationEvent, ActivityEvent } from "../types"
 import { TransportType } from "../types"
 
-// Factory functions for creating different event types
 export const createTransportEvent = (): TransportEvent => ({
   type: "transport",
   transportType: TransportType.Flight,

@@ -10,22 +10,16 @@ interface PaginationProps {
 }
 
 const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
-  // Don't render pagination if there's only one page
   if (totalPages <= 1) {
     return null
   }
 
   const handlePageChange = (newPage: number) => {
-    // Option 1: Instant scrolling (no animation)
-    //window.scrollTo(0, 0)
 
-    // Option 2: If you still want smooth scrolling but faster,
-    // you can use this custom function instead:
     
     const scrollToTop = () => {
       const currentPosition = window.pageYOffset;
       if (currentPosition > 0) {
-        // Faster scroll by using a larger step (adjust the 30 to control speed)
         window.scrollTo(0, Math.max(0, currentPosition - 50));
         window.requestAnimationFrame(scrollToTop);
       }
@@ -33,7 +27,6 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
     scrollToTop();
     
 
-    // Call the original onPageChange function
     onPageChange(newPage)
   }
 

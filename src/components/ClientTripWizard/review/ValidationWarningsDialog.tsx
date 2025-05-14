@@ -38,23 +38,19 @@ const ValidationWarningsDialog: React.FC<ValidationWarningsDialogProps> = ({
 }) => {
   const theme = useTheme()
 
-  // Use local state to track checkbox value
   const [localHideHighlighting, setLocalHideHighlighting] = useState(hideHighlighting)
 
-  // Update local state when props change and dialog opens
   useEffect(() => {
     if (open) {
       setLocalHideHighlighting(hideHighlighting)
     }
   }, [hideHighlighting, open])
 
-  // Handle checkbox change
   const handleCheckboxChange = () => {
     const newValue = !localHideHighlighting
     setLocalHideHighlighting(newValue)
   }
 
-  // When dialog closes, propagate the local state to parent
   const handleClose = () => {
     onHideHighlightingChange(localHideHighlighting)
     onClose()

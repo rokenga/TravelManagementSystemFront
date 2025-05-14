@@ -48,7 +48,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
   const [tripStatusValidationMessage, setTripStatusValidationMessage] = useState<string | null>(null)
   const [paymentStatusValidationMessage, setPaymentStatusValidationMessage] = useState<string | null>(null)
 
-  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setSelectedTripStatus("")
@@ -57,14 +56,9 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       setTripStatusValidationMessage(null)
       setPaymentStatusValidationMessage(null)
 
-      console.log("Dialog opened with statuses:", {
-        tripStatus: currentTripStatus,
-        paymentStatus: currentPaymentStatus,
-      })
     }
   }, [open, currentTripStatus, currentPaymentStatus])
 
-  // Validate trip status change
   useEffect(() => {
     setTripStatusValidationMessage(null)
 
@@ -72,7 +66,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       return
     }
 
-    // Check if the trip status transition is valid
     const isValid = isTripStatusChangeValid(currentTripStatus, selectedTripStatus)
     if (!isValid) {
       setTripStatusValidationMessage(
@@ -81,7 +74,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
     }
   }, [selectedTripStatus, currentTripStatus])
 
-  // Validate payment status change
   useEffect(() => {
     setPaymentStatusValidationMessage(null)
 
@@ -89,7 +81,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       return
     }
 
-    // Check if the payment status transition is valid
     const isValid = isPaymentStatusChangeValid(currentPaymentStatus, selectedPaymentStatus)
     if (!isValid) {
       setPaymentStatusValidationMessage(
@@ -101,14 +92,13 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
   const isTripStatusChangeValid = (current?: TripStatus, next?: TripStatus): boolean => {
     if (!current || !next) return false
 
-    // Implement trip status transition rules
     switch (current) {
       case TripStatus.Draft:
         return next === TripStatus.Confirmed || next === TripStatus.Cancelled
       case TripStatus.Confirmed:
         return next === TripStatus.Cancelled
       case TripStatus.Cancelled:
-        return false // No transitions from this terminal state
+        return false 
       default:
         return false
     }
@@ -117,14 +107,13 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
   const isPaymentStatusChangeValid = (current?: PaymentStatus, next?: PaymentStatus): boolean => {
     if (!current || !next) return false
 
-    // Implement payment status transition rules
     switch (current) {
       case PaymentStatus.Unpaid:
         return next === PaymentStatus.PartiallyPaid || next === PaymentStatus.Paid
       case PaymentStatus.PartiallyPaid:
         return next === PaymentStatus.Paid
       case PaymentStatus.Paid:
-        return false // No transitions from this terminal state
+        return false 
       default:
         return false
     }
@@ -139,7 +128,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
   }
 
   const handleConfirm = async () => {
-    // Check if at least one status is selected and valid
     if (
       (!selectedTripStatus && !selectedPaymentStatus) ||
       (selectedTripStatus && tripStatusValidationMessage) ||
@@ -152,7 +140,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       setLoading(true)
       setError(null)
 
-      // Prepare request payload
       const payload: {
         tripStatus?: TripStatus
         paymentStatus?: PaymentStatus
@@ -166,12 +153,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
         payload.paymentStatus = selectedPaymentStatus
       }
 
-      console.log("Sending status change request:", {
-        tripId,
-        payload,
-      })
-
-      // Make API call
       await axios.post(`${API_URL}/client-trips/${tripId}/status`, payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -181,7 +162,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       onSuccess()
       onClose()
     } catch (err: any) {
-      // Handle specific error messages from the backend
       if (err.response && err.response.data) {
         if (err.response.data.error) {
           setError(err.response.data.error)
@@ -191,13 +171,11 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       } else {
         setError("Nepavyko pakeisti statuso. Bandykite dar kartą.")
       }
-      console.error("Failed to change status:", err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Get available next trip statuses based on current status
   const getAvailableTripStatuses = (currentStatus?: TripStatus): TripStatus[] => {
     if (!currentStatus) return []
 
@@ -207,13 +185,12 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       case TripStatus.Confirmed:
         return [TripStatus.Cancelled]
       case TripStatus.Cancelled:
-        return [] // No transitions from this state
+        return [] 
       default:
         return []
     }
   }
 
-  // Get available next payment statuses based on current status
   const getAvailablePaymentStatuses = (currentStatus?: PaymentStatus): PaymentStatus[] => {
     if (!currentStatus) return []
 
@@ -223,7 +200,7 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
       case PaymentStatus.PartiallyPaid:
         return [PaymentStatus.Paid]
       case PaymentStatus.Paid:
-        return [] // No transitions from this terminal state
+        return [] 
       default:
         return []
     }
@@ -251,7 +228,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
         )}
 
         <Grid container spacing={3} sx={{ mt: 0 }}>
-          {/* Trip Status Section */}
           <Grid item xs={12}>
             <FormControl fullWidth error={!!tripStatusValidationMessage}>
               <InputLabel id="trip-status-select-label">Kelionės statusas</InputLabel>
@@ -263,12 +239,10 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
                 onChange={handleTripStatusChange}
                 disabled={loading || !canChangeTripStatus}
               >
-                {/* Show current status */}
                 {currentTripStatus && (
                   <MenuItem value={currentTripStatus}>{translateTripStatus(currentTripStatus)} (dabartinis)</MenuItem>
                 )}
 
-                {/* Show available statuses */}
                 {availableTripStatuses.map((status) => (
                   <MenuItem key={status} value={status}>
                     {translateTripStatus(status)}
@@ -289,7 +263,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
             <Divider />
           </Grid>
 
-          {/* Payment Status Section */}
           <Grid item xs={12}>
             <FormControl fullWidth error={!!paymentStatusValidationMessage}>
               <InputLabel id="payment-status-select-label">Mokėjimo statusas</InputLabel>
@@ -301,14 +274,12 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
                 onChange={handlePaymentStatusChange}
                 disabled={loading || !canChangePaymentStatus}
               >
-                {/* Show current status */}
                 {currentPaymentStatus && (
                   <MenuItem value={currentPaymentStatus}>
                     {translatePaymentStatus(currentPaymentStatus)} (dabartinis)
                   </MenuItem>
                 )}
 
-                {/* Show available statuses */}
                 {availablePaymentStatuses.map((status) => (
                   <MenuItem key={status} value={status}>
                     {translatePaymentStatus(status)}
@@ -326,7 +297,6 @@ const TripStatusChangeDialog: React.FC<TripStatusChangeDialogProps> = ({
           </Grid>
         </Grid>
 
-        {/* Removed the redundant warning alert */}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>

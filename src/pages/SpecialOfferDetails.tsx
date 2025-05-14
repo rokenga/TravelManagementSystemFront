@@ -41,10 +41,8 @@ import {
   Email as EmailIcon,
 } from "@mui/icons-material"
 
-// Import the ImageSlider component
 import ImageSlider from "../components/ImageSlider"
 
-// Helper function to format dates in Lithuanian
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
   const options: Intl.DateTimeFormatOptions = {
@@ -55,13 +53,11 @@ const formatDate = (dateString: string): string => {
   return new Intl.DateTimeFormat("lt-LT", options).format(date)
 }
 
-// Helper function to format time
 const formatTime = (dateString: string): string => {
   const date = new Date(dateString)
   return date.toLocaleTimeString("lt-LT", { hour: "2-digit", minute: "2-digit" })
 }
 
-// Helper function to get transport icon
 const getTransportIcon = (type: string) => {
   switch (type) {
     case "Flight":
@@ -79,7 +75,6 @@ const getTransportIcon = (type: string) => {
   }
 }
 
-// Helper function to render star rating
 const renderStarRating = (rating?: number) => {
   if (!rating) return null
 
@@ -109,7 +104,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
         const response = await axios.get<PublicOfferDetails>(`${API_URL}/PublicTripOfferFacade/${id}`)
         setOffer(response.data)
       } catch (err) {
-        console.error("Failed to fetch offer details:", err)
         setError("Nepavyko gauti pasiūlymo detalių. Bandykite vėliau.")
       } finally {
         setLoading(false)
@@ -125,7 +119,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
     navigate(`/reserve-special-offer/${id}`)
   }
 
-  // Prepare images for gallery
   const galleryImages: ImageItem[] =
     offer?.files
       .filter((file) => file.type === "Image")
@@ -135,7 +128,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
         altText: file.altText,
       })) || []
 
-  // Get all accommodations from all steps
   const allAccommodations = offer?.itinerary.steps.flatMap((step) => step.accommodations || []) || []
 
   if (loading) {
@@ -183,9 +175,7 @@ const SpecialOfferDetailsPage: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3, md: 4 } }}>
       <Grid container spacing={3}>
-        {/* Main Content */}
         <Grid item xs={12} md={9}>
-          {/* Hero Section with Image Slider */}
           <Paper
             elevation={3}
             sx={{
@@ -200,14 +190,12 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 <ImageSlider
                   images={galleryImages}
                   onImageClick={(index) => {
-                    console.log("Image clicked:", index)
                   }}
                 />
               </Box>
             )}
           </Paper>
 
-          {/* Floating Reservation Button (mobile only) */}
           {isMobile && (
             <Box sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}>
               <Fab color="primary" aria-label="reserve" onClick={handleReserve}>
@@ -216,7 +204,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Trip Title and Key Details */}
           <Paper elevation={3} sx={{ borderRadius: 2, p: { xs: 2, sm: 3 }, mb: 3 }}>
             <Typography
               variant={isSmallMobile ? "h5" : "h4"}
@@ -227,7 +214,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
               {offer.tripName}
             </Typography>
 
-            {/* Key details in a more compact, unified design */}
             <Box
               sx={{
                 display: "flex",
@@ -323,7 +309,9 @@ const SpecialOfferDetailsPage: React.FC = () => {
                         fontWeight="bold"
                         sx={{ fontSize: { xs: "0.9rem", sm: "1rem" }, textAlign: "left", mb: 1 }}
                       >
-                        {transport.companyName} - {transport.transportName}
+                        {transport.companyName}
+                        {transport.transportName && transport.companyName && " - "}
+                        {transport.transportName}
                         {transport.transportCode && ` (${transport.transportCode})`}
                       </Typography>
 
@@ -407,10 +395,8 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 </Box>
               )}
 
-              {/* Add divider between transport and accommodation if both exist */}
               {step.transports.length > 0 && step.accommodations.length > 0 && <Divider sx={{ my: 3 }} />}
 
-              {/* Accommodation section */}
               {step.accommodations.length > 0 && (
                 <Box sx={{ mt: step.transports.length > 0 ? 3 : 0 }}>
                   {step.accommodations.map((accommodation, aIndex) => (
@@ -468,7 +454,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
                           </Box>
                         </Grid>
 
-                        {/* Add divider if there are additional details */}
                         {(accommodation.roomType || accommodation.boardBasis) && (
                           <Grid item xs={12}>
                             <Divider sx={{ my: 1 }} />
@@ -516,7 +501,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
                         )}
                       </Grid>
 
-                      {/* Add divider if there's a description */}
                       {accommodation.description && <Divider sx={{ my: 1 }} />}
 
                       {accommodation.description && (
@@ -532,7 +516,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
                         </Typography>
                       )}
 
-                      {/* Map - only show if there's a valid address */}
                       {accommodation.hotelLink && (
                         <Box sx={{ mt: 2, height: 250, borderRadius: 1, overflow: "hidden" }}>
                           <LeafletMapDisplay address={accommodation.hotelLink} height={250} hideErrors={true} />
@@ -546,7 +529,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
           ))}
         </Grid>
 
-        {/* Right Sidebar - Help and Reservation */}
         <Grid item xs={12} md={3}>
           <Box
             sx={{
@@ -591,6 +573,8 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 fullWidth
                 startIcon={<PhoneIcon />}
                 sx={{ py: 1, mb: 1.5, justifyContent: "flex-start" }}
+                component="a"
+                href="tel:+37037224409"
               >
                 +370 37 224409
               </Button>
@@ -600,6 +584,8 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 fullWidth
                 startIcon={<EmailIcon />}
                 sx={{ py: 1, justifyContent: "flex-start" }}
+                component="a"
+                href="mailto:info@saitas.lt"
               >
                 info@saitas.lt
               </Button>

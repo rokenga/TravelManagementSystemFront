@@ -8,7 +8,7 @@ import { format } from "date-fns"
 import { lt } from "date-fns/locale"
 import { translateTripRequestStatus } from "../Utils/translateEnums"
 import { useContext } from "react"
-import { UserContext } from "../contexts/UserContext" // Assuming you have a UserContext
+import { UserContext } from "../contexts/UserContext" 
 
 interface TripRequestCardProps {
   request: TripRequestResponse
@@ -30,15 +30,14 @@ const StyledCard = styled(Card)(({ theme }) => ({
 const getStatusColor = (status: TripRequestStatus) => {
   switch (status) {
     case TripRequestStatus.New:
-      return "#4caf50" // Green
+      return "#4caf50" 
     case TripRequestStatus.Confirmed:
-      return "#2196f3" // Blue
+      return "#2196f3"
     default:
-      return "#757575" // Grey
+      return "#757575"
   }
 }
 
-// Helper function to truncate text
 const truncateText = (text: string, maxLength: number) => {
   if (!text) return ""
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text
@@ -49,11 +48,9 @@ const TripRequestCard: React.FC<TripRequestCardProps> = ({ request, onClick }) =
   const isAdmin = user?.role === "Admin"
   const formattedDate = format(new Date(request.createdAt), "yyyy-MM-dd HH:mm", { locale: lt })
 
-  // Truncate name and message
   const truncatedName = truncateText(request.fullName, 30)
   const truncatedMessage = request.message ? truncateText(request.message, 100) : ""
 
-  // Check if we should show agent info (admin user and agent info exists)
   const showAgentInfo = isAdmin && (request.agentFirstName || request.agentLastName)
   const agentName = showAgentInfo ? `${request.agentFirstName || ""} ${request.agentLastName || ""}`.trim() : ""
 

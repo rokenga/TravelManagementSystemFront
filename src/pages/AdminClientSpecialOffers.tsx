@@ -18,7 +18,6 @@ import ClientSpecialOfferFilterPanel, {
 } from "../components/filters/ClientSpecialOfferFilterPanel"
 import { useNavigation } from "../contexts/NavigationContext"
 
-// Default values for filter state
 const defaultFilters: ClientSpecialOfferFilters = {
   categories: [],
   statuses: [],
@@ -27,7 +26,6 @@ const defaultFilters: ClientSpecialOfferFilters = {
   endDate: null,
 }
 
-// Define the request body interface
 interface SpecialOfferRequestBody {
   pageNumber: number
   pageSize: number
@@ -50,10 +48,8 @@ const AdminClientSpecialOffers: React.FC = () => {
   const navigate = useNavigate()
   const isFilterCollapsed = useMediaQuery(theme.breakpoints.down("md"))
 
-  // UI state
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
 
-  // List state
   const [searchTerm, setSearchTerm] = useState<string>("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -61,25 +57,22 @@ const AdminClientSpecialOffers: React.FC = () => {
   const [sortOption, setSortOption] = useState<string>("Naujausi pirmi")
   const [selectedFilters, setSelectedFilters] = useState<ClientSpecialOfferFilters>(defaultFilters)
 
-  // Function to fetch offers
   const fetchOffers = async (
     page: number,
     size: number,
     search: string,
     filters: ClientSpecialOfferFilters,
-    sort: string = sortOption, // Default to current sortOption if not provided
+    sort: string = sortOption,
   ) => {
     try {
       setLoading(true)
 
-      // Create request body with proper type
       const requestBody: SpecialOfferRequestBody = {
         pageNumber: page,
         pageSize: size,
         searchTerm: search || undefined,
       }
 
-      // Add sorting
       if (sort === "Pavadinimas A-Z") {
         requestBody.sortBy = "tripName"
         requestBody.descending = false
@@ -94,7 +87,6 @@ const AdminClientSpecialOffers: React.FC = () => {
         requestBody.descending = false
       }
 
-      // Add filters
       if (filters.categories && filters.categories.length > 0) {
         requestBody.categories = filters.categories
       }
@@ -115,7 +107,6 @@ const AdminClientSpecialOffers: React.FC = () => {
         requestBody.endDate = filters.endDate
       }
 
-      console.log("Sending request:", requestBody)
 
       const response = await axios.post(`${API_URL}/ClientTripOfferFacade/paginated`, requestBody, {
         headers: {
@@ -124,25 +115,17 @@ const AdminClientSpecialOffers: React.FC = () => {
         },
       })
 
-      console.log("Response:", response.data)
 
-      // Update state with response data
       setOffers(response.data.items)
       setTotalPages(Math.ceil(response.data.totalCount / response.data.pageSize))
-
-      console.log("Total pages:", Math.ceil(response.data.totalCount / response.data.pageSize))
-      console.log("Items count:", response.data.items.length)
     } catch (err) {
-      console.error("Error fetching offers:", err)
       setError("Nepavyko gauti klientų specialių pasiūlymų.")
     } finally {
       setLoading(false)
     }
   }
 
-  // Initial fetch
   useEffect(() => {
-    // Reset filters if coming from navbar
     if (isNavbarNavigation) {
       setCurrentPage(1)
       setPageSize(25)
@@ -150,7 +133,6 @@ const AdminClientSpecialOffers: React.FC = () => {
       setSortOption("Naujausi pirmi")
       setSelectedFilters(defaultFilters)
     } else {
-      // Try to restore saved state
       const savedState = getPageState("admin-special-offers")
       if (savedState) {
         if (savedState.page) setCurrentPage(savedState.page)
@@ -161,7 +143,6 @@ const AdminClientSpecialOffers: React.FC = () => {
       }
     }
 
-    // Fetch offers after state is set
     const savedState = getPageState("admin-special-offers")
     setTimeout(() => {
       fetchOffers(
@@ -173,7 +154,6 @@ const AdminClientSpecialOffers: React.FC = () => {
       )
     }, 0)
 
-    // Save state on unmount
     return () => {
       savePageState("admin-special-offers", {
         page: currentPage,
@@ -185,7 +165,6 @@ const AdminClientSpecialOffers: React.FC = () => {
     }
   }, [isNavbarNavigation])
 
-  // Handlers
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
     fetchOffers(newPage, pageSize, searchTerm, selectedFilters, sortOption)
@@ -205,8 +184,8 @@ const AdminClientSpecialOffers: React.FC = () => {
 
   const handleSortChange = (option: string) => {
     setSortOption(option)
-    setCurrentPage(1) // Reset to first page when sorting
-    fetchOffers(1, pageSize, searchTerm, selectedFilters, option) // Pass the new option directly
+    setCurrentPage(1) 
+    fetchOffers(1, pageSize, searchTerm, selectedFilters, option) 
   }
 
   const handleApplyFilters = (filters: ClientSpecialOfferFilters) => {
@@ -321,7 +300,6 @@ const AdminClientSpecialOffers: React.FC = () => {
                 ))}
               </Grid>
 
-              {/* Pagination Controls */}
               <Box
                 sx={{
                   display: "flex",

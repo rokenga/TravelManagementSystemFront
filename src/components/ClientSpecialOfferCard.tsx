@@ -8,7 +8,6 @@ import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff"
 import { translateOfferStatus, translateTripCategory } from "../Utils/translateEnums"
 import { type TripResponse, TripCategory, OfferStatus } from "../types/ClientTrip"
 
-// Lithuanian date formatter (YYYY-MM-DD)
 const formatDate = (dateString?: string) => {
   if (!dateString) return "Nežinoma data"
   return new Intl.DateTimeFormat("lt-LT", {
@@ -23,7 +22,6 @@ const truncateText = (text = "", maxLength = 60) => {
   return text.slice(0, maxLength) + "..."
 }
 
-// Calculate trip duration in days
 const calculateDuration = (startDate?: string, endDate?: string) => {
   if (!startDate || !endDate) return null
 
@@ -35,19 +33,17 @@ const calculateDuration = (startDate?: string, endDate?: string) => {
   return diffDays
 }
 
-// More subtle category colors
 const categoryColors = {
-  [TripCategory.Tourist]: "#90CAF9", // Light Blue
-  [TripCategory.Group]: "#CE93D8", // Light Purple
-  [TripCategory.Relax]: "#FFCC80", // Light Orange
-  [TripCategory.Business]: "#A5D6A7", // Light Green
-  [TripCategory.Cruise]: "#F48FB1", // Light Pink
+  [TripCategory.Tourist]: "#90CAF9", 
+  [TripCategory.Group]: "#CE93D8", 
+  [TripCategory.Relax]: "#FFCC80", 
+  [TripCategory.Business]: "#A5D6A7", 
+  [TripCategory.Cruise]: "#F48FB1", 
 }
 
-// Status colors
 const statusColors = {
-  [OfferStatus.Draft]: "#FFB74D", // Orange 300
-  [OfferStatus.Confirmed]: "#81C784", // Green 300
+  [OfferStatus.Draft]: "#FFB74D",
+  [OfferStatus.Confirmed]: "#81C784", 
 }
 
 interface SpecialOfferCardProps {
@@ -76,14 +72,12 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
             p: 2,
           }}
         >
-          {/* Header with title only */}
           <Box sx={{ mb: 1.5, display: "flex", alignItems: "center" }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3, mr: 1 }}>
               {truncateText(offer.tripName || "Specialus pasiūlymas")}
             </Typography>
           </Box>
 
-          {/* Destination if available */}
           {offer.destination && (
             <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
               <FlightTakeoffIcon sx={{ fontSize: "0.9rem", mr: 0.75, color: "text.secondary" }} />
@@ -93,9 +87,7 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
             </Box>
           )}
 
-          {/* Status badges - more compact */}
           <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, flexWrap: "wrap", gap: 0.5 }}>
-            {/* Trip category */}
             {offer.category && (
               <Chip
                 label={translateTripCategory(offer.category)}
@@ -109,7 +101,6 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
               />
             )}
 
-            {/* Trip status */}
             {offer.status && (
               <Chip
                 label={translateOfferStatus(offer.status)}
@@ -122,7 +113,6 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
                 }}
               />
             )}
-            {/* Transfer status if applicable */}
             {offer.isTransferred && offer.transferredFromAgentName && (
               <Chip
                 label="Perkeltas"
@@ -130,7 +120,7 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
                 sx={{
                   height: "20px",
                   fontSize: "0.7rem",
-                  bgcolor: "#2196F3", // Info blue
+                  bgcolor: "#2196F3", 
                   color: "white",
                 }}
                 title={`Perkeltas nuo: ${offer.transferredFromAgentName}`}
@@ -138,9 +128,7 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
             )}
           </Box>
 
-          {/* Trip details - more compact */}
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {/* Date range */}
             {(offer.startDate || offer.endDate) && (
               <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary" }}>
                 <CalendarTodayIcon sx={{ fontSize: "0.9rem", mr: 0.5, opacity: 0.7 }} />
@@ -154,7 +142,6 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
               </Box>
             )}
 
-            {/* Duration if available */}
             {duration && (
               <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary" }}>
                 <AccessTimeIcon sx={{ fontSize: "0.9rem", mr: 0.5, opacity: 0.7 }} />

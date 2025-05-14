@@ -20,7 +20,6 @@ import {
   FormHelperText,
 } from "@mui/material"
 
-// Define both numeric and string enum for status
 export enum ReservationStatus {
   New = 0,
   Contacted = 1,
@@ -29,7 +28,6 @@ export enum ReservationStatus {
   Cancelled = 4,
 }
 
-// Map string status to numeric status
 const mapStringStatusToEnum = (status: string): ReservationStatus => {
   switch (status) {
     case "New":
@@ -43,11 +41,10 @@ const mapStringStatusToEnum = (status: string): ReservationStatus => {
     case "Cancelled":
       return ReservationStatus.Cancelled
     default:
-      return ReservationStatus.New // Default to New if unknown
+      return ReservationStatus.New 
   }
 }
 
-// Map numeric status to string status
 const mapEnumToStringStatus = (status: ReservationStatus): string => {
   switch (status) {
     case ReservationStatus.New:
@@ -68,7 +65,7 @@ const mapEnumToStringStatus = (status: ReservationStatus): string => {
 interface StatusChangeDialogProps {
   open: boolean
   reservationId: string
-  currentStatus: string | number // Accept either string or number
+  currentStatus: string | number 
   onClose: () => void
   onSuccess: () => void
 }
@@ -80,7 +77,6 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   onClose,
   onSuccess,
 }) => {
-  // Convert string status to numeric enum if needed
   const getNumericStatus = (status: string | number): ReservationStatus => {
     if (typeof status === "string") {
       return mapStringStatusToEnum(status)
@@ -94,23 +90,15 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
 
-  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       const numStatus = getNumericStatus(currentStatus)
       setSelectedStatus(numStatus)
       setError(null)
       setValidationMessage(null)
-
-      console.log("Dialog opened with status:", {
-        originalStatus: currentStatus,
-        convertedStatus: numStatus,
-        type: typeof currentStatus,
-      })
     }
   }, [open, currentStatus])
 
-  // Validate status change based on backend rules
   useEffect(() => {
     setValidationMessage(null)
 
@@ -118,7 +106,6 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       return
     }
 
-    // Check if the status transition is valid
     const isValid = isValidStatusTransition(numericCurrentStatus, selectedStatus)
     if (!isValid) {
       setValidationMessage("Negalimas statuso pakeitimas. Patikrinkite statuso keitimo taisykles.")
@@ -147,14 +134,7 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       setLoading(true)
       setError(null)
 
-      // Convert numeric enum back to string for API if needed
       const statusForApi = typeof currentStatus === "string" ? mapEnumToStringStatus(selectedStatus) : selectedStatus
-
-      console.log("Sending status change request:", {
-        reservationId,
-        newStatus: statusForApi,
-        originalType: typeof currentStatus,
-      })
 
       await axios.post(
         `${API_URL}/Reservation/${reservationId}/status`,
@@ -169,13 +149,11 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       onSuccess()
       onClose()
     } catch (err: any) {
-      // Handle specific error messages from the backend
       if (err.response && err.response.data) {
         setError(err.response.data || "Nepavyko pakeisti statuso. Bandykite dar kartą.")
       } else {
         setError("Nepavyko pakeisti statuso. Bandykite dar kartą.")
       }
-      console.error("Failed to change status:", err)
     } finally {
       setLoading(false)
     }
@@ -198,7 +176,6 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
     }
   }
 
-  // Get available next statuses based on current status
   const getAvailableStatuses = (currentStatus: ReservationStatus): ReservationStatus[] => {
     switch (currentStatus) {
       case ReservationStatus.New:
@@ -238,12 +215,10 @@ const ReservationStatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
             onChange={handleStatusChange}
             disabled={loading || !canChangeStatus}
           >
-            {/* Show current status */}
             <MenuItem value={numericCurrentStatus} disabled>
               {getStatusLabel(numericCurrentStatus)} (dabartinis)
             </MenuItem>
 
-            {/* Show available statuses */}
             {availableStatuses.map((status) => (
               <MenuItem key={status} value={status}>
                 {getStatusLabel(status)}

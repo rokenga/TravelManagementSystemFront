@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material"
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, CircularProgress, Container } from "@mui/material"
 import { usePreventNavigation } from "../hooks/usePreventNavigation"
 import EditTripWizardForm from "../components/ClientTripWizard/EditTripWizardForm"
 
 function WizardEditFormPage() {
   const [hasChanges, setHasChanges] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const {
     showDialog: showNavigationDialog,
@@ -16,38 +17,39 @@ function WizardEditFormPage() {
     pendingLocation,
   } = usePreventNavigation(hasChanges)
 
-  // Function to handle saving before leaving
   const handleLeaveWithSave = async () => {
     setIsSaving(true)
+    setIsLoading(true)
 
     if (window.saveEditFormAsDraft) {
       try {
-        // Make sure we're passing the pendingLocation to the save function
         const saveResult = await window.saveEditFormAsDraft(pendingLocation)
 
-        // Only proceed with navigation if the save was successful
-        if (saveResult) {
-          // Navigation will be handled by the save function
-          console.log("Save successful, navigation handled by save function")
-        } else {
-          console.error("Save function returned false, not navigating")
+        if (!saveResult) {
           setIsSaving(false)
+          setIsLoading(false)
         }
       } catch (error) {
-        console.error("Error saving draft:", error)
         setIsSaving(false)
+        setIsLoading(false)
       }
     } else {
-      console.warn("saveEditFormAsDraft function not available")
       handleLeave(true)
     }
   }
 
+  if (isLoading) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress />
+      </Container>
+    )
+  }
+
   return (
     <>
-      <EditTripWizardForm onDataChange={(changed) => setHasChanges(changed)} />
+      <EditTripWizardForm onDataChange={(changed: boolean) => setHasChanges(changed)} />
 
-      {/* Navigation confirmation dialog */}
       <Dialog
         open={showNavigationDialog}
         onClose={handleStay}

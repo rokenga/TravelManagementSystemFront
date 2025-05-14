@@ -33,7 +33,6 @@ const CollapsibleHeader = styled(Box)(({ theme }) => ({
   borderRadius: `${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0`,
 }))
 
-// Consistent typography styles
 const typographyStyles = {
   fontSize: "1rem",
   fontWeight: 400,
@@ -48,17 +47,15 @@ const TripRequestList: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [includeCompleted, setIncludeCompleted] = useState(false)
 
-  // Use refs to prevent UI glitches during polling
   const requestsRef = useRef<TripRequestResponse[]>([])
   const loadingRef = useRef(false)
   const includeCompletedRef = useRef(false)
 
   const fetchRequests = async () => {
-    if (loadingRef.current) return // Skip if already loading
+    if (loadingRef.current) return 
     loadingRef.current = true
 
     try {
-      // Add includeCompleted parameter to the request
       const response = await axios.get<TripRequestResponse[]>(`${API_URL}/TripRequest`, {
         params: {
           includeCompleted: includeCompletedRef.current,
@@ -68,7 +65,6 @@ const TripRequestList: React.FC = () => {
         },
       })
 
-      // Handle new data
       const newData = response.data
       const hasChanged = JSON.stringify(newData) !== JSON.stringify(requestsRef.current)
 
@@ -76,7 +72,6 @@ const TripRequestList: React.FC = () => {
         setRequests(newData)
         requestsRef.current = newData
 
-        // Auto-expand if there are new requests and no previous data
         if (newData.some((req) => req.status === TripRequestStatus.New) && requestsRef.current.length === 0) {
           setExpanded(true)
         }
@@ -84,7 +79,6 @@ const TripRequestList: React.FC = () => {
 
       setError(null)
     } catch (err) {
-      console.error("Klaida gaunant užklausas:", err)
       setError("Nepavyko gauti kelionių užklausų. Patikrinkite savo prisijungimą.")
     } finally {
       loadingRef.current = false
@@ -93,20 +87,16 @@ const TripRequestList: React.FC = () => {
   }
 
   useEffect(() => {
-    // Update ref when state changes
     includeCompletedRef.current = includeCompleted
 
-    // Fetch requests when includeCompleted changes
     setLoading(true)
     fetchRequests()
   }, [includeCompleted])
 
   useEffect(() => {
-    // Initial fetch
     setLoading(true)
     fetchRequests()
 
-    // Set up polling every 60 seconds
     const interval = setInterval(fetchRequests, 60000)
 
     return () => clearInterval(interval)
@@ -123,7 +113,6 @@ const TripRequestList: React.FC = () => {
 
   const handleModalClose = () => {
     setModalOpen(false)
-    // Refresh the list after modal is closed to get updated statuses
     fetchRequests()
   }
 
@@ -166,7 +155,6 @@ const TripRequestList: React.FC = () => {
 
         <Collapse in={expanded}>
           <Box sx={{ p: 2, maxHeight: "60vh", overflowY: "auto" }}>
-            {/* Include completed checkbox */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
               <FormControlLabel
                 control={

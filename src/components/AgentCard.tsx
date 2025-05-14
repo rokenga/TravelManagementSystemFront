@@ -8,7 +8,6 @@ interface AgentCardProps {
 }
 
 const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
-  // Function to get initials from name
   const getInitials = (firstName?: string, lastName?: string): string => {
     const firstInitial = firstName && firstName.length > 0 ? firstName.charAt(0).toUpperCase() : ""
     const lastInitial = lastName && lastName.length > 0 ? lastName.charAt(0).toUpperCase() : ""
@@ -19,7 +18,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
     return "?"
   }
 
-  // Function to get avatar color based on name
   const getAvatarColor = (name?: string): string => {
     const colors = [
       "#F44336",
@@ -51,7 +49,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
     return colors[Math.abs(hash) % colors.length]
   }
 
-  // Format birthdate
   const formatBirthdate = (birthday?: string) => {
     if (!birthday) return "Nenurodyta"
 
@@ -92,7 +89,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
               {agent.email || "Nėra el. pašto"}
             </Typography>
           </Box>
-          {/* Add birthday near email with same styling */}
           <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
             <CakeIcon fontSize="small" sx={{ color: "text.secondary", mr: 1 }} />
             <Typography variant="body1" color="text.secondary">

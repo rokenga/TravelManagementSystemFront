@@ -8,7 +8,6 @@ import type { Dayjs } from "dayjs"
 import "dayjs/locale/lt"
 import CalendarIcon from "@mui/icons-material/CalendarToday"
 
-// Ensure month names start with capital letters
 const capitalizeMonths = (locale: any) => {
   const originalMonths = locale.options?.months
   if (originalMonths) {
@@ -21,14 +20,14 @@ interface CustomDateTimePickerProps {
   label: string
   value: Dayjs | null
   onChange: (newDateTime: Dayjs | null) => void
-  showTime?: boolean // Whether to show the time picker
-  minDate?: Dayjs | null // Minimum allowed date
-  maxDate?: Dayjs | null // Maximum allowed date
-  disablePast?: boolean // Whether to disable past dates
-  disableFuture?: boolean // Whether to disable future dates
-  disabled?: boolean // Whether the field is disabled
-  helperText?: string // Optional helper text
-  readOnly?: boolean // Whether the field is read-only but looks normal
+  showTime?: boolean
+  minDate?: Dayjs | null
+  maxDate?: Dayjs | null
+  disablePast?: boolean
+  disableFuture?: boolean
+  disabled?: boolean
+  helperText?: string
+  readOnly?: boolean
 }
 
 const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
@@ -44,7 +43,6 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   helperText,
   readOnly = false,
 }) => {
-  // For read-only mode, we'll use a custom TextField instead of the DatePicker
   if (readOnly) {
     const formattedValue = value ? value.format(showTime ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD") : ""
 
@@ -64,7 +62,7 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
             ),
             sx: {
               cursor: "default",
-              color: "rgba(0, 0, 0, 0.87)", // Normal text color
+              color: "rgba(0, 0, 0, 0.87)",
             },
           }}
           data-datepicker="true"
@@ -74,7 +72,6 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
     )
   }
 
-  // Regular date picker for non-read-only mode
   const commonProps = {
     label,
     value,
@@ -98,7 +95,6 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
           },
         },
       },
-      // Add data attributes to all other slots
       day: {
         "data-datepicker": "true",
       },

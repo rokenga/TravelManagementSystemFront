@@ -16,7 +16,6 @@ interface Client {
   id: string
   name: string
   surname: string
-  // Add any other fields your API returns
 }
 
 interface Step1Props {
@@ -25,14 +24,12 @@ interface Step1Props {
   onDataChange?: (hasData: boolean) => void
 }
 
-// Add this to store the current form data globally
 declare global {
   interface Window {
     __currentFormData?: any
   }
 }
 
-// Export a function to get the current form data
 export function getCurrentFormData() {
   return window.__currentFormData || null
 }
@@ -64,10 +61,8 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
 
-  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     collectFormData: async () => {
-      // Return the current form data
       return {
         ...formData,
         clientId: selectedClientIdRef.current,
@@ -75,23 +70,19 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
     },
   }))
 
-  // Store the current form data in a global variable for access from outside
   useEffect(() => {
     window.__currentFormData = {
       ...formData,
       clientId: selectedClientIdRef.current,
     }
 
-    // Clean up when component unmounts
     return () => {
       window.__currentFormData = null
     }
   }, [formData, selectedClientIdRef.current])
 
-  // Notify parent of data changes
   useEffect(() => {
     if (onDataChange) {
-      // Check if there's any meaningful data in the form
       const hasData =
         formData.tripName.trim() !== "" ||
         selectedClientIdRef.current !== "" ||
@@ -102,7 +93,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
     }
   }, [formData, selectedClientIdRef.current, onDataChange])
 
-  // If startDate/endDate are set, do immediate validation
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
       const validation = validateDateTimeConstraints(formData.startDate, formData.endDate)
@@ -116,7 +106,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
     }
   }, [formData.startDate, formData.endDate])
 
-  // Initialize selected client
   useEffect(() => {
     if (initialData.clientId) {
       const client = clients.find((c) => c.id === initialData.clientId)
@@ -124,32 +113,26 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
     }
   }, [initialData.clientId, clients])
 
-  // Add this useEffect after the existing useEffects
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const clientIdParam = urlParams.get("clientId")
     const clientNameParam = urlParams.get("clientName")
 
     if (clientIdParam && clientNameParam) {
-      console.log("Setting client from URL params:", clientIdParam, clientNameParam)
       selectedClientIdRef.current = clientIdParam
       handleInputChange("clientId", clientIdParam)
       handleInputChange("clientName", clientNameParam)
 
-      // Try to find the client in the existing list first
       const existingClient = clients.find((c) => c.id === clientIdParam)
       if (existingClient) {
         setSelectedClient(existingClient)
       } else {
-        // If not found in the list, fetch it directly
         initializeSelectedClient(clientIdParam)
       }
     }
-  }, [clients]) // Add clients as dependency since we need it for the lookup
+  }, [clients]) 
 
-  // Update the initializeSelectedClient function to handle the client name properly
   const initializeSelectedClient = async (clientId: string) => {
-    // If we already have the list of clients, see if we can find one matching
     const found = clients.find((c) => c.id === clientId)
     if (found) {
       setSelectedClient(found)
@@ -161,7 +144,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
       return
     }
 
-    // Otherwise try a direct fetch
     try {
       const response = await axios.get<Client>(`${API_URL}/Client/${clientId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
@@ -175,13 +157,11 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
         }))
       }
     } catch (err) {
-      console.error("Failed to load single client:", err)
     }
   }
 
   const handleInputChange = (name: string, value: any) => {
     if (name === "tripName" && typeof value === "string" && value.length > MAX_TRIP_NAME_LENGTH) {
-      // Truncate the value if it exceeds the maximum length
       value = value.slice(0, MAX_TRIP_NAME_LENGTH)
     }
 
@@ -191,7 +171,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
   const handleClientChange = (newValue: Client | null) => {
     setSelectedClient(newValue)
 
-    // Update both the form state and the ref
     const clientIdValue = newValue?.id || ""
     selectedClientIdRef.current = clientIdValue
 
@@ -214,12 +193,10 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
       })
       setClients(response.data)
 
-      // If we have a clientId, try to select it
       if (selectedClientIdRef.current) {
         initializeSelectedClient(selectedClientIdRef.current)
       }
     } catch (err) {
-      console.error("Error fetching clients:", err)
     }
   }
 
@@ -227,7 +204,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
     fetchClients()
   }, [])
 
-  // Initialize the ref with the initial client ID
   useEffect(() => {
     if (initialData?.clientId) {
       selectedClientIdRef.current = initialData.clientId
@@ -241,10 +217,8 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
       return
     }
 
-    // Use the client ID from the ref to ensure it's not lost
     const clientId = selectedClientIdRef.current
 
-    // The rest of your submit logic...
     onSubmit({
       ...formData,
       clientId: clientId,
@@ -317,7 +291,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
           />
         </Grid>
 
-        {/* Add destination field */}
         <Grid item xs={12}>
           <DestinationAutocomplete value={formData.destination} onChange={handleDestinationChange} />
         </Grid>
@@ -339,7 +312,6 @@ const Step1TripInfo = forwardRef<any, Step1Props>(({ initialData, onSubmit, onDa
           </Typography>
         </Grid>
 
-        {/* Category, Adult Count, and Children Count in one line */}
         <Grid item xs={12}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>

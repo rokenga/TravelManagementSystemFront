@@ -27,13 +27,11 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
 }))
 
-// Maximum character limits
 const MAX_NAME_LENGTH = 100
 const MAX_MESSAGE_LENGTH = 1000
 
-// Validation patterns
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-const PHONE_PATTERN = /^[0-9]{8}$/ // 8 digits after +370
+const PHONE_PATTERN = /^[0-9]{8}$/ 
 
 interface ValidationErrors {
   name?: string
@@ -57,14 +55,11 @@ const TripRequest: React.FC = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("success")
 
   const handleChange = (field: string, value: string) => {
-    // Sanitize input to prevent XSS
     const sanitizedValue = DOMPurify.sanitize(value)
 
-    // Apply character limits
     if (field === "name" && sanitizedValue.length > MAX_NAME_LENGTH) return
     if (field === "message" && sanitizedValue.length > MAX_MESSAGE_LENGTH) return
 
-    // For phone field, only allow digits
     if (field === "phone") {
       const newValue = sanitizedValue.replace(/[^0-9]/g, "")
       setFormData({ ...formData, [field]: newValue })
@@ -78,26 +73,22 @@ const TripRequest: React.FC = () => {
     const newErrors: ValidationErrors = {}
     let isValid = true
 
-    // Validate name
     if (!formData.name.trim()) {
       newErrors.name = "Vardas yra privalomas"
       isValid = false
     }
 
-    // Validate phone
     const phoneDigits = formData.phone.replace(/\D/g, "")
     if (phoneDigits && !PHONE_PATTERN.test(phoneDigits)) {
       newErrors.phone = "Telefono numeris turi būti 8 skaitmenų ilgio"
       isValid = false
     }
 
-    // Validate email
     if (!EMAIL_PATTERN.test(formData.email.trim())) {
       newErrors.email = "Neteisingas el. pašto formatas"
       isValid = false
     }
 
-    // Validate message length
     if (formData.message.trim().length > MAX_MESSAGE_LENGTH) {
       newErrors.message = `Žinutė negali viršyti ${MAX_MESSAGE_LENGTH} simbolių`
       isValid = false
@@ -113,7 +104,7 @@ const TripRequest: React.FC = () => {
     setIsLoading(true)
 
     try {
-      const token = localStorage.getItem("csrf_token") // CSRF protection (if implemented)
+      const token = localStorage.getItem("csrf_token") 
 
       const payload: TripRequestCreate = {
         fullName: formData.name.trim(),
@@ -166,7 +157,7 @@ const TripRequest: React.FC = () => {
                 required
                 disabled={isLoading}
                 error={!!errors.name}
-                helperText={errors.name || " "} // Empty space to maintain consistent spacing
+                helperText={errors.name || " "} 
                 inputProps={{ maxLength: MAX_NAME_LENGTH }}
               />
             </Grid>
@@ -204,7 +195,7 @@ const TripRequest: React.FC = () => {
                 required
                 disabled={isLoading}
                 error={!!errors.email}
-                helperText={errors.email || " "} // Empty space to maintain consistent spacing
+                helperText={errors.email || " "} 
               />
             </Grid>
             <Grid item xs={12}>

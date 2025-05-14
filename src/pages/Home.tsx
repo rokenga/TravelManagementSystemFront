@@ -28,7 +28,6 @@ const Home: React.FC = () => {
           px: { xs: 2, sm: 3, md: 4 },
         }}
       >
-        {/* Recent Offers Section (replacing Travel Categories) */}
         <RecentOffers />
 
         <StyledSection ref={tripRequestRef}>

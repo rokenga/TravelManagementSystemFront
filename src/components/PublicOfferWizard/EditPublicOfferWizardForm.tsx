@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import axios from "axios"
 import dayjs from "dayjs"
@@ -16,14 +16,9 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Typography,
 } from "@mui/material"
-import { ArrowBack, CheckCircle, Save, ExitToApp } from "@mui/icons-material"
+import { ArrowBack, CheckCircle, Save } from "@mui/icons-material"
 import { API_URL } from "../../Utils/Configuration"
 import Step1OfferDetails from "./Step1OfferDetails"
 import Step2ReviewConfirm from "./Step2ReviewConfirm"
@@ -33,54 +28,50 @@ import type { PublicOfferDetails } from "../../types/PublicSpecialOffer"
 import { toLocalIso } from "../../Utils/dateSerialize"
 import { numberToStarRatingEnum, starRatingEnumToNumber } from "../../Utils/starRatingUtils"
 
+declare global {
+  interface Window {
+    saveEditOfferAsDraft?: (destination?: string | null) => Promise<boolean>
+  }
+}
+
 const steps = ["Pasiūlymo informacija", "Peržiūra ir patvirtinimas"]
 
 interface EditPublicOfferWizardFormProps {
   tripId: string
+  onDataChange?: (hasChanges: boolean) => void
 }
 
-// Helper function to safely parse dates in the correct format
 const parseDateCorrectly = (dateString: string | null | undefined): dayjs.Dayjs | null => {
   if (!dateString) return null
 
-  // Try to parse with dayjs directly first
   let date = dayjs(dateString)
 
-  // If the date is valid, return it
   if (date.isValid()) return date
 
-  // If not valid, try to manually parse it
-  // Split the date string by possible separators
   const parts = dateString.split(/[-T ]/)
   if (parts.length >= 3) {
-    // Ensure we're using yyyy-mm-dd format
     const year = parts[0]
     const month = parts[1]
     const day = parts[2]
 
-    // Reconstruct the date string in the correct format
     const formattedDate = `${year}-${month}-${day}`
     date = dayjs(formattedDate)
 
     if (date.isValid()) return date
   }
 
-  console.error("Failed to parse date:", dateString)
   return null
 }
 
-// Helper function to safely convert dayjs to ISO string or null
 const safeToLocalIso = (date: dayjs.Dayjs | null): string | null => {
   if (!date || !date.isValid()) return null
   return toLocalIso(date)
 }
 
-// Validation function for offer data
 const validateOfferData = (
   data: PublicOfferWizardData,
   isDraft: boolean,
 ): { isValid: boolean; errorMessage: string } => {
-  // If it's a draft, no validation needed
   if (isDraft) {
     return {
       isValid: true,
@@ -95,7 +86,6 @@ const validateOfferData = (
     }
   }
 
-  // Check if at least one image is provided
   if (!data.images || (data.images.length === 0 && (!data.existingImages || data.existingImages.length === 0))) {
     return {
       isValid: false,
@@ -103,7 +93,6 @@ const validateOfferData = (
     }
   }
 
-  // Check if either accommodation, transport, or cruise is provided
   const hasAccommodations = data.accommodations.length > 0
   const hasTransports = data.transports.length > 0
   const hasCruises = data.cruises.length > 0
@@ -121,25 +110,24 @@ const validateOfferData = (
   }
 }
 
-const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ tripId }) => {
+const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ tripId, onDataChange }) => {
   const navigate = useNavigate()
-  const { id: urlParamId } = useParams<{ id: string }>() // Also try to get ID from URL params as fallback
+  const { id: urlParamId } = useParams<{ id: string }>() 
   const effectiveTripId = tripId || urlParamId
 
   const [activeStep, setActiveStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [showNavigationDialog, setShowNavigationDialog] = useState(false)
-  const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true)
+  const [hasFormChanges, setHasFormChanges] = useState(false)
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false)
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
+  const isSavingRef = useRef(false)
 
-  // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
 
-  // Initialize form data with empty values
   const [formData, setFormData] = useState<PublicOfferWizardData>({
     tripName: "",
     description: "",
@@ -160,7 +148,8 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
     existingImages: [],
   })
 
-  // Fetch the offer data when component mounts
+  const [originalData, setOriginalData] = useState<string>("")
+
   useEffect(() => {
     const fetchOfferData = async () => {
       if (!effectiveTripId) {
@@ -183,7 +172,6 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         const offerData = response.data
         const step = offerData.itinerary.steps[0]
 
-        // Convert API data to form data format
         const mappedFormData: PublicOfferWizardData = {
           tripName: offerData.tripName || "",
           description: offerData.description || "",
@@ -200,22 +188,22 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
           accommodations:
             step?.accommodations.map((acc) => ({
               hotelName: acc.hotelName || "",
-              checkIn: parseDateCorrectly(acc.checkIn), // Use our helper function
-              checkOut: parseDateCorrectly(acc.checkOut), // Use our helper function
+              checkIn: parseDateCorrectly(acc.checkIn), 
+              checkOut: parseDateCorrectly(acc.checkOut), 
               hotelLink: acc.hotelLink || "",
               description: acc.description || "",
               boardBasis: acc.boardBasis || "",
               roomType: acc.roomType || "",
               price: acc.price || 0,
-              starRating: starRatingEnumToNumber(acc.starRating), // Convert enum string to number
+              starRating: starRatingEnumToNumber(acc.starRating), 
             })) || [],
           transports:
             step?.transports
               .filter((t) => t.transportType !== "Cruise")
               .map((trans) => ({
                 transportType: trans.transportType || "Flight",
-                departureTime: parseDateCorrectly(trans.departureTime), // Use our helper function
-                arrivalTime: parseDateCorrectly(trans.arrivalTime), // Use our helper function
+                departureTime: parseDateCorrectly(trans.departureTime), 
+                arrivalTime: parseDateCorrectly(trans.arrivalTime), 
                 departurePlace: trans.departurePlace || "",
                 arrivalPlace: trans.arrivalPlace || "",
                 description: trans.description || "",
@@ -229,8 +217,8 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
             step?.transports
               .filter((t) => t.transportType === "Cruise")
               .map((cruise) => ({
-                departureTime: parseDateCorrectly(cruise.departureTime), // Use our helper function
-                arrivalTime: parseDateCorrectly(cruise.arrivalTime), // Use our helper function
+                departureTime: parseDateCorrectly(cruise.departureTime), 
+                arrivalTime: parseDateCorrectly(cruise.arrivalTime), 
                 departurePlace: cruise.departurePlace || "",
                 arrivalPlace: cruise.arrivalPlace || "",
                 description: cruise.description || "",
@@ -249,9 +237,10 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         }
 
         setFormData(mappedFormData)
+        setOriginalData(JSON.stringify(mappedFormData))
+        setInitialDataLoaded(true)
         setError(null)
       } catch (err) {
-        console.error("Failed to fetch offer data:", err)
         setError("Nepavyko gauti pasiūlymo duomenų. Bandykite vėliau.")
       } finally {
         setLoading(false)
@@ -261,9 +250,49 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
     fetchOfferData()
   }, [effectiveTripId])
 
-  /**
-   * STEPPER NAVIGATION
-   */
+  useEffect(() => {
+    window.saveEditOfferAsDraft = async (destination?: string | null) => {
+      try {
+        if (isSavingRef.current) {
+          return false
+        }
+
+        isSavingRef.current = true
+        setIsSaving(true)
+
+        const result = await handleSubmit(true, destination)
+
+        isSavingRef.current = false
+
+        return result
+      } catch (error) {
+        setSnackbarMessage("Nepavyko išsaugoti juodraščio. Bandykite dar kartą.")
+        setSnackbarSeverity("error")
+        setSnackbarOpen(true)
+        setIsSaving(false)
+        isSavingRef.current = false
+        return false
+      }
+    }
+
+    return () => {
+      delete window.saveEditOfferAsDraft
+    }
+  }, [formData])
+
+  useEffect(() => {
+    if (initialDataLoaded) {
+      const currentDataString = JSON.stringify(formData)
+      const hasChanges = currentDataString !== originalData || imagesToDelete.length > 0 || formData.images.length > 0
+
+      setHasFormChanges(hasChanges)
+
+      if (onDataChange) {
+        onDataChange(hasChanges)
+      }
+    }
+  }, [formData, originalData, imagesToDelete, initialDataLoaded, onDataChange])
+
   const handleNext = () => {
     setActiveStep((prev) => prev + 1)
   }
@@ -272,29 +301,12 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
     setActiveStep(activeStep - 1)
   }
 
-  /**
-   * DIALOG HANDLERS
-   */
-  const handleStay = () => setShowNavigationDialog(false)
-  const handleLeaveWithoutSaving = () => {
-    setShouldBlockNavigation(false)
-    setShowNavigationDialog(false)
-    navigate(`/public-offers/${effectiveTripId}`)
-  }
-
-  /**
-   * STEPS SUBMISSION
-   */
   const handleStep1Submit = (updatedData: Partial<PublicOfferWizardData>) => {
     setFormData((prev) => ({ ...prev, ...updatedData }))
     handleNext()
   }
 
-  /**
-   * Handle image deletion - memoized to prevent unnecessary re-renders
-   */
   const handleImageDelete = useCallback((imageId: string) => {
-    console.log("Deleting image with ID:", imageId)
     setImagesToDelete((prev) => [...prev, imageId])
     setFormData((prev) => ({
       ...prev,
@@ -302,23 +314,18 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
     }))
   }, [])
 
-  /**
-   * FINAL SUBMIT: Update the offer
-   */
-  const handleSubmit = async (isDraft = false) => {
-    // Validate the data based on whether it's a draft or not
+  const handleSubmit = async (isDraft = false, destination?: string | null): Promise<boolean> => {
     const validationResult = validateOfferData(formData, isDraft)
     if (!validationResult.isValid) {
       setSnackbarMessage(validationResult.errorMessage)
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
-      return
+      return false
     }
 
     setIsSaving(true)
 
     try {
-      // Convert cruises to transport entries for the API
       const cruiseTransports = formData.cruises.map((cruise) => ({
         transportType: "Cruise",
         departureTime: safeToLocalIso(cruise.departureTime),
@@ -333,7 +340,6 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         price: cruise.price,
       }))
 
-      // Map transports to the format expected by the API
       const mappedTransports = formData.transports.map((transport) => ({
         transportType: transport.transportType,
         departureTime: safeToLocalIso(transport.departureTime),
@@ -348,7 +354,6 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         price: transport.price,
       }))
 
-      // Map accommodations to the format expected by the API
       const mappedAccommodations = formData.accommodations.map((acc) => ({
         hotelName: acc.hotelName,
         checkIn: safeToLocalIso(acc.checkIn),
@@ -358,16 +363,14 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         boardBasis: acc.boardBasis,
         roomType: acc.roomType,
         price: acc.price,
-        starRating: numberToStarRatingEnum(acc.starRating), // Convert number to enum string
+        starRating: numberToStarRatingEnum(acc.starRating), 
       }))
 
-      // Calculate total price
       const accommodationTotal = formData.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
       const transportTotal = formData.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
       const cruiseTotal = formData.cruises.reduce((sum, cruise) => sum + (cruise.price || 0), 0)
       const totalPrice = accommodationTotal + transportTotal + cruiseTotal
 
-      // Build the request payload
       const requestPayload = {
         tripName: formData.tripName,
         description: formData.description,
@@ -394,20 +397,16 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         imagesToDelete: imagesToDelete,
       }
 
-      console.log("Sending update request:", requestPayload)
 
-      // Create FormData for multipart/form-data submission
       const formDataPayload = new FormData()
       formDataPayload.append("data", JSON.stringify(requestPayload))
 
-      // Append new images
       if (formData.images && formData.images.length > 0) {
         formData.images.forEach((file) => {
           formDataPayload.append("newImages", file)
         })
       }
 
-      // Send the update request
       const response = await axios.put(`${API_URL}/PublicTripOfferFacade/agent/${effectiveTripId}`, formDataPayload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -415,53 +414,55 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
         },
       })
 
-      console.log("Successfully updated the offer:", response.data)
 
-      // Show success message
       setSnackbarMessage("Pasiūlymas sėkmingai atnaujintas!")
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Wait for 1 second before redirecting
-      setTimeout(() => {
-        navigate(`/public-offers/${effectiveTripId}`)
-      }, 1000)
-    } catch (err: any) {
-      console.error("Failed to update the offer:", err)
+      setHasFormChanges(false)
+      if (onDataChange) {
+        onDataChange(false)
+      }
 
-      // Show error message
+      setTimeout(() => {
+        if (destination) {
+          navigate(destination)
+        } else {
+          navigate(`/public-offers/${effectiveTripId}`)
+        }
+      }, 1000)
+
+      return true
+    } catch (err: any) {
+
       let errorMessage = "Nepavyko atnaujinti pasiūlymo. Patikrinkite įvestus duomenis."
       if (err.response?.data) {
-        // Check if the error data is an object with Message property
         if (typeof err.response.data === "object" && err.response.data.Message) {
           errorMessage = err.response.data.Message
         }
-        // Check if it's an object with message property
         else if (typeof err.response.data === "object" && err.response.data.message) {
           errorMessage = err.response.data.message
         }
-        // Check if it's a string
         else if (typeof err.response.data === "string") {
           errorMessage = err.response.data
         }
-        // If it's an object but we don't know its structure, stringify it
         else if (typeof err.response.data === "object") {
           try {
             errorMessage = JSON.stringify(err.response.data)
           } catch (e) {
-            console.error("Could not stringify error data:", e)
           }
         }
       }
       setSnackbarMessage(errorMessage)
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
+      setIsSaving(false)
+      return false
     } finally {
       setIsSaving(false)
     }
   }
 
-  // Save as draft function
   const handleSaveAsDraft = () => {
     handleSubmit(true)
   }
@@ -491,7 +492,7 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="lt">
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%" }} data-wizard-form="true">
         <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
           {steps.map((label) => (
             <MuiStep key={label}>
@@ -521,6 +522,7 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
                   type="button"
                   startIcon={<ArrowBack />}
                   sx={{ minWidth: 120 }}
+                  data-wizard-navigation="true"
                 >
                   Atgal
                 </Button>
@@ -531,6 +533,7 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
                   type="button"
                   startIcon={<Save />}
                   sx={{ minWidth: 160 }}
+                  data-save-button="true"
                 >
                   Išsaugoti juodraštį
                 </Button>
@@ -542,6 +545,7 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
                   type="button"
                   endIcon={<CheckCircle />}
                   sx={{ minWidth: 120 }}
+                  data-save-button="true"
                 >
                   {isSaving ? <CircularProgress size={24} color="inherit" /> : "Atnaujinti"}
                 </Button>
@@ -550,37 +554,6 @@ const EditPublicOfferWizardForm: React.FC<EditPublicOfferWizardFormProps> = ({ t
           )}
         </Paper>
       </Box>
-
-      <Dialog
-        open={showNavigationDialog}
-        onClose={handleStay}
-        aria-labelledby="leave-dialog-title"
-        aria-describedby="leave-dialog-description"
-      >
-        <DialogTitle id="leave-dialog-title">Išsaugoti pakeitimus?</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="leave-dialog-description">
-            Ar norite išsaugoti pakeitimus prieš išeidami? Jei ne, pakeitimai bus prarasti.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleStay} color="primary">
-            Likti
-          </Button>
-          <Button onClick={handleLeaveWithoutSaving} color="error" startIcon={<ExitToApp />}>
-            Išeiti be išsaugojimo
-          </Button>
-          <Button
-            onClick={() => handleSubmit(true)}
-            color="primary"
-            variant="contained"
-            startIcon={<Save />}
-            disabled={isSaving}
-          >
-            {isSaving ? <CircularProgress size={24} color="inherit" /> : "Išsaugoti ir išeiti"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <CustomSnackbar
         open={snackbarOpen}

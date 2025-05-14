@@ -23,7 +23,6 @@ const Footer: React.FC = () => {
           padding: "0 1rem",
         }}
       >
-        {/* Main footer content */}
         <div
           style={{
             display: "flex",
@@ -32,7 +31,6 @@ const Footer: React.FC = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* Logo and company description */}
           <div style={{ maxWidth: "300px" }}>
             <div style={{ height: "40px", marginBottom: "1rem" }}>
               <Logo />
@@ -43,36 +41,9 @@ const Footer: React.FC = () => {
             <p style={{ fontSize: "14px", color: "#004784", margin: 0 }}>© 2025 Saitas. Visos teisės saugomos</p>
           </div>
 
-          {/* Links column */}
           <div style={{ minWidth: "150px" }}>
             <h4 style={{ color: "#004784", margin: "0 0 0.5rem 0", fontSize: "16px" }}>Nuorodos</h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              <li style={{ marginBottom: "0.25rem" }}>
-                <Link
-                  to="/"
-                  style={{
-                    color: "#004784",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Pagrindinis
-                </Link>
-              </li>
-              <li style={{ marginBottom: "0.25rem" }}>
-                <Link
-                  to="/specialOffers"
-                  style={{
-                    color: "#004784",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Specialūs pasiūlymai
-                </Link>
-              </li>
               <li>
                 <Link
                   to="/login"
@@ -86,51 +57,6 @@ const Footer: React.FC = () => {
                   Prisijungimas agentams
                 </Link>
               </li>
-            </ul>
-          </div>
-
-          {/* Legal column */}
-          <div style={{ minWidth: "150px" }}>
-            <h4 style={{ color: "#004784", margin: "0 0 0.5rem 0", fontSize: "16px" }}>Teisinė informacija</h4>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              <li style={{ marginBottom: "0.25rem" }}>
-                <Link
-                  to="/privacy-policy"
-                  style={{
-                    color: "#004784",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Privatumo politika
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms"
-                  style={{
-                    color: "#004784",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Naudojimosi sąlygos
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact column */}
-          <div style={{ minWidth: "150px" }}>
-            <h4 style={{ color: "#004784", margin: "0 0 0.5rem 0", fontSize: "16px" }}>Kontaktai</h4>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              <li style={{ marginBottom: "0.25rem", fontSize: "14px", color: "#004784" }}>
-                El. paštas: info@saitas.lt
-              </li>
-              <li style={{ marginBottom: "0.25rem", fontSize: "14px", color: "#004784" }}>Tel.: +370 600 00000</li>
-              <li style={{ fontSize: "14px", color: "#004784" }}>K.Donelaičio g. 26-1, LT-44239 Kaunas</li>
             </ul>
           </div>
         </div>

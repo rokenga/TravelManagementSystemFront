@@ -24,13 +24,11 @@ import { translatePartnerType } from "../../Utils/translateEnums"
 import countriesData from "../../assets/full-countries-lt.json"
 import continentData from "../../assets/continents.json"
 
-// Interface for country data
 interface Country {
   code: string
   name: string
 }
 
-// Interface for continent data
 interface Continent {
   code: string
   name: string
@@ -50,7 +48,6 @@ interface PartnerFilterPanelProps {
   initialFilters: PartnerFilters
 }
 
-// Default empty filters
 export const defaultPartnerFilters: PartnerFilters = {
   types: [],
   countries: [],
@@ -62,7 +59,6 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  // Initialize state with initialFilters
   const [selectedTypes, setSelectedTypes] = useState<number[]>(initialFilters.types || [])
   const [selectedCountries, setSelectedCountries] = useState<string[]>(initialFilters.countries || [])
   const [selectedContinents, setSelectedContinents] = useState<string[]>(initialFilters.continents || [])
@@ -72,22 +68,18 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
   const [continents, setContinents] = useState<Continent[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Load countries and continents
   useEffect(() => {
     setLoading(true)
 
     try {
-      // Use the imported JSON data
       setCountries(countriesData as Country[])
       setContinents(continentData as Continent[])
     } catch (err) {
-      console.error("Error loading countries and continents data:", err)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Update local state when initialFilters change
   useEffect(() => {
     setSelectedTypes(initialFilters.types || [])
     setSelectedCountries(initialFilters.countries || [])
@@ -192,7 +184,7 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
               onChange={(_, newValue) => setSelectedCountries(newValue)}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
-                  <Chip key={option} label={option} {...getTagProps({ index })} size="small" sx={{ m: 0.5 }} />
+                  <Chip label={option} {...getTagProps({ index })} size="small" sx={{ m: 0.5 }} />
                 ))
               }
               renderInput={(params) => (
@@ -215,7 +207,7 @@ const PartnerFilterPanel: React.FC<PartnerFilterPanelProps> = ({ isOpen, onClose
               onChange={(_, newValue) => setSelectedContinents(newValue)}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
-                  <Chip key={option} label={option} {...getTagProps({ index })} size="small" sx={{ m: 0.5 }} />
+                  <Chip label={option} {...getTagProps({ index })} size="small" sx={{ m: 0.5 }} />
                 ))
               }
               renderInput={(params) => (

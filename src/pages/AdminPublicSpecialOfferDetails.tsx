@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useContext } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import type { PublicOfferDetails } from "../types/PublicSpecialOffer"
@@ -42,26 +42,17 @@ import {
   Assignment as AssignmentIcon,
 } from "@mui/icons-material"
 
-// Import the ImageSlider component
 import ImageSlider from "../components/ImageSlider"
 import ActionBar from "../components/ActionBar"
 import ConfirmationDialog from "../components/ConfirmationDialog"
-// Import the StatusChangeDialog component and add necessary imports
 import StatusChangeDialog, { type OfferStatus } from "../components/status/PublicOfferStatusChangeModal"
 
-/**
- * Helper function to safely parse dates in various formats
- * This handles both ISO format and DD/MM/YYYY format
- */
 const parseDateCorrectly = (dateString: string | null | undefined): Date | null => {
   if (!dateString) return null
 
-  // First try standard parsing
   let date = new Date(dateString)
   if (!isNaN(date.getTime())) return date
 
-  // If that fails, try to parse DD/MM/YYYY format
-  // This handles formats like "02/04/2025 01:00:00"
   const dateRegex = /(\d{2})\/(\d{2})\/(\d{4})\s*(\d{2})?:?(\d{2})?:?(\d{2})?/
   const match = dateString.match(dateRegex)
 
@@ -73,18 +64,15 @@ const parseDateCorrectly = (dateString: string | null | undefined): Date | null 
     const minute = match[5] || "00"
     const second = match[6] || "00"
 
-    // Reconstruct in ISO format: YYYY-MM-DDTHH:MM:SS
     const isoString = `${year}-${month}-${day}T${hour}:${minute}:${second}`
     date = new Date(isoString)
 
     if (!isNaN(date.getTime())) return date
   }
 
-  console.error("Failed to parse date:", dateString)
   return null
 }
 
-// Helper function to format dates in Lithuanian
 const formatDate = (dateString: string): string => {
   const date = parseDateCorrectly(dateString)
   if (!date) return "Nenustatyta data"
@@ -97,7 +85,6 @@ const formatDate = (dateString: string): string => {
   return new Intl.DateTimeFormat("lt-LT", options).format(date)
 }
 
-// Helper function to format time
 const formatTime = (dateString: string): string => {
   const date = parseDateCorrectly(dateString)
   if (!date) return "Nenustatytas laikas"
@@ -105,7 +92,6 @@ const formatTime = (dateString: string): string => {
   return date.toLocaleTimeString("lt-LT", { hour: "2-digit", minute: "2-digit" })
 }
 
-// Helper function to get transport icon
 const getTransportIcon = (type: string) => {
   switch (type) {
     case "Flight":
@@ -123,7 +109,6 @@ const getTransportIcon = (type: string) => {
   }
 }
 
-// Helper function to get status chip color and label
 const getStatusChip = (status: string) => {
   switch (status) {
     case "Active":
@@ -137,7 +122,6 @@ const getStatusChip = (status: string) => {
   }
 }
 
-// Helper function to get trip status chip color and label
 const getTripStatusChip = (status: string) => {
   switch (status?.toLowerCase()) {
     case "draft":
@@ -152,6 +136,7 @@ const getTripStatusChip = (status: string) => {
 const AdminPublicOfferDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const user = useContext(UserContext)
   const [offer, setOffer] = useState<PublicOfferDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -159,7 +144,6 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  // Add these state variables inside the component
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({
     open: false,
@@ -167,18 +151,15 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
     severity: "success",
   })
 
-  // Function to check if current user is an admin
   const isAdmin = (): boolean => {
     return user?.role === "Admin"
   }
 
-  // Function to check if current user is the creator of the offer
   const isCreator = (): boolean => {
     if (!offer || !user) return false
     return offer.agentId === user.id
   }
 
-  // Function to check if user has permission to edit/delete/change status
   const hasPermission = (): boolean => {
     return isAdmin() || isCreator()
   }
@@ -193,13 +174,7 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
           },
         })
         setOffer(response.data)
-        console.log("Offer details:", response.data)
-        console.log("Current user:", user)
-        console.log("Is admin:", isAdmin())
-        console.log("Is creator:", isCreator())
-        console.log("Has permission:", hasPermission())
       } catch (err) {
-        console.error("Failed to fetch offer details:", err)
         setError("Nepavyko gauti pasiūlymo detalių. Bandykite vėliau.")
       } finally {
         setLoading(false)
@@ -227,19 +202,16 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         },
       })
 
-      // Show success message before navigating
       setSnackbar({
         open: true,
         message: "Pasiūlymas sėkmingai ištrintas",
         severity: "success",
       })
 
-      // Add a small delay before navigation to ensure the snackbar is seen
       setTimeout(() => {
         navigate("/public-offers")
       }, 1500)
     } catch (err) {
-      console.error("Failed to delete offer:", err)
       setSnackbar({
         open: true,
         message: "Nepavyko ištrinti pasiūlymo. Bandykite dar kartą.",
@@ -253,12 +225,14 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
     setShowDeleteDialog(false)
   }
 
-  // Function to navigate to reservations
   const handleViewReservations = () => {
     navigate(`/public-offers/${id}/reservations`)
   }
 
-  // Prepare images for gallery
+  const handleBackClick = () => {
+    navigate("/public-offers")
+  }
+
   const galleryImages: ImageItem[] =
     offer?.files
       .filter((file) => file.type === "Image")
@@ -268,22 +242,13 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         altText: file.altText,
       })) || []
 
-  // Add this function inside the component
   const handleChangeStatus = () => {
     setShowStatusDialog(true)
   }
 
-  // Add this function inside the component
   const handleConfirmStatusChange = async (status: OfferStatus) => {
     try {
       const agentId = user?.id || ""
-
-      console.log("Changing offer status:", {
-        currentStatus: offer?.offerStatus,
-        newStatus: status,
-        offerId: id,
-        agentId,
-      })
 
       await axios.put(
         `${API_URL}/PublicTripOfferFacade/${id}/status`,
@@ -295,11 +260,10 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         },
       )
 
-      // Update the local state if needed
       if (offer) {
         setOffer({
           ...offer,
-          offerStatus: status, // Update offerStatus instead of status
+          offerStatus: status, 
         })
       }
 
@@ -309,12 +273,8 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         severity: "success",
       })
 
-      // Close the dialog after successful update
       setShowStatusDialog(false)
     } catch (error: any) {
-      console.error("Failed to change status:", error)
-
-      // Extract error message from response if available
       let errorMessage = "Nepavyko pakeisti pasiūlymo statuso"
 
       if (error.response) {
@@ -335,12 +295,10 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         severity: "error",
       })
 
-      // Re-throw the error so the dialog can handle it
       throw error
     }
   }
 
-  // Add this function inside the component
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false })
   }
@@ -348,7 +306,13 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <ActionBar showBackButton={true} backUrl="/public-offers" showEditButton={false} showDeleteButton={false} />
+        <ActionBar
+          showBackButton={true}
+          backUrl="/public-offers"
+          showEditButton={false}
+          showDeleteButton={false}
+          onBackClick={handleBackClick}
+        />
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2, mb: 3 }} />
@@ -364,7 +328,13 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <ActionBar showBackButton={true} backUrl="/public-offers" showEditButton={false} showDeleteButton={false} />
+        <ActionBar
+          showBackButton={true}
+          backUrl="/public-offers"
+          showEditButton={false}
+          showDeleteButton={false}
+          onBackClick={handleBackClick}
+        />
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
@@ -375,24 +345,19 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
   if (!offer) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <ActionBar showBackButton={true} backUrl="/public-offers" showEditButton={false} showDeleteButton={false} />
+        <ActionBar
+          showBackButton={true}
+          backUrl="/public-offers"
+          showEditButton={false}
+          showDeleteButton={false}
+          onBackClick={handleBackClick}
+        />
         <Alert severity="info">Pasiūlymas nerastas.</Alert>
       </Container>
     )
   }
 
-  // Get the first step which contains the offer details
   const offerStep = offer.itinerary.steps[0]
-
-  // Debug information
-  console.log("Rendering with permissions:", {
-    isAdmin: isAdmin(),
-    isCreator: isCreator(),
-    hasPermission: hasPermission(),
-    userRole: user?.role,
-    userId: user?.id,
-    offerAgentId: offer.agentId,
-  })
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -408,32 +373,27 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         onChangeStatus={handleChangeStatus}
         showReservationsButton={true}
         onViewReservations={handleViewReservations}
+        onBackClick={handleBackClick} 
       />
 
-      {/* Main Content */}
       <Paper elevation={3} sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}>
-        {/* Hero Section with Image Slider */}
         {galleryImages.length > 0 && (
           <Box>
             <ImageSlider
               images={galleryImages}
               onImageClick={(index) => {
-                console.log("Image clicked:", index)
               }}
             />
           </Box>
         )}
 
-        {/* Offer Header */}
         <Box sx={{ p: 3 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
             <Typography variant="h5" sx={{ color: "#000000", fontWeight: 500 }}>
               {offer.tripName}
             </Typography>
 
-            {/* Status Chips */}
             <Box sx={{ display: "flex", gap: 2 }}>
-              {/* Trip Status Chip */}
               {offer.status && (
                 <Chip
                   label={getTripStatusChip(offer.status).label}
@@ -443,7 +403,6 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
                 />
               )}
 
-              {/* Offer Status Chip */}
               {offer.offerStatus && (
                 <Chip
                   label={getStatusChip(offer.offerStatus).label}
@@ -475,7 +434,6 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
                 variant="outlined"
               />
             )}
-            {/* Only show category if it exists */}
             {offer.category && (
               <Chip
                 icon={<InfoIcon />}
@@ -513,14 +471,12 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* Offer Details */}
       <Paper elevation={3} sx={{ borderRadius: 2, p: 3, mb: 4 }}>
         <Typography variant="subtitle1" gutterBottom sx={{ color: "#000000", fontWeight: 500, mb: 3 }}>
           Pasiūlymo detalės
         </Typography>
 
         <Grid container spacing={3}>
-          {/* Transport Cards */}
           {offerStep.transports &&
             offerStep.transports.length > 0 &&
             offerStep.transports.map((transport, index) => (
@@ -609,7 +565,6 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
               </Grid>
             ))}
 
-          {/* Accommodation Cards */}
           {offerStep.accommodations &&
             offerStep.accommodations.length > 0 &&
             offerStep.accommodations.map((accommodation, index) => (
@@ -701,7 +656,6 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
         </Grid>
       </Paper>
 
-      {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={showDeleteDialog}
         title="Ištrinti pasiūlymą"
@@ -712,7 +666,7 @@ const AdminPublicOfferDetailsPage: React.FC = () => {
 
       <StatusChangeDialog
         open={showStatusDialog}
-        currentStatus={offer?.offerStatus as OfferStatus} // Use offerStatus instead of status
+        currentStatus={offer?.offerStatus as OfferStatus} 
         validUntil={offer?.validUntil}
         tripStatus={offer?.status}
         onClose={() => setShowStatusDialog(false)}

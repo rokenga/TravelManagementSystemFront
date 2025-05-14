@@ -1,6 +1,5 @@
 import { createTheme } from "@mui/material/styles";
 
-// Extend MUI's PaletteColorOptions to include 'lighter'
 declare module "@mui/material/styles" {
   interface PaletteColor {
     lighter?: string;

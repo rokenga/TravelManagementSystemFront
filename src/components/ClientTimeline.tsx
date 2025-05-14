@@ -33,8 +33,8 @@ interface TimelineEvent {
   id: string
   title: string
   category?: TripCategory
-  date: string // This will be startDate for trips, createdAt for offers without dates
-  createdAt?: string // Store the creation date for offers
+  date: string 
+  createdAt?: string 
   type: "trip" | "offer"
   description: string
   endDate?: string
@@ -42,23 +42,21 @@ interface TimelineEvent {
 
 interface ClientTimelineProps {
   trips: ClientTripListResponse[]
-  offers: TripResponse[] // Changed to TripResponse[] to match real data
+  offers: TripResponse[] 
 }
 
-// Time period options in months
-type TimePeriod = 6 | 12 | 24 | 0 // 0 means "All"
+type TimePeriod = 6 | 12 | 24 | 0 
 
 const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>(6) // Default to 6 months
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>(6) 
   const navigate = useNavigate()
 
-  // Convert trips and offers to a unified timeline format
   const timelineEvents: TimelineEvent[] = useMemo(
     () => [
       ...trips.map((trip) => {
-        const startDate = trip.startDate ? trip.startDate : "0000-00-00" // Default value if undefined
+        const startDate = trip.startDate ? trip.startDate : "0000-00-00" 
         const endDate = trip.endDate ? trip.endDate : "0000-00-00"
 
         return {
@@ -72,16 +70,15 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
         }
       }),
       ...offers.map((offer) => {
-        // For offers, use createdAt for sorting if startDate is not available
         const startDate = offer.startDate || "0000-00-00"
         const endDate = offer.endDate || "0000-00-00"
-        const createdAt = offer.createdAt || new Date().toISOString() // Default to now if missing
+        const createdAt = offer.createdAt || new Date().toISOString() 
 
         return {
           id: offer.id,
           title: offer.tripName || "Pasiūlymas be pavadinimo",
           category: offer.category as TripCategory,
-          date: offer.startDate ? startDate : createdAt, // Use createdAt if no startDate
+          date: offer.startDate ? startDate : createdAt, 
           createdAt: createdAt,
           type: "offer" as const,
           description: offer.description || "Nėra aprašymo",
@@ -92,19 +89,16 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
     [trips, offers],
   )
 
-  // Filter events based on selected time period
   const filteredEvents = useMemo(() => {
     if (timePeriod === 0) {
-      // Return all events if "All" is selected
       return timelineEvents
     }
 
     const now = new Date()
     const cutoffDate = new Date()
-    cutoffDate.setMonth(now.getMonth() - timePeriod) // Go back X months
+    cutoffDate.setMonth(now.getMonth() - timePeriod) 
 
     return timelineEvents.filter((event) => {
-      // Skip events with invalid dates
       if (event.date === "0000-00-00") return false
 
       const eventDate = new Date(event.date)
@@ -112,7 +106,6 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
     })
   }, [timelineEvents, timePeriod])
 
-  // Sort items by date (newest first)
   const sortedEvents = useMemo(
     () => filteredEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [filteredEvents],
@@ -132,7 +125,6 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
 
   return (
     <Box sx={{ maxWidth: "100%", overflow: "hidden" }}>
-      {/* Time period filter */}
       <Box sx={{ mb: 3, display: "flex", justifyContent: "flex-end" }}>
         <FormControl
           size="small"
@@ -181,7 +173,6 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
               {!isMobile && (
                 <TimelineOppositeContent sx={{ m: "auto 0" }}>
                   {event.type === "trip" || (event.date !== event.createdAt && event.date !== "0000-00-00") ? (
-                    // Show date range for trips or offers with actual dates
                     <>
                       <Typography variant="body2" color="text.secondary">
                         {event.date !== "0000-00-00"
@@ -195,7 +186,6 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                       )}
                     </>
                   ) : (
-                    // Show creation date for offers without dates
                     <Typography variant="body2" color="text.secondary">
                       Sukurta: {new Date(event.createdAt || "").toLocaleDateString("lt-LT")}
                     </Typography>
@@ -220,7 +210,7 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                     marginRight: isMobile ? 0 : "auto",
                     borderLeft: `4px solid ${event.type === "trip" ? theme.palette.primary.main : theme.palette.secondary.main}`,
                     transition: "all 0.2s ease-in-out",
-                    cursor: "pointer", // Make all items clickable
+                    cursor: "pointer", 
                     "&:hover": {
                       transform: "translateY(-4px)",
                       boxShadow: 4,
@@ -237,7 +227,6 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                       <CalendarMonth fontSize="small" sx={{ mr: 0.5, color: "text.secondary" }} />
                       <Typography variant="body2" color="text.secondary">
                         {event.type === "trip" || (event.date !== event.createdAt && event.date !== "0000-00-00") ? (
-                          // Show date range for trips or offers with actual dates
                           <>
                             {event.date !== "0000-00-00"
                               ? new Date(event.date).toLocaleDateString("lt-LT")
@@ -247,7 +236,6 @@ const ClientTimeline: React.FC<ClientTimelineProps> = ({ trips, offers }) => {
                               ` - ${new Date(event.endDate).toLocaleDateString("lt-LT")}`}
                           </>
                         ) : (
-                          // Show creation date for offers without dates
                           <>Sukurta: {new Date(event.createdAt || "").toLocaleDateString("lt-LT")}</>
                         )}
                       </Typography>

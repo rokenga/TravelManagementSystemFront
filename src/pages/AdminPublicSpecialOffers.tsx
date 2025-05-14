@@ -18,14 +18,12 @@ import PublicSpecialOfferFilterPanel, {
 } from "../components/filters/PublicSpecialOfferFilterPanel"
 import { useNavigation } from "../contexts/NavigationContext"
 
-// Define the OfferStatus enum
 export enum OfferStatus {
   Active = "Active",
   Expired = "Expired",
   ManuallyDisabled = "ManuallyDisabled",
 }
 
-// Default values for filter state
 const defaultFilters: PublicSpecialOfferFilters = {
   categories: [],
   statuses: [],
@@ -36,7 +34,6 @@ const defaultFilters: PublicSpecialOfferFilters = {
   onlyMine: false,
 }
 
-// Define the request body interface
 interface PublicOfferRequestBody {
   pageNumber: number
   pageSize: number
@@ -78,10 +75,8 @@ const AdminPublicSpecialOffers: React.FC = () => {
   const isFilterCollapsed = useMediaQuery(theme.breakpoints.down("md"))
   const isInitialMount = useRef(true)
 
-  // UI state
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
 
-  // List state
   const [searchTerm, setSearchTerm] = useState<string>("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -89,7 +84,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
   const [sortOption, setSortOption] = useState<string>("Naujausi pirmi")
   const [selectedFilters, setSelectedFilters] = useState<PublicSpecialOfferFilters>(defaultFilters)
 
-  // Save current state to be restored when coming back
   const saveCurrentState = useCallback(() => {
     const state: PublicOfferListState = {
       page: currentPage,
@@ -98,12 +92,10 @@ const AdminPublicSpecialOffers: React.FC = () => {
       sortOption,
       filters: selectedFilters,
     }
-    console.log("Saving public offers list state:", state)
     savePageState("admin-public-offers", state)
   }, [currentPage, pageSize, searchTerm, sortOption, selectedFilters, savePageState])
 
   useEffect(() => {
-    // If this is a navbar navigation, reset all filters
     if (isNavbarNavigation) {
       setCurrentPage(1)
       setPageSize(25)
@@ -111,27 +103,22 @@ const AdminPublicSpecialOffers: React.FC = () => {
       setSortOption("Naujausi pirmi")
       setSelectedFilters(defaultFilters)
 
-      // Fetch with default values
       fetchOffers(1, 25, "", defaultFilters)
       return
     }
 
-    // Only try to restore state on initial mount
     if (isInitialMount.current) {
       isInitialMount.current = false
 
       const savedState = getPageState("admin-public-offers") as PublicOfferListState | null
-      console.log("Retrieved saved public offers list state:", savedState)
 
       if (savedState) {
-        console.log("Restoring state from saved state")
         if (savedState.page) setCurrentPage(savedState.page)
         if (savedState.pageSize) setPageSize(savedState.pageSize)
         if (savedState.searchTerm !== undefined) setSearchTerm(savedState.searchTerm)
         if (savedState.sortOption) setSortOption(savedState.sortOption)
         if (savedState.filters) setSelectedFilters(savedState.filters)
 
-        // Fetch with restored values
         fetchOffers(
           savedState.page || 1,
           savedState.pageSize || 25,
@@ -140,31 +127,25 @@ const AdminPublicSpecialOffers: React.FC = () => {
           savedState.sortOption || "Naujausi pirmi",
         )
       } else {
-        // No saved state, fetch with defaults
         fetchOffers(1, 25, "", defaultFilters)
       }
     }
   }, [getPageState, isNavbarNavigation])
 
-  // Save state when component unmounts
   useEffect(() => {
     return () => {
       saveCurrentState()
     }
   }, [saveCurrentState])
 
-  /**
-   * Fetch the public offers from the API
-   */
   const fetchOffers = async (
     page: number,
     size: number,
     search: string,
     filters: PublicSpecialOfferFilters,
-    sort: string = sortOption, // Default to current sortOption if not provided
+    sort: string = sortOption, 
   ) => {
     try {
-      console.log("Fetching public offers with params:", { page, size, search, filters, sort })
       setLoading(true)
 
       const requestBody: PublicOfferRequestBody = {
@@ -179,7 +160,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
         onlyMine: filters.onlyMine || undefined,
       }
 
-      // Add price range if it's different from default
       if (filters.priceRange[0] > 0) {
         requestBody.priceFrom = filters.priceRange[0]
       }
@@ -188,7 +168,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
         requestBody.priceTo = filters.priceRange[1]
       }
 
-      // Add date range if dates are selected
       if (filters.startDate) {
         requestBody.startDateFrom = filters.startDate
       }
@@ -197,7 +176,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
         requestBody.startDateTo = filters.endDate
       }
 
-      // Add sorting
       if (sort === "Pavadinimas A-Z") {
         requestBody.sortBy = "tripName"
         requestBody.descending = false
@@ -218,7 +196,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
         requestBody.descending = true
       }
 
-      console.log("Sending request body:", requestBody)
 
       const response = await axios.post<PaginatedResponse<TripResponse>>(
         `${API_URL}/PublicTripOfferFacade/paginated`,
@@ -235,15 +212,7 @@ const AdminPublicSpecialOffers: React.FC = () => {
       setCurrentPage(response.data.pageNumber)
       setPageSize(response.data.pageSize)
       setTotalPages(Math.ceil(response.data.totalCount / response.data.pageSize))
-
-      console.log("Pagination data:", {
-        currentPage: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: Math.ceil(response.data.totalCount / response.data.pageSize),
-      })
     } catch (err: any) {
-      console.error("Failed to fetch public offers:", err)
       setError(err.response?.data?.message || "Nepavyko gauti viešų pasiūlymų sąrašo.")
     } finally {
       setLoading(false)
@@ -259,41 +228,35 @@ const AdminPublicSpecialOffers: React.FC = () => {
   }
 
   const handlePageChange = (newPage: number) => {
-    console.log(`Changing to page ${newPage}`)
     setCurrentPage(newPage)
     fetchOffers(newPage, pageSize, searchTerm, selectedFilters, sortOption)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
-    console.log(`Changing page size to ${newPageSize}`)
     setPageSize(newPageSize)
-    setCurrentPage(1) // Reset to first page when changing page size
+    setCurrentPage(1) 
     fetchOffers(1, newPageSize, searchTerm, selectedFilters, sortOption)
   }
 
   const handleSearchChange = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm)
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1)
     fetchOffers(1, pageSize, newSearchTerm, selectedFilters, sortOption)
   }
 
   const handleSortChange = (option: string) => {
     setSortOption(option)
-    setCurrentPage(1) // Reset to first page when sorting
-    fetchOffers(1, pageSize, searchTerm, selectedFilters, option) // Pass the new option directly
+    setCurrentPage(1) 
+    fetchOffers(1, pageSize, searchTerm, selectedFilters, option) 
   }
 
   const handleApplyFilters = (filters: PublicSpecialOfferFilters) => {
-    console.log("Applied filters:", filters)
     setSelectedFilters(filters)
-    setCurrentPage(1) // Reset to first page when filtering
+    setCurrentPage(1) 
     fetchOffers(1, pageSize, searchTerm, filters, sortOption)
     setIsFilterDrawerOpen(false)
   }
 
-  /**
-   * Count how many filters are active
-   */
   const getActiveFilterCount = () => {
     let count = 0
     if (selectedFilters.categories.length > 0) count++
@@ -303,7 +266,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
     if (selectedFilters.endDate) count++
     if (selectedFilters.onlyMine) count++
 
-    // Check if price range is different from default
     if (selectedFilters.priceRange && (selectedFilters.priceRange[0] > 0 || selectedFilters.priceRange[1] < 10000)) {
       count++
     }
@@ -405,7 +367,6 @@ const AdminPublicSpecialOffers: React.FC = () => {
                 ))}
               </Grid>
 
-              {/* Pagination Controls */}
               <Box
                 sx={{
                   display: "flex",

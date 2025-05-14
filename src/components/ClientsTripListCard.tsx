@@ -5,7 +5,6 @@ import { Card, CardContent, CardActionArea, Typography, Box, Chip, Divider, Line
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
 import AccessTimeIcon from "@mui/icons-material/AccessTime"
 import PaymentIcon from "@mui/icons-material/Payment"
-import PeopleIcon from "@mui/icons-material/People"
 import LocalOfferIcon from "@mui/icons-material/LocalOffer"
 import StarIcon from "@mui/icons-material/Star"
 import LocationOnIcon from "@mui/icons-material/LocationOn"
@@ -13,7 +12,6 @@ import { translateTripStatus, translateTripCategory } from "../Utils/translateEn
 import type { ClientTripListResponse } from "../types/ClientsTripList"
 import { TripStatus, TripCategory } from "../types/ClientTrip"
 
-// Lithuanian date formatter (YYYY-MM-DD)
 const formatDate = (dateString?: string) => {
   if (!dateString) return "Nežinoma data"
   return new Intl.DateTimeFormat("lt-LT", {
@@ -36,7 +34,6 @@ const formatPrice = (price?: number) => {
   }).format(price)
 }
 
-// Format the review date in Lithuanian format
 const formatReviewDate = (dateString: string) => {
   return new Intl.DateTimeFormat("lt-LT", {
     year: "numeric",
@@ -45,27 +42,24 @@ const formatReviewDate = (dateString: string) => {
   }).format(new Date(dateString))
 }
 
-// Status colors
 const statusColors = {
-  [TripStatus.Draft]: "#FF9800", // Orange
-  [TripStatus.Confirmed]: "#4CAF50", // Green
-  [TripStatus.Cancelled]: "#F44336", // Red
+  [TripStatus.Draft]: "#FF9800", 
+  [TripStatus.Confirmed]: "#4CAF50", 
+  [TripStatus.Cancelled]: "#F44336",
 }
 
-// Category colors - same as in TripSummaryCard
 const categoryColors = {
-  [TripCategory.Tourist]: "#42A5F5", // Blue
-  [TripCategory.Group]: "#AB47BC", // Purple
-  [TripCategory.Relax]: "#FFA726", // Orange
-  [TripCategory.Business]: "#66BB6A", // Green
-  [TripCategory.Cruise]: "#EC407A", // Pink
+  [TripCategory.Tourist]: "#42A5F5",
+  [TripCategory.Group]: "#AB47BC",
+  [TripCategory.Relax]: "#FFA726", 
+  [TripCategory.Business]: "#66BB6A", 
+  [TripCategory.Cruise]: "#EC407A", 
 }
 
-// Get color for rating badge
 const getRatingColor = (rating: number) => {
-  if (rating >= 8) return "#4CAF50" // Green for high ratings
-  if (rating >= 5) return "#FFC107" // Amber for medium ratings
-  return "#F44336" // Red for low ratings
+  if (rating >= 8) return "#4CAF50" 
+  if (rating >= 5) return "#FFC107" 
+  return "#F44336" 
 }
 
 interface ClientTripCardProps {
@@ -103,7 +97,6 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
             width: "100%",
           }}
         >
-          {/* Left side - Trip details */}
           <Box sx={{ flex: 1, pr: { xs: 0, md: 2 } }}>
             <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mr: 1 }}>
@@ -111,9 +104,7 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
               </Typography>
             </Box>
 
-            {/* Status and category badges */}
             <Box sx={{ display: "flex", mb: 2, flexWrap: "wrap", gap: 1 }}>
-              {/* Trip category */}
               {trip.category && (
                 <Chip
                   icon={<LocalOfferIcon style={{ fontSize: "0.875rem", color: "white" }} />}
@@ -130,7 +121,6 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
                 />
               )}
 
-              {/* Trip status */}
               {trip.status && (
                 <Chip
                   icon={<AccessTimeIcon style={{ fontSize: "0.875rem", color: "white" }} />}
@@ -148,9 +138,7 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
               )}
             </Box>
 
-            {/* Trip details */}
             <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-              {/* Date range */}
               <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
                 <CalendarTodayIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
                 <Typography variant="body2" color="text.secondary">
@@ -158,7 +146,6 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
                 </Typography>
               </Box>
 
-              {/* Price if available */}
               {trip.price !== undefined && (
                 <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
                   <PaymentIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
@@ -168,7 +155,6 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
                 </Box>
               )}
 
-              {/* Destination */}
               {trip.destination && (
                 <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
                   <LocationOnIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
@@ -180,23 +166,18 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
             </Box>
           </Box>
 
-          {/* Divider for medium and larger screens */}
           <Divider orientation="vertical" flexItem sx={{ mx: 3, display: { xs: "none", md: "block" } }} />
 
-          {/* Divider for mobile */}
           <Divider sx={{ my: 2, display: { xs: "block", md: "none" } }} />
 
-          {/* Right side - Trip review if available */}
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
             {trip.review ? (
               <>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2, justifyContent: "space-between" }}>
-                  {/* Changed to match trip name styling */}
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Atsiliepimas
                   </Typography>
 
-                  {/* Rating badge similar to the image */}
                   <Chip
                     icon={<StarIcon />}
                     label={`${trip.review.rating}/10`}
@@ -211,7 +192,6 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
                   />
                 </Box>
 
-                {/* Rating progress bar */}
                 <Box sx={{ mb: 2 }}>
                   <LinearProgress
                     variant="determinate"
@@ -227,13 +207,11 @@ const ClientsTripListCard: React.FC<ClientTripCardProps> = ({ trip, onClick }) =
                     }}
                   />
 
-                  {/* Review date */}
                   <Typography variant="body2" color="text.secondary" align="right">
                     {formatReviewDate(trip.review.createdAt)}
                   </Typography>
                 </Box>
 
-                {/* Review text - simplified to match the image */}
                 <Box
                   sx={{
                     backgroundColor: "rgba(0,0,0,0.03)",

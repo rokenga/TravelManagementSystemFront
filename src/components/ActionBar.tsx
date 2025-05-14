@@ -66,7 +66,6 @@ interface ActionBarProps {
 }
 
 const ActionBar: React.FC<ActionBarProps> = ({
-  title,
   backUrl,
   children,
   showBackButton = true,
@@ -102,12 +101,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
 }) => {
   const navigate = useNavigate()
   const { navigateBack, previousPath } = useNavigation()
-  const theme = useTheme()
 
-  // Use 1200px as the breakpoint as specified
   const isCompact = useMediaQuery("(max-width:1199px)")
 
-  // State for dropdown menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
@@ -131,7 +127,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
     }
   }
 
-  // Helper function to create menu items
   const getMenuItems = () => {
     const items = []
 
@@ -144,7 +139,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
       })
     }
 
-    // Secondary actions first
     if (showReviewButton) {
       if (hasReview && onViewReview) {
         items.push({
@@ -198,7 +192,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
       })
     }
 
-    // Add the reservations button right after the change status button
     if (showReservationsButton && onViewReservations) {
       items.push({
         key: "view-reservations",
@@ -244,7 +237,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
       })
     }
 
-    // Primary actions last - Edit before Delete
     if (showEditButton && onEdit) {
       items.push({
         key: "edit",
@@ -272,12 +264,10 @@ const ActionBar: React.FC<ActionBarProps> = ({
 
   const menuItems = getMenuItems()
 
-  // Render buttons for desktop view (>= 1200px)
   const renderDesktopButtons = () => {
     const buttons: MenuItem[] = []
     const primaryButtons: MenuItem[] = []
 
-    // Separate primary actions (Edit and Delete)
     menuItems.forEach((item) => {
       if (item.key === "edit" || item.key === "delete") {
         primaryButtons.push(item)
@@ -286,14 +276,12 @@ const ActionBar: React.FC<ActionBarProps> = ({
       }
     })
 
-    // Sort primary buttons to ensure Edit comes before Delete
     primaryButtons.sort((a, b) => {
       if (a.key === "edit") return -1
       if (b.key === "edit") return 1
       return 0
     })
 
-    // Render secondary action buttons
     const secondaryButtons = buttons.map((item) => (
       <Button
         key={item.key}
@@ -308,7 +296,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
       </Button>
     ))
 
-    // Render primary action buttons (Edit and Delete)
     const primaryActionButtons = primaryButtons.map((item) => (
       <Button
         key={item.key}
@@ -348,9 +335,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
         backgroundColor: "background.paper",
       }}
     >
-      {/* Left side with back button only */}
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        {/* Back button */}
         {showBackButton && (
           <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBack} sx={{ textTransform: "none" }}>
             Atgal
@@ -358,12 +343,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
         )}
       </Box>
 
-      {/* Right side - All other buttons */}
       <Box sx={{ display: "flex", gap: 1 }}>
-        {/* Secondary action buttons */}
         {!isCompact && <Box sx={{ display: "flex", gap: 1, mr: 2 }}>{renderDesktopButtons().secondaryButtons}</Box>}
 
-        {/* Primary action buttons (Edit and Delete) */}
         {!isCompact && renderDesktopButtons().primaryButtons}
 
         {isCompact && menuItems.length > 0 && (

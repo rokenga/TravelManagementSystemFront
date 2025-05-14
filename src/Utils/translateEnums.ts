@@ -20,13 +20,14 @@ export const translateReservationStatus = (status: ReservationStatus): string =>
       return "Patvirtinta"
     case ReservationStatus.Cancelled:
       return "Atšaukta"
+    case ReservationStatus.PendingReassignment:
+      return "Laukia perleidimo"
     default:
       return String(status)
   }
 }
 
 export const translatePartnerType = (type: PartnerType | string): string => {
-  // Handle if the type comes as a string
   if (typeof type === "string") {
     switch (type) {
       case "HotelSystem":
@@ -43,8 +44,6 @@ export const translatePartnerType = (type: PartnerType | string): string => {
         return "Nežinomas"
     }
   }
-  
-  // Handle if the type comes as an enum value
   switch (type) {
     case PartnerType.HotelSystem:
       return "Viešbučių sistema"

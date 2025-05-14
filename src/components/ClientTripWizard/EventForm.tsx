@@ -29,7 +29,6 @@ interface EventCardProps {
   onImageChange?: (files: File[]) => void
 }
 
-// Enums
 enum TransportType {
   Flight = "Flight",
   Train = "Train",
@@ -46,7 +45,6 @@ enum BoardBasisType {
   UltraAllInclusive = "UltraAllInclusive",
 }
 
-// Mapping for display names
 const boardBasisLabels: Record<BoardBasisType, string> = {
   [BoardBasisType.BedAndBreakfast]: "Pusryčiai įskaičiuoti",
   [BoardBasisType.HalfBoard]: "Pusryčiai ir vakarienė",
@@ -63,8 +61,6 @@ const transportTypes = [
   { value: TransportType.Ferry, label: "Keltas", icon: <Sailing fontSize="small" /> },
 ]
 
-// This component enforces that the datetime is within the day range for day-by-day mode
-// and within the overall trip bounds
 const LockedDateTimePicker: React.FC<{
   field: string
   label: string
@@ -78,17 +74,13 @@ const LockedDateTimePicker: React.FC<{
   const parseVal = (v: string) => (v ? dayjs(v) : null)
   const currentValue = parseVal(value)
 
-  // Calculate min and max date constraints
   let minDate = tripStart.startOf("day")
-  // Use end of day for the trip end to include the full last day
   let maxDate = tripEnd.endOf("day")
 
-  // If in day-by-day mode, restrict to the specific day
   if (dayByDay && dayDate) {
     const dayStart = dayjs(dayDate).startOf("day")
     const dayEnd = dayjs(dayDate).endOf("day")
 
-    // Only restrict to the day if it's within the trip range
     if (dayStart.isAfter(tripStart) || dayStart.isSame(tripStart, "day")) {
       minDate = dayStart
     }
@@ -114,7 +106,6 @@ const LockedDateTimePicker: React.FC<{
   )
 }
 
-// This picker allows dates within the trip range, but not limited to a specific day
 const FreeDateTimePicker: React.FC<{
   field: string
   label: string
@@ -122,12 +113,11 @@ const FreeDateTimePicker: React.FC<{
   tripStart: Dayjs
   tripEnd: Dayjs
   onChangeField: (field: string, newVal: string) => void
-  minDate?: Dayjs | null // Optional override for minimum date
+  minDate?: Dayjs | null 
 }> = ({ field, label, value, tripStart, tripEnd, onChangeField, minDate }) => {
   const parseVal = (v: string) => (v ? dayjs(v) : null)
   const currentValue = parseVal(value)
 
-  // Use either the provided minDate or the trip start
   const effectiveMinDate = minDate || tripStart
 
   const handleChange = (newVal: Dayjs | null) => {
@@ -141,13 +131,11 @@ const FreeDateTimePicker: React.FC<{
       onChange={handleChange}
       showTime={true}
       minDate={effectiveMinDate}
-      // Use end of day for the trip end to include the full last day
       maxDate={tripEnd.endOf("day")}
     />
   )
 }
 
-// Helper function to get transport type icon
 const getTransportTypeIcon = (type: string) => {
   switch (type) {
     case "Flight":
@@ -165,7 +153,6 @@ const getTransportTypeIcon = (type: string) => {
   }
 }
 
-// Helper function to get departure/arrival icons
 const getDepartureIcon = (type: string, isArrival = false) => {
   switch (type) {
     case "Flight":
@@ -191,9 +178,7 @@ const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const theme = useTheme()
 
-  // For a "transport" event
   if (event.type === "transport") {
-    // Calculate departure time as dayjs object for use as min date
     const departureTime = event.departureTime ? dayjs(event.departureTime) : null
 
     return (
@@ -322,9 +307,7 @@ const EventCard: React.FC<EventCardProps> = ({
     )
   }
 
-  // For an "accommodation" event
   if (event.type === "accommodation") {
-    // Calculate check-in time as dayjs object for use as min date for checkout
     const checkInTime = event.checkIn ? dayjs(event.checkIn) : null
 
     return (
@@ -445,7 +428,6 @@ const EventCard: React.FC<EventCardProps> = ({
     )
   }
 
-  // For an "activity" event
   if (event.type === "activity") {
     return (
       <Box>
@@ -479,9 +461,7 @@ const EventCard: React.FC<EventCardProps> = ({
     )
   }
 
-  // For a "cruise" event - updated with same fields as transport plus cabinType
   if (event.type === "cruise") {
-    // Calculate departure time as dayjs object for use as min date
     const departureTime = event.departureTime ? dayjs(event.departureTime) : null
 
     return (

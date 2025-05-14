@@ -62,7 +62,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images, interval = 5000, heig
 
   return (
     <Box sx={{ position: "relative" }}>
-      {/* Main image slider */}
       <Box
         sx={{
           position: "relative",
@@ -92,7 +91,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images, interval = 5000, heig
           />
         ))}
 
-        {/* Navigation arrows */}
         <IconButton
           sx={{
             position: "absolute",
@@ -130,7 +128,6 @@ const ImageSlider: React.FC<ImageSliderProps> = ({ images, interval = 5000, heig
         </IconButton>
       </Box>
 
-      {/* Thumbnails */}
       <Box
         sx={{
           display: "flex",

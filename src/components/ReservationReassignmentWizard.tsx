@@ -48,30 +48,25 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
   onClose,
   reservationId,
 }) => {
-  // Stepper state
   const [activeStep, setActiveStep] = useState(0)
   const steps = ["Pasirinkite agentą", "Patvirtinkite veiksmą"]
 
-  // Form state
   const [availableAgents, setAvailableAgents] = useState<AgentResponse[]>([])
   const [selectedAgentId, setSelectedAgentId] = useState<string>("")
   const [loadingAgents, setLoadingAgents] = useState(false)
 
-  // UI state
   const [loading, setLoading] = useState(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch available agents when the dialog opens
   useEffect(() => {
     if (open) {
       fetchAvailableAgents()
     }
   }, [open])
 
-  // Reset state when the popup opens
   useEffect(() => {
     if (open) {
       setActiveStep(0)
@@ -90,14 +85,12 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
       })
       setAvailableAgents(response.data)
     } catch (err) {
-      console.error("Failed to fetch available agents:", err)
       setError("Nepavyko gauti agentų sąrašo. Bandykite dar kartą vėliau.")
     } finally {
       setLoadingAgents(false)
     }
   }
 
-  // Handle step change
   const handleNext = () => {
     if (activeStep === 0 && !selectedAgentId) {
       setSnackbarMessage("Prašome pasirinkti agentą")
@@ -112,12 +105,10 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
     setActiveStep((prevStep) => prevStep - 1)
   }
 
-  // Handle agent selection
   const handleAgentSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedAgentId(event.target.value)
   }
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (!selectedAgentId) {
       setSnackbarMessage("Prašome pasirinkti agentą")
@@ -144,23 +135,17 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Close after a short delay to show the success message
       setTimeout(() => {
         onClose()
-        // Refresh the page to reflect changes
         window.location.reload()
       }, 1500)
     } catch (error: any) {
-      console.error("Failed to reassign reservation:", error)
-      // Handle different error response formats
       let errorMessage = "Nepavyko perduoti rezervacijos"
 
       if (error.response?.data) {
-        // If the error data is an object with a Message property
         if (typeof error.response.data === "object" && error.response.data.Message) {
           errorMessage = error.response.data.Message
         }
-        // If the error data is a string
         else if (typeof error.response.data === "string") {
           errorMessage = error.response.data
         }
@@ -174,7 +159,6 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
     }
   }
 
-  // Get selected agent details for confirmation page
   const getSelectedAgentDetails = () => {
     return availableAgents.find((agent) => agent.id === selectedAgentId)
   }
@@ -295,7 +279,6 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           {activeStep === 0 ? (
-            // Center the "Toliau" button in the first step
             <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
               <Button
                 variant="contained"
@@ -306,7 +289,6 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
               </Button>
             </Box>
           ) : (
-            // Show Back and Confirm buttons in the second step
             <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
               <Button onClick={handleBack} disabled={loading} variant="outlined">
                 Atgal
@@ -325,7 +307,6 @@ const ReservationReassignmentWizard: React.FC<ReservationReassignmentWizardProps
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbarOpen}
         message={snackbarMessage}

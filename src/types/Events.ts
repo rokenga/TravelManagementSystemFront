@@ -1,14 +1,11 @@
-// Types for different event types in the trip
 
 import type { TransportType, BoardBasisType } from "./Enums"
 
-// Base interface for all events
 export interface BaseEvent {
   id?: string
   description?: string
 }
 
-// Transport event
 export interface TransportEvent extends BaseEvent {
   type: "transport" | "cruise"
   transportType: TransportType
@@ -22,7 +19,6 @@ export interface TransportEvent extends BaseEvent {
   cabinType?: string
 }
 
-// Accommodation event
 export interface AccommodationEvent extends BaseEvent {
   type: "accommodation"
   hotelName?: string
@@ -33,22 +29,18 @@ export interface AccommodationEvent extends BaseEvent {
   roomType?: string
 }
 
-// Activity event
 export interface ActivityEvent extends BaseEvent {
   type: "activity"
   activityTime?: string
 }
 
-// Image event
 export interface ImageEvent extends BaseEvent {
   type: "images"
   description?: string
 }
 
-// Union type for all event types
 export type TripEvent = TransportEvent | AccommodationEvent | ActivityEvent | ImageEvent
 
-// Type guard functions
 export function isTransportEvent(event: TripEvent): event is TransportEvent {
   return event.type === "transport" || event.type === "cruise"
 }

@@ -10,11 +10,9 @@ import { API_URL } from "../../Utils/Configuration"
 import ConfirmationDialog from "../ConfirmationDialog"
 import CustomSnackbar from "../CustomSnackBar"
 
-// Import types
 import type { Client, TripFormData, ItineraryDay } from "../../types"
 import type { Country } from "../DestinationAutocomplete"
 
-// Import components
 import BasicTripInfo from "./trip-info/BasicTripInfo"
 import TripDetails from "./trip-info/TripDetails"
 import ItineraryOptions from "./trip-info/ItineraryOptions"
@@ -27,7 +25,6 @@ interface Step1Props {
   onDataChange?: (hasData: boolean) => void
 }
 
-// Add a global variable to store the current form data
 let currentFormData: TripFormData = {
   tripName: "",
   clientId: "",
@@ -43,20 +40,16 @@ let currentFormData: TripFormData = {
   dayByDayItineraryNeeded: false,
   itineraryTitle: "",
   itineraryDescription: "",
-  destination: null, // Add destination field
+  destination: null, 
 }
 
-// Export a function to get the current form data
 export function getCurrentFormData(): TripFormData {
-  console.log("Getting current form data:", currentFormData)
   return { ...currentFormData }
 }
 
-// Helper function to convert string destination to Country object
 const stringToCountry = (destination?: string): Country | null => {
   if (!destination) return null
 
-  // Find the country in the full list to get complete data
   const matchingCountry = fullCountriesList.find((country) => country.name.toLowerCase() === destination.toLowerCase())
 
   if (matchingCountry) {
@@ -66,7 +59,6 @@ const stringToCountry = (destination?: string): Country | null => {
     }
   }
 
-  // Fallback if not found in the list
   return {
     name: destination,
     code: "",
@@ -74,12 +66,9 @@ const stringToCountry = (destination?: string): Country | null => {
 }
 
 const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, onSubmit, onDataChange }) => {
-  // Store the selected client ID in a ref to ensure it's not lost
   const selectedClientIdRef = useRef<string>(initialData?.clientId || "")
 
-  // Convert string destination to Country object for the Autocomplete
   const initialDestination = initialData.destination ? stringToCountry(initialData.destination) : null
-  console.log("Initial destination:", initialData.destination, "Converted to:", initialDestination)
 
   const [formData, setFormData] = useState<TripFormData>({
     tripName: initialData?.tripName || "",
@@ -96,15 +85,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     dayByDayItineraryNeeded: initialData?.dayByDayItineraryNeeded || false,
     itineraryTitle: initialData?.itineraryTitle || "",
     itineraryDescription: initialData?.itineraryDescription || "",
-    destination: initialData?.destination || null, // Initialize destination
+    destination: initialData?.destination || null, 
   })
 
-  // Update the global currentFormData whenever formData changes
   useEffect(() => {
     currentFormData = { ...formData }
-    console.log("Updated current form data:", currentFormData)
 
-    // Check if any data has been entered
     const hasData =
       formData.tripName?.trim() !== "" ||
       formData.clientId?.trim() !== "" ||
@@ -116,14 +102,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       formData.childrenCount !== null ||
       formData.price !== 0 ||
       formData.dayByDayItineraryNeeded !== false ||
-      formData.destination !== null // Include destination in check
+      formData.destination !== null 
 
-    // Notify parent component
     if (onDataChange) {
       onDataChange(hasData)
     }
 
-    // Also dispatch a custom event for components that can't receive props
     const event = new CustomEvent("step1DataChanged", { detail: { hasData } })
     window.dispatchEvent(event)
   }, [formData, onDataChange])
@@ -143,17 +127,13 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
-  // Store the pending checkbox state
   const [pendingDayByDayState, setPendingDayByDayState] = useState<boolean | null>(null)
 
-  // Check if we're in edit mode by looking at the URL
   const isEditMode = window.location.pathname.includes("/edit")
 
-  // Initialize the ref with the initial client ID
   useEffect(() => {
     if (initialData?.clientId) {
       selectedClientIdRef.current = initialData.clientId
-      console.log("Initialized clientIdRef with:", selectedClientIdRef.current)
     }
   }, [initialData])
 
@@ -161,14 +141,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     fetchClients()
   }, [])
 
-  // Initialize from URL params if available
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const clientIdParam = urlParams.get("clientId")
     const clientNameParam = urlParams.get("clientName")
 
     if (clientIdParam && clientNameParam) {
-      console.log("Setting client from URL params:", clientIdParam, clientNameParam)
       setFormData((prev) => ({
         ...prev,
         clientId: clientIdParam,
@@ -177,8 +155,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       selectedClientIdRef.current = clientIdParam
       initializeSelectedClient(clientIdParam)
     } else if (initialData?.clientId) {
-      // If no URL params but we have initialData, use that
-      console.log("Setting client from initialData:", initialData.clientId, initialData.clientName)
       selectedClientIdRef.current = initialData.clientId
       initializeSelectedClient(initialData.clientId)
     }
@@ -197,11 +173,9 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     }
   }, [startDate, endDate])
 
-  // Initialize the destination when initialData changes
   useEffect(() => {
     if (initialData.destination) {
       const country = stringToCountry(initialData.destination)
-      console.log("Setting destination from initialData:", initialData.destination, "Converted to:", country)
       setDestination(country)
       setFormData((prev) => ({
         ...prev,
@@ -217,7 +191,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       })
       setClients(response.data)
 
-      // If we have a clientId, try to select it
       if (selectedClientIdRef.current) {
         initializeSelectedClient(selectedClientIdRef.current)
       }
@@ -227,12 +200,8 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   }
 
   async function initializeSelectedClient(clientId: string) {
-    console.log("Initializing selected client with ID:", clientId)
-
-    // If we already have the list of clients, see if we can find one matching
     const found = clients.find((c) => c.id === clientId)
     if (found) {
-      console.log("Found client in existing list:", found)
       setSelectedClient(found)
       setFormData((prev) => ({
         ...prev,
@@ -242,13 +211,11 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       return
     }
 
-    // Otherwise try a direct fetch
     try {
       const response = await axios.get<Client>(`${API_URL}/Client/${clientId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       })
       if (response.data) {
-        console.log("Fetched client directly:", response.data)
         setSelectedClient(response.data)
         setFormData((prev) => ({
           ...prev,
@@ -262,17 +229,12 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   }
 
   function handleInputChange(name: string, value: any) {
-    console.log(`Setting ${name} to:`, value, "Type:", typeof value)
-
-    // Special handling for clientId to ensure it's also updated in the ref
     if (name === "clientId") {
       selectedClientIdRef.current = value
     }
 
-    // Update form state
     setFormData((prev) => ({ ...prev, [name]: value }))
 
-    // Notify parent component directly about changes
     if (onDataChange) {
       onDataChange(true)
     }
@@ -281,25 +243,19 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   function handleClientChange(newValue: Client | null) {
     setSelectedClient(newValue || null)
 
-    // Explicitly convert to string and ensure it's not undefined
     const clientIdValue = newValue && newValue.id ? String(newValue.id) : ""
-    console.log("Setting client ID:", clientIdValue, "Type:", typeof clientIdValue)
 
-    // Update both the form state and the ref
     selectedClientIdRef.current = clientIdValue
 
     handleInputChange("clientId", clientIdValue)
     handleInputChange("clientName", newValue ? `${newValue.name} ${newValue.surname}` : null)
 
-    // Notify parent component directly about changes
     if (onDataChange) {
       onDataChange(true)
     }
   }
 
-  // Handle destination change
   function handleDestinationChange(newValue: Country | null) {
-    console.log("Setting destination to:", newValue)
     setDestination(newValue)
     handleInputChange("destination", newValue?.name || null)
   }
@@ -317,7 +273,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       setSnackbarOpen(true)
     }
 
-    // Notify parent component directly about changes
     if (onDataChange) {
       onDataChange(true)
     }
@@ -336,7 +291,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       setSnackbarOpen(true)
     }
 
-    // Notify parent component directly about changes
     if (onDataChange) {
       onDataChange(true)
     }
@@ -348,36 +302,19 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       return
     }
 
-    // Build new itinerary (or merge) if needed
     const newStart = startDate ? startDate.format("YYYY-MM-DD") : null
     const newEnd = endDate ? endDate.format("YYYY-MM-DD") : null
     const newDayByDay = formData.dayByDayItineraryNeeded
 
-    // Check if only the dates have changed (not the day-by-day setting)
     const onlyDatesChanged =
       ((newStart !== initialData.startDate && initialData.startDate !== null) ||
         (newEnd !== initialData.endDate && initialData.endDate !== null)) &&
       newDayByDay === initialData.dayByDayItineraryNeeded
 
-    // Add debug logging
-    console.log("Submit check:", {
-      newStart,
-      initialStart: initialData.startDate,
-      newEnd,
-      initialEnd: initialData.endDate,
-      newDayByDay,
-      initialDayByDay: initialData.dayByDayItineraryNeeded,
-      onlyDatesChanged,
-    })
-
-    // Only check for events outside range if only the dates have changed
     if (onlyDatesChanged) {
-      // Check if any events would be lost due to date changes
       const eventsOutsideRange = checkEventsOutsideRange(currentItinerary, newStart, newEnd, newDayByDay)
-      console.log("Events outside range:", eventsOutsideRange)
 
       if (eventsOutsideRange.length > 0) {
-        // Show warning dialog about events that would be lost
         setWarningDialogType("dateChange")
         setEventsOutsideRange(eventsOutsideRange)
         setShowWarningDialog(true)
@@ -385,7 +322,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       }
     }
 
-    // If no events would be lost or user confirmed, proceed
     proceedWithSubmit(newStart, newEnd, newDayByDay)
   }
 
@@ -401,19 +337,9 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     const endDate = new Date(newEnd)
     const eventsOutsideRange: any[] = []
 
-    console.log("Checking events outside range:", {
-      itinerary,
-      newStart,
-      newEnd,
-      isDayByDay,
-      startDate,
-      endDate,
-    })
-
     itinerary.forEach((day) => {
       const dayDate = new Date(day.dayLabel)
 
-      // For day-by-day itinerary, check if the day is outside the new range
       if (isDayByDay) {
         if (dayDate < startDate || dayDate > endDate) {
           if (day.events.length > 0) {
@@ -424,12 +350,10 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           }
         }
       }
-      // For non-day-by-day itinerary, check individual events
       else {
         day.events.forEach((event: any) => {
           let eventDate: Date | null = null
 
-          // Get the relevant date from the event based on its type
           if (event.type === "transport" || event.type === "cruise") {
             eventDate = event.departureTime ? new Date(event.departureTime) : null
           } else if (event.type === "accommodation") {
@@ -454,12 +378,9 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   function proceedWithSubmit(newStart: string | null, newEnd: string | null, newDayByDay: boolean) {
     let updatedItinerary = [...currentItinerary]
 
-    // If dayByDay is true, build or merge the date range
     if (newDayByDay && newStart && newEnd) {
       updatedItinerary = rebuildDateRangeWithEvents(currentItinerary, newStart, newEnd)
     } else if (!newDayByDay) {
-      // Single-day approach
-      // Flatten or store events in a single array
       const allEvents = flattenAllEvents(currentItinerary)
       updatedItinerary = [
         {
@@ -470,20 +391,15 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       ]
     }
 
-    // Use the client ID from the ref to ensure it's not lost
     const clientId = selectedClientIdRef.current
-    console.log("Using clientId from ref:", clientId)
 
     const dataToSubmit = {
       ...formData,
       clientId: clientId,
       startDate: newStart,
       endDate: newEnd,
-      destination: formData.destination, // Ensure destination is included
+      destination: formData.destination, 
     }
-
-    console.log("Submitting from Step1, clientId:", dataToSubmit.clientId, "Type:", typeof dataToSubmit.clientId)
-    console.log("Full form data being submitted:", dataToSubmit)
 
     onSubmit(dataToSubmit, updatedItinerary)
   }
@@ -492,23 +408,13 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     const newCheckedState = e.target.checked
     const hasEvents = currentItinerary.some((d: any) => d.events?.length > 0)
 
-    console.log("Day by day change triggered", {
-      checked: newCheckedState,
-      hasEvents,
-      currentItinerary,
-    })
-
-    // If there are events and we're changing the state, show a confirmation dialog
     if (hasEvents) {
-      // Store the pending state that the user wants to change to
       setPendingDayByDayState(newCheckedState)
       setWarningDialogType("dayByDay")
       setShowWarningDialog(true)
     } else {
-      // If no events, directly update the state
       handleInputChange("dayByDayItineraryNeeded", newCheckedState)
 
-      // If unchecking, clear the itinerary title and description
       if (!newCheckedState) {
         handleInputChange("itineraryTitle", "")
         handleInputChange("itineraryDescription", "")
@@ -518,21 +424,17 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
 
   function handleConfirmChange() {
     if (warningDialogType === "dayByDay") {
-      // If user confirms, apply the pending state change
       if (pendingDayByDayState !== null) {
         handleInputChange("dayByDayItineraryNeeded", pendingDayByDayState)
 
-        // If unchecking, clear the itinerary title and description
         if (pendingDayByDayState === false) {
           handleInputChange("itineraryTitle", "")
           handleInputChange("itineraryDescription", "")
         }
 
-        // Reset the pending state
         setPendingDayByDayState(null)
       }
     } else if (warningDialogType === "dateChange") {
-      // If user confirms date change, proceed with submission
       const newStart = startDate ? startDate.format("YYYY-MM-DD") : null
       const newEnd = endDate ? endDate.format("YYYY-MM-DD") : null
       const newDayByDay = formData.dayByDayItineraryNeeded
@@ -544,17 +446,11 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   }
 
   function handleCancelChange() {
-    // Reset the pending state without applying it
     setPendingDayByDayState(null)
     setShowWarningDialog(false)
   }
 
-  /**
-   * Rebuild a day-by-day itinerary from a new start/end date,
-   * merging existing events if the dayLabel matches.
-   */
   function rebuildDateRangeWithEvents(oldDays: any[], newStartStr: string, newEndStr: string) {
-    // step 1: build array of all days from newStart to newEnd
     const newDays: any[] = []
     const start = dayjs(newStartStr)
     const end = dayjs(newEndStr)
@@ -567,8 +463,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
       })
       current = current.add(1, "day")
     }
-
-    // step 2: try to merge from oldDays
     oldDays.forEach((oldDay) => {
       const found = newDays.find((d) => d.dayLabel === oldDay.dayLabel)
       if (found) {
@@ -580,9 +474,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
     return newDays
   }
 
-  /**
-   * Flatten all events from multiple day arrays into one big array
-   */
   function flattenAllEvents(days: any[]) {
     let all: any[] = []
     days.forEach((d) => {
@@ -598,7 +489,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
   return (
     <form onSubmit={handleSubmit}>
       <Grid container spacing={3}>
-        {/* Basic Trip Info Section */}
         <Grid item xs={12}>
           <Typography variant="h6" gutterBottom>
             Pagrindinė informacija
@@ -619,7 +509,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           onDestinationChange={handleDestinationChange}
         />
 
-        {/* Trip Details Section */}
         <Grid item xs={12}>
           <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
             Kelionės detalės
@@ -640,7 +529,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           onEndDateChange={handleEndDateChange}
         />
 
-        {/* Itinerary Options Section */}
         <ItineraryOptions
           isMultipleDays={isMultipleDays}
           dayByDayItineraryNeeded={formData.dayByDayItineraryNeeded}
@@ -650,7 +538,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
           onInputChange={handleInputChange}
         />
 
-        {/* Submit Button */}
         <Grid item xs={12}>
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
             <Button
@@ -668,7 +555,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
         </Grid>
       </Grid>
 
-      {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={showWarningDialog}
         title={warningDialogType === "dayByDay" ? "Dėmesio" : "Įspėjimas dėl datų keitimo"}
@@ -683,7 +569,6 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
         onCancel={handleCancelChange}
       />
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbarOpen}
         message={snackbarMessage}

@@ -7,8 +7,6 @@ import EditPublicOfferWizardForm from "../components/PublicOfferWizard/EditPubli
 export default function EditPublicOfferWizardPage() {
   const { tripId } = useParams<{ tripId: string }>()
 
-  console.log("Trip ID from params:", tripId) // Add this for debugging
-
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>

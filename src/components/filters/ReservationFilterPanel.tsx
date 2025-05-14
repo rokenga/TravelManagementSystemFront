@@ -29,7 +29,6 @@ interface ReservationFilterPanelProps {
   initialFilters: ReservationFilters
 }
 
-// Default empty filters
 export const defaultReservationFilters: ReservationFilters = {
   statuses: [],
 }
@@ -43,10 +42,8 @@ const ReservationFilterPanel: React.FC<ReservationFilterPanelProps> = ({
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  // Initialize state with initialFilters
   const [selectedStatuses, setSelectedStatuses] = useState<ReservationStatus[]>(initialFilters.statuses || [])
 
-  // Update local state when initialFilters change
   useEffect(() => {
     setSelectedStatuses(initialFilters.statuses || [])
   }, [initialFilters])

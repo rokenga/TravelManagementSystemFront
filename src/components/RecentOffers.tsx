@@ -36,10 +36,8 @@ const RecentOffers: React.FC = () => {
     const fetchRecentOffers = async () => {
       try {
         setLoading(true)
-        // Use the non-paginated endpoint to get all offers
         const response = await axios.get(`${API_URL}/PublicTripOfferFacade`)
 
-        // Sort by creation date (newest first) and take the first 3
         const sortedOffers = response.data
           .sort((a: TripResponse, b: TripResponse) => {
             return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
@@ -48,7 +46,6 @@ const RecentOffers: React.FC = () => {
 
         setOffers(sortedOffers)
       } catch (error) {
-        console.error("Failed to fetch recent offers:", error)
       } finally {
         setLoading(false)
       }

@@ -37,7 +37,6 @@ export interface CreateTripRequest {
   price?: number
   dayByDayItineraryNeeded?: boolean
 
-  // The final itinerary structure
   itinerary?: {
     title?: string
     description?: string
@@ -80,7 +79,6 @@ export interface TripResponse {
   agentLastName?: string
 }
 
-/** ======= Pagination & Filtering Types ======= **/
 
 export interface TripQueryParams {
   pageNumber: number
@@ -94,7 +92,6 @@ export interface TripQueryParams {
   endDate?: string
   priceMin?: number
   priceMax?: number
-  // Add these new fields for array support
   categories?: TripCategory[]
   statuses?: TripStatus[]
 }

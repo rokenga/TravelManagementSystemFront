@@ -5,10 +5,8 @@ import { useEffect, useState } from "react"
 import { Grid, Typography, Button, Paper, Box, Divider, Badge, IconButton } from "@mui/material"
 import { Warning as WarningIcon } from "@mui/icons-material"
 
-// Import types
 import type { TripFormData, ItineraryDay, ValidationWarning } from "../../types"
 
-// Import components
 import TripInfoCard from "./review/TripInfoCard"
 import ItineraryInfoCard from "./review/ItineraryInfoCard"
 import SingleDayPreview from "./review/SingleDayPreview"
@@ -26,10 +24,8 @@ interface Step3Props {
   isSaving?: boolean
   hideHighlighting?: boolean
   onHideHighlightingChange?: (hide: boolean) => void
-  // Add props for images
   stepImages?: { [key: number]: File[] }
   existingStepImages?: { [key: number]: Array<{ id: string; url: string; urlInline?: string }> }
-  // Add props for existing files
   existingTripImages?: Array<{ id: string; url: string; fileName?: string }>
   existingTripDocuments?: Array<{ id: string; url: string; fileName: string }>
 }
@@ -51,16 +47,12 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
 }) => {
   const dayByDay = tripData.dayByDayItineraryNeeded
 
-  // Process itinerary to include image data
   const processedItinerary = itinerary.map((day, index) => {
-    // Find image events in this day
     const imageEvents = day.events.filter((event) => event.type === "images")
 
-    // If there are image events, add image data to them
     if (imageEvents.length > 0) {
       const updatedEvents = day.events.map((event) => {
         if (event.type === "images") {
-          // Create URLs for new images
           const newImageUrls = stepImages[index]
             ? Array.from(stepImages[index]).map((file) => ({
                 url: URL.createObjectURL(file),
@@ -68,7 +60,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
               }))
             : []
 
-          // Get existing image URLs
           const existingImageUrls = existingStepImages[index]
             ? existingStepImages[index].map((img) => ({
                 id: img.id,
@@ -77,7 +68,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
               }))
             : []
 
-          // Combine both types of images
           return {
             ...event,
             images: [...newImageUrls, ...existingImageUrls],
@@ -95,7 +85,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
     return day
   })
 
-  // Skip empty days
   const nonEmptyDays = processedItinerary
     .map((day, i) => ({
       ...day,
@@ -103,35 +92,26 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
     }))
     .filter((day) => day.events.length > 0 || (day.dayDescription && day.dayDescription.trim() !== ""))
 
-  // Only show itinerary info if title or description exists
   const showItineraryInfo = tripData.itineraryTitle || tripData.itineraryDescription
 
-  // State for validation warnings dialog
   const [warningsDialogOpen, setWarningsDialogOpen] = useState(false)
 
-  // Add local state to track highlighting
   const [localHideHighlighting, setLocalHideHighlighting] = useState(hideHighlighting)
 
-  // Update local state when props change
   useEffect(() => {
     setLocalHideHighlighting(hideHighlighting)
   }, [hideHighlighting])
 
-  // Handle hide highlighting change
   const handleHideHighlightingChange = (hide: boolean) => {
     setLocalHideHighlighting(hide)
     onHideHighlightingChange(hide)
   }
 
-  // Generate synthetic warnings if none exist but fields are highlighted
   const [syntheticWarnings, setSyntheticWarnings] = useState<ValidationWarning[]>([])
 
-  // Use useEffect to generate synthetic warnings based on missing fields
   useEffect(() => {
     const warnings: ValidationWarning[] = []
 
-    // Always generate warnings regardless of hideHighlighting
-    // This ensures the button remains visible even when highlighting is turned off
     if (!validationWarnings || validationWarnings.length === 0) {
       if (!tripData.tripName || tripData.tripName.trim() === "") {
         warnings.push({
@@ -167,7 +147,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
     }
   }, [tripData, validationWarnings])
 
-  // Combine actual warnings with synthetic ones
   const allWarnings = [...(validationWarnings || []), ...syntheticWarnings]
   const hasWarnings = allWarnings.length > 0
 
@@ -175,7 +154,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", mb: 2 }}>
-          {/* Always show the button if there are warnings, regardless of hideHighlighting */}
           {hasWarnings && (
             <Badge badgeContent={allWarnings.length} color="warning" sx={{ mr: 2 }}>
               <IconButton
@@ -196,10 +174,8 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         </Box>
       </Grid>
 
-      {/* Trip info */}
       <TripInfoCard tripData={tripData} hideHighlighting={localHideHighlighting} />
 
-      {/* Trip media (images and documents) - No props needed, it will fetch data internally */}
       <TripMediaCard
         existingStepImages={existingStepImages}
         tripImages={tripData.images || []}
@@ -208,7 +184,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         existingTripDocuments={existingTripDocuments}
       />
 
-      {/* Itinerary info - Only shown if title or description exists */}
       <ItineraryInfoCard
         itineraryTitle={tripData.itineraryTitle}
         itineraryDescription={tripData.itineraryDescription}
@@ -216,7 +191,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         hideHighlighting={localHideHighlighting}
       />
 
-      {/* Itinerary preview */}
       <Grid item xs={12}>
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
           <Typography
@@ -252,7 +226,6 @@ const Step3ReviewConfirm: React.FC<Step3Props> = ({
         </Button>
       </Grid>
 
-      {/* Validation Warnings Dialog */}
       <ValidationWarningsDialog
         open={warningsDialogOpen}
         onClose={() => setWarningsDialogOpen(false)}

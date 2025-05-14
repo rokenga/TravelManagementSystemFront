@@ -64,7 +64,6 @@ const PartnerDetailsPage: React.FC = () => {
 
   const token = localStorage.getItem("accessToken")
 
-  // Use useCallback to create a memoized fetchPartner function
   const fetchPartner = useCallback(async () => {
     if (!partnerId) return
 
@@ -77,10 +76,8 @@ const PartnerDetailsPage: React.FC = () => {
       })
       setPartner(response.data)
 
-      // Check if the current user can edit this partner
       setCanEdit(response.data.createdBy === user?.email)
     } catch (err: any) {
-      console.error("Failed to fetch partner:", err)
       setError(err.response?.data?.message || "Nepavyko gauti partnerio informacijos.")
     } finally {
       setLoading(false)
@@ -120,14 +117,11 @@ const PartnerDetailsPage: React.FC = () => {
 
       setShowDeleteDialog(false)
 
-      // Navigate back to partner list after a short delay
       setTimeout(() => {
         navigate("/partner-list")
       }, 1500)
     } catch (err: any) {
-      console.error("Failed to delete partner:", err)
 
-      // Handle unauthorized error
       if (err.response?.status === 401) {
         setSnackbar({
           open: true,
@@ -148,20 +142,15 @@ const PartnerDetailsPage: React.FC = () => {
   }
 
   const handleEditSuccess = (updatedPartner: PartnerResponse) => {
-    console.log("Edit success called with:", updatedPartner)
 
-    // Immediately update the partner state with the new data
     setPartner(updatedPartner)
 
-    // Show success message in the snackbar
     setSnackbar({
       open: true,
       message: "Partneris sėkmingai atnaujintas!",
       severity: "success",
     })
 
-    // Refresh the partner data from the server to ensure we have the latest data
-    // Use a slightly longer delay to ensure the API has time to update
     setTimeout(() => {
       fetchPartner()
     }, 500)
@@ -175,17 +164,13 @@ const PartnerDetailsPage: React.FC = () => {
     setSnackbar({ ...snackbar, open: false })
   }
 
-  // Function to get the location string for the map - just return the city if available
   const getMapAddress = () => {
     if (!partner) return ""
 
-    // Prioritize just the city for better geocoding results
     if (partner.city) return partner.city
 
-    // Fall back to country if no city
     if (partner.country) return partner.country
 
-    // If we have both region and country
     if (partner.region) {
       return partner.region
     }
@@ -193,14 +178,11 @@ const PartnerDetailsPage: React.FC = () => {
     return ""
   }
 
-  // Check if we have enough location data to show a map
   const hasLocationData = partner && (partner.city || partner.country || partner.region)
 
-  // Function to get the type color
   const getTypeColor = () => {
     if (!partner) return partnerTypeColors[4] // Default to Other
 
-    // If type is a string (from API), convert to number
     if (typeof partner.type === "string") {
       const typeMap: Record<string, number> = {
         HotelSystem: 0,
@@ -213,14 +195,11 @@ const PartnerDetailsPage: React.FC = () => {
       return partnerTypeColors[typeNumber]
     }
 
-    // If type is already a number
     return partnerTypeColors[partner.type] || partnerTypeColors[4] // Default to Other color
   }
 
-  // Check if contact information exists
   const hasContactInfo = partner && (partner.email || partner.phone || partner.websiteUrl || partner.facebook)
 
-  // Check if additional information exists
   const hasAdditionalInfo = partner && (partner.loginInfo || partner.notes)
 
   if (loading) {
@@ -272,15 +251,12 @@ const PartnerDetailsPage: React.FC = () => {
         onDelete={handleDelete}
       />
 
-      {/* Main content */}
       <Grid container spacing={3}>
-        {/* Left column - Partner info */}
         <Grid item xs={12} md={4}>
-          {/* Partner profile card - SMALLER VERSION */}
           <Card sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
             <Box
               sx={{
-                height: 80, // Reduced height
+                height: 80,
                 bgcolor: getTypeColor(),
                 opacity: 0.8,
               }}
@@ -292,7 +268,7 @@ const PartnerDetailsPage: React.FC = () => {
                     src={partner.logoUrl}
                     alt={`${partner.name} logo`}
                     sx={{
-                      width: 80, // Smaller avatar
+                      width: 80, 
                       height: 80,
                       border: "4px solid white",
                       boxShadow: 2,
@@ -301,13 +277,13 @@ const PartnerDetailsPage: React.FC = () => {
                 ) : (
                   <Avatar
                     sx={{
-                      width: 80, // Smaller avatar
+                      width: 80, 
                       height: 80,
                       bgcolor: "#f0f0f0",
                       color: "#757575",
                       border: "4px solid white",
                       boxShadow: 2,
-                      fontSize: 32, // Smaller font
+                      fontSize: 32, 
                     }}
                   >
                     {partner.name?.substring(0, 2).toUpperCase() || "?"}
@@ -331,11 +307,9 @@ const PartnerDetailsPage: React.FC = () => {
                 />
               </Box>
 
-              {/* Removed creation date */}
             </CardContent>
           </Card>
 
-          {/* Contact Information */}
           {hasContactInfo && (
             <Card sx={{ mb: 3, borderRadius: 2 }}>
               <CardContent>
@@ -420,7 +394,6 @@ const PartnerDetailsPage: React.FC = () => {
             </Card>
           )}
 
-          {/* Additional Information */}
           {hasAdditionalInfo && (
             <Card sx={{ borderRadius: 2 }}>
               <CardContent>
@@ -468,7 +441,6 @@ const PartnerDetailsPage: React.FC = () => {
           )}
         </Grid>
 
-        {/* Right column - Location and Map */}
         <Grid item xs={12} md={8}>
           <Card sx={{ borderRadius: 2, height: "100%" }}>
             <CardContent>
@@ -516,7 +488,6 @@ const PartnerDetailsPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         open={showDeleteDialog}
         title="Ištrinti partnerį"
@@ -528,7 +499,6 @@ const PartnerDetailsPage: React.FC = () => {
         loading={deleteLoading}
       />
 
-      {/* Edit Partner Modal */}
       {partner && (
         <PartnerFormModal
           open={editModalOpen}
@@ -539,7 +509,6 @@ const PartnerDetailsPage: React.FC = () => {
         />
       )}
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

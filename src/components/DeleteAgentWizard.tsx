@@ -54,30 +54,25 @@ interface DeleteAgentRequest {
 }
 
 const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, agentId, agentName }) => {
-  // Stepper state
   const [activeStep, setActiveStep] = useState(0)
   const steps = ["Pasirinkite agentus", "Patvirtinkite veiksmą"]
 
-  // Form state
   const [availableAgents, setAvailableAgents] = useState<AgentReassignmentOption[]>([])
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([])
   const [loadingAgents, setLoadingAgents] = useState(false)
 
-  // UI state
   const [loading, setLoading] = useState(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [snackbarMessage, setSnackbarMessage] = useState("")
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch available agents for reassignment when the dialog opens
   useEffect(() => {
     if (open && agentId) {
       fetchAvailableAgents()
     }
   }, [open, agentId])
 
-  // Reset state when the popup opens
   useEffect(() => {
     if (open) {
       setActiveStep(0)
@@ -96,14 +91,12 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
       })
       setAvailableAgents(response.data)
     } catch (err) {
-      console.error("Failed to fetch available agents:", err)
       setError("Nepavyko gauti agentų sąrašo. Bandykite dar kartą vėliau.")
     } finally {
       setLoadingAgents(false)
     }
   }
 
-  // Handle step change
   const handleNext = () => {
     if (activeStep === 0 && selectedAgentIds.length === 0) {
       setSnackbarMessage("Prašome pasirinkti bent vieną agentą")
@@ -118,7 +111,6 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
     setActiveStep((prevStep) => prevStep - 1)
   }
 
-  // Handle agent selection
   const handleAgentSelection = (agentId: string) => {
     setSelectedAgentIds((prevSelected) => {
       if (prevSelected.includes(agentId)) {
@@ -129,7 +121,6 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
     })
   }
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (selectedAgentIds.length === 0) {
       setSnackbarMessage("Prašome pasirinkti bent vieną agentą")
@@ -154,14 +145,11 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Close after a short delay to show the success message, then redirect
       setTimeout(() => {
         onClose()
-        // Redirect to the agents list page
         window.location.href = "/agents"
       }, 1500)
     } catch (error: any) {
-      console.error("Failed to delete agent:", error)
       setSnackbarMessage(error.response?.data?.message || "Nepavyko ištrinti agento")
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -170,7 +158,6 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
     }
   }
 
-  // Get selected agents details for confirmation page
   const getSelectedAgentsDetails = () => {
     return availableAgents.filter((agent) => selectedAgentIds.includes(agent.id))
   }
@@ -319,7 +306,6 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           {activeStep === 0 ? (
-            // Center the "Toliau" button in the first step
             <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
               <Button
                 variant="contained"
@@ -330,7 +316,6 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
               </Button>
             </Box>
           ) : (
-            // Show Back and Delete buttons in the second step
             <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between" }}>
               <Button onClick={handleBack} disabled={loading} variant="outlined">
                 Atgal
@@ -349,7 +334,6 @@ const DeleteAgentWizard: React.FC<DeleteAgentWizardProps> = ({ open, onClose, ag
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbarOpen}
         message={snackbarMessage}

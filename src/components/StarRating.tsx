@@ -23,7 +23,6 @@ const StarRating: React.FC<StarRatingProps> = ({
   showEmptyStars = true,
   precision = 1,
 }) => {
-  // Convert null to 0 for display purposes
   const displayValue = value === null ? 0 : value
 
   return (

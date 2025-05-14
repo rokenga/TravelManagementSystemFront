@@ -23,14 +23,12 @@ interface TripsTableProps {
   onTripClick: (tripId: string) => void
 }
 
-// Function to format date in Lithuanian format (yyyy-mm-dd)
 const formatDate = (dateString?: string) => {
   if (!dateString) return ""
   const date = new Date(dateString)
-  return date.toISOString().split("T")[0] // Extract yyyy-mm-dd
+  return date.toISOString().split("T")[0] 
 }
 
-// Function to determine if a trip is upcoming
 const isUpcoming = (startDate?: string): boolean => {
   if (!startDate) return false
   const tripStart = new Date(startDate)
@@ -38,7 +36,6 @@ const isUpcoming = (startDate?: string): boolean => {
   return tripStart > today
 }
 
-// Function to determine if a trip is active (currently happening)
 const isActive = (startDate?: string, endDate?: string): boolean => {
   if (!startDate || !endDate) return false
   const tripStart = new Date(startDate)
@@ -47,14 +44,12 @@ const isActive = (startDate?: string, endDate?: string): boolean => {
   return today >= tripStart && today <= tripEnd
 }
 
-// Function to truncate text to a specific length
 const truncateText = (text: string, maxLength: number): string => {
   if (!text) return ""
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text
 }
 
 const TripsTable: React.FC<TripsTableProps> = ({ trips, onTripClick }) => {
-  // Get status color based on trip status
   const getStatusColor = (
     status: string,
   ): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
@@ -72,7 +67,6 @@ const TripsTable: React.FC<TripsTableProps> = ({ trips, onTripClick }) => {
     }
   }
 
-  // Get payment status color
   const getPaymentStatusColor = (
     status: string,
   ): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
@@ -122,12 +116,7 @@ const TripsTable: React.FC<TripsTableProps> = ({ trips, onTripClick }) => {
                   key={trip.id}
                   sx={{
                     backgroundColor: index % 2 === 0 ? "background.default" : "background.paper",
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: "action.hover",
-                    },
                   }}
-                  onClick={() => onTripClick(trip.id)}
                 >
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center" }}>

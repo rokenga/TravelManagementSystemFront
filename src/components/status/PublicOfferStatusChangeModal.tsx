@@ -47,7 +47,6 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
   const [availableStatuses, setAvailableStatuses] = useState<OfferStatus[]>([])
 
-  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setSelectedStatus(currentStatus || OfferStatus.Active)
@@ -56,23 +55,19 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
     }
   }, [open, currentStatus, tripStatus])
 
-  // Check if the offer is expired
   const isExpired = validUntil ? new Date(validUntil) < new Date() : false
 
-  // Determine available statuses based on backend rules
   useEffect(() => {
     if (!currentStatus) return
 
     const statuses: OfferStatus[] = []
 
-    // If current status is Expired, no changes allowed
     if (currentStatus === OfferStatus.Expired || isExpired) {
       setValidationMessage("Pasibaigusio pasiūlymo statuso keisti negalima.")
       setAvailableStatuses([])
       return
     }
 
-    // If trip is Draft, only ManuallyDisabled is allowed
     if (tripStatus?.toLowerCase() === "draft") {
       if (currentStatus !== OfferStatus.ManuallyDisabled) {
         statuses.push(OfferStatus.ManuallyDisabled)
@@ -83,7 +78,6 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
           : "Kai kelionė yra juodraštis, pasiūlymo statusas gali būti tik 'Išjungtas rankiniu būdu'.",
       )
     } else {
-      // For confirmed trips, normal rules apply
       if (currentStatus === OfferStatus.Active) {
         statuses.push(OfferStatus.ManuallyDisabled)
       } else if (currentStatus === OfferStatus.ManuallyDisabled) {
@@ -94,20 +88,16 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
     setAvailableStatuses(statuses)
   }, [currentStatus, tripStatus, isExpired])
 
-  // Validate status change based on backend rules
   useEffect(() => {
-    // Skip validation if we already have a message from the available statuses check
     if (validationMessage) return
 
     if (!currentStatus) return
 
-    // If trying to set Active but offer is expired
     if (selectedStatus === OfferStatus.Active && isExpired) {
       setValidationMessage("Negalima nustatyti aktyvaus statuso, nes galiojimo data pasibaigė.")
       return
     }
 
-    // If trying to set ManuallyDisabled but current status is not Active
     if (selectedStatus === OfferStatus.ManuallyDisabled && currentStatus !== OfferStatus.Active) {
       setValidationMessage("Pasiūlymą galima išjungti tik kai jis yra aktyvus.")
       return
@@ -127,13 +117,11 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
       await onConfirm(selectedStatus)
       onClose()
     } catch (err: any) {
-      // Handle specific error messages from the backend
       if (err.response && err.response.data) {
         setError(err.response.data.message || "Nepavyko pakeisti statuso. Bandykite dar kartą.")
       } else {
         setError("Nepavyko pakeisti statuso. Bandykite dar kartą.")
       }
-      console.error("Failed to change status:", err)
     } finally {
       setLoading(false)
     }
@@ -172,12 +160,10 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
             onChange={handleStatusChange}
             disabled={loading || currentStatus === OfferStatus.Expired || isExpired || availableStatuses.length === 0}
           >
-            {/* Show current status */}
             <MenuItem value={currentStatus || ""} disabled>
               {currentStatus ? `${getStatusLabel(currentStatus)} (dabartinis)` : "Nežinomas statusas"}
             </MenuItem>
 
-            {/* Available status options */}
             {availableStatuses.map((status) => (
               <MenuItem key={status} value={status}>
                 {getStatusLabel(status)}
@@ -187,7 +173,6 @@ const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
           {validationMessage && <FormHelperText>{validationMessage}</FormHelperText>}
         </FormControl>
 
-        {/* Show a single contextual message based on the situation */}
         {(currentStatus === OfferStatus.Expired || isExpired) && !validationMessage && (
           <Alert severity="warning" sx={{ mt: 2 }}>
             Šio pasiūlymo galiojimo laikas yra pasibaigęs.

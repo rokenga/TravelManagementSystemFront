@@ -23,7 +23,6 @@ import CustomDateTimePicker from "../CustomDatePicker"
 import dayjs from "dayjs"
 import countriesData from "../../assets/full-countries-lt.json"
 
-// Interface for country data
 interface Country {
   code: string
   name: string
@@ -50,7 +49,6 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  // Initialize state with initialFilters
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialFilters.categories || [])
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialFilters.statuses || [])
   const [selectedPaymentStatuses, setSelectedPaymentStatuses] = useState<string[]>(initialFilters.paymentStatuses || [])
@@ -64,14 +62,10 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
   const [priceRange, setPriceRange] = useState<[number, number]>(initialFilters.priceRange || [0, 20000])
   const [countries, setCountries] = useState<Country[]>([])
 
-  // Load countries from JSON file
   useEffect(() => {
-    // In a real implementation, you would load the JSON file
-    // For now, we'll use the imported data directly
     setCountries(countriesData as Country[])
   }, [])
 
-  // Update local state when initialFilters change
   useEffect(() => {
     setSelectedCategories(initialFilters.categories || [])
     setSelectedStatuses(initialFilters.statuses || [])
@@ -235,7 +229,6 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      {/* Payment Status Filter Section */}
       <Typography variant="subtitle1" gutterBottom>
         Mokėjimo būsena
       </Typography>

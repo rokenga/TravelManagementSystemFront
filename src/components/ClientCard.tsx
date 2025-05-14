@@ -38,7 +38,6 @@ interface ClientTagAssignmentResponse {
   assignedByAgentId: string
 }
 
-// Use ClientResponse instead of the custom Client interface
 interface ClientCardProps {
   client: ClientResponse
   onClick?: (clientId: string) => void
@@ -63,7 +62,6 @@ const categoryColors: Record<TagCategory, string> = {
   [TagCategory.TravelPreference]: "#AB47BC",
 }
 
-// Update the component definition to accept the onClick prop
 const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
   const navigate = useNavigate()
   const [isTagModalOpen, setIsTagModalOpen] = useState(false)
@@ -76,7 +74,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
       })
       setClientTags(response.data)
     } catch (error) {
-      console.error("Failed to fetch client tags:", error)
     }
   }
 
@@ -86,11 +83,9 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
         const response = await axios.get<ClientTagAssignmentResponse[]>(`${API_URL}/ClientTagAssignment/${client.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         })
-        console.log("🚀 Client Tags for", client.id, ":", response.data)
 
         setClientTags(response.data)
       } catch (error) {
-        console.error("Failed to fetch client tags:", error)
       }
     }
 
@@ -102,7 +97,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
     setIsTagModalOpen(true)
   }
 
-  // Update the click handler to use the onClick prop if provided
   const handleCardClick = () => {
     if (onClick) {
       onClick(client.id)
@@ -126,11 +120,10 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
             transform: "translateY(-5px)",
             boxShadow: 6,
           },
-          position: "relative", // For positioning the transfer badge
+          position: "relative", 
         }}
       >
 
-        {/* Update the CardActionArea onClick to use our new handler */}
         <CardActionArea onClick={handleCardClick}>
           <CardContent
             sx={{
@@ -139,7 +132,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
               py: 2,
               px: 2,
               position: "relative",
-              // Remove the conditional padding
             }}
           >
             <Avatar
@@ -265,7 +257,6 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
           name: t.tagName,
           category: t.category,
         }))}
-        // When modal saves new tags, re-fetch from server
         onTagsUpdated={fetchClientTags}
       />
     </>

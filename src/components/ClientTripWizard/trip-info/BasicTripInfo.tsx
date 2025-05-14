@@ -47,7 +47,6 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
 
       <Grid item xs={12} md={6}>
         {clientId && clientName && isEditMode ? (
-          // If we already have both an ID and name in edit mode, show locked
           <TextField
             label="Klientas"
             value={clientName}
@@ -62,7 +61,6 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
             }}
           />
         ) : (
-          // Otherwise show the Autocomplete
           <Autocomplete
             options={Array.isArray(clients) ? clients : []}
             getOptionLabel={(option) => `${option.name} ${option.surname}`}
@@ -86,7 +84,6 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
         )}
       </Grid>
 
-      {/* Add destination field */}
       <Grid item xs={12}>
         <DestinationAutocomplete value={destination} onChange={onDestinationChange} />
       </Grid>

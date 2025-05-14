@@ -34,26 +34,22 @@ const TripDetails: React.FC<TripDetailsProps> = ({
   onStartDateChange,
   onEndDateChange,
 }) => {
-  // State for snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "error" as "error" | "success" | "info" | "warning",
   })
 
-  // Set default adult count to 2 when component mounts if it's null
   useEffect(() => {
     if (adultsCount === null) {
       onInputChange("adultsCount", 2)
     }
   }, [adultsCount, onInputChange])
 
-  // Handle price change with validation
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     const numValue = Number.parseFloat(value)
 
-    // Don't allow negative values
     if (numValue < 0) {
       setSnackbar({
         open: true,
@@ -66,7 +62,6 @@ const TripDetails: React.FC<TripDetailsProps> = ({
     }
   }
 
-  // Handle close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({
       ...snackbar,
@@ -74,10 +69,9 @@ const TripDetails: React.FC<TripDetailsProps> = ({
     })
   }
 
-  // Custom styles to match heights
   const datePickerStyle = {
     "& .MuiInputBase-root": {
-      height: "56px", // Match the height of other controls
+      height: "56px", 
     },
     "& .MuiOutlinedInput-input": {
       paddingTop: "16.5px",
@@ -87,7 +81,6 @@ const TripDetails: React.FC<TripDetailsProps> = ({
 
   return (
     <>
-      {/* First row: Date fields only */}
       <Grid item xs={12} sm={6} md={6}>
         <Box sx={datePickerStyle}>
           <CustomDateTimePicker label="Data nuo" value={startDate} onChange={onStartDateChange} showTime={false} />
@@ -107,7 +100,6 @@ const TripDetails: React.FC<TripDetailsProps> = ({
         </Box>
       </Grid>
 
-      {/* Second row: Category, Price, Adults count, Children count */}
       <Grid item xs={12} sm={6} md={3}>
         <TextField
           select
@@ -151,7 +143,6 @@ const TripDetails: React.FC<TripDetailsProps> = ({
             const value = e.target.value
             const numValue = Number.parseInt(value, 10)
 
-            // Ensure value is at least 1
             if (value === "" || numValue < 1) {
               onInputChange("adultsCount", 1)
             } else {
@@ -184,7 +175,6 @@ const TripDetails: React.FC<TripDetailsProps> = ({
         />
       </Grid>
 
-      {/* Insurance checkbox */}
       <Grid item xs={12} sx={{ mt: 1 }}>
         <FormControlLabel
           control={
@@ -194,7 +184,6 @@ const TripDetails: React.FC<TripDetailsProps> = ({
         />
       </Grid>
 
-      {/* Custom Snackbar for error messages */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

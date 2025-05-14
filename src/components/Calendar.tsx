@@ -16,7 +16,6 @@ import {
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 
-// Event category icons mapping
 const categoryIcons: Record<string, React.ReactNode> = {
   "Šiandienos grįžimai": <HomeIcon fontSize="small" color="primary" />,
   "Šiandienos išvykimai": <DepartureIcon fontSize="small" color="primary" />,
@@ -50,7 +49,6 @@ const Calendar: React.FC = () => {
     "Gruodis",
   ]
 
-  // Fetch today's events
   useEffect(() => {
     const fetchTodayEvents = async () => {
       try {
@@ -63,7 +61,6 @@ const Calendar: React.FC = () => {
         })
         setEvents(response.data)
       } catch (err) {
-        console.error("Klaida gaunant šiandienos įvykius:", err)
         setEvents({})
       } finally {
         setLoading(false)
@@ -95,12 +92,10 @@ const Calendar: React.FC = () => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay()
 
-    // Adjust for Monday as first day of week (0 = Monday, 6 = Sunday in our display)
     const startingDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1
 
     const calendarDays = []
 
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDay; i++) {
       calendarDays.push(
         <Box
@@ -114,7 +109,6 @@ const Calendar: React.FC = () => {
       )
     }
 
-    // Add cells for each day of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const isToday =
         day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()
@@ -192,7 +186,6 @@ const Calendar: React.FC = () => {
 
       {renderCalendar()}
 
-      {/* Events Section */}
       <Box sx={{ mt: 3 }}>
         <Typography variant="h6" sx={{ mb: 1.5 }}>
           Šiandienos įvykiai

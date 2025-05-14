@@ -38,7 +38,6 @@ const TripReviewModal: React.FC<TripReviewModalProps> = ({ open, onClose, tripId
 
   const token = localStorage.getItem("accessToken")
 
-  // Fetch existing review when modal opens
   useEffect(() => {
     if (open && tripId) {
       fetchReview()
@@ -61,12 +60,9 @@ const TripReviewModal: React.FC<TripReviewModalProps> = ({ open, onClose, tripId
       setText(response.data.text)
       setIsEditing(false)
     } catch (err: any) {
-      // If 404, there's no review yet - that's okay
       if (err.response?.status !== 404) {
-        console.error("Failed to fetch review:", err)
         setError("Nepavyko gauti atsiliepimo")
       } else {
-        // No review exists yet, set to editing mode
         setReview(null)
         setRating(0)
         setText("")
@@ -104,7 +100,6 @@ const TripReviewModal: React.FC<TripReviewModalProps> = ({ open, onClose, tripId
 
     try {
       if (review) {
-        // Update existing review
         await axios.put(`${API_URL}/TripReview/${review.id}`, reviewData, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -112,7 +107,6 @@ const TripReviewModal: React.FC<TripReviewModalProps> = ({ open, onClose, tripId
           },
         })
       } else {
-        // Create new review
         await axios.post(`${API_URL}/TripReview`, reviewData, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -121,7 +115,6 @@ const TripReviewModal: React.FC<TripReviewModalProps> = ({ open, onClose, tripId
         })
       }
 
-      // Refresh the review data
       await fetchReview()
 
       if (onSuccess) {
@@ -130,7 +123,6 @@ const TripReviewModal: React.FC<TripReviewModalProps> = ({ open, onClose, tripId
 
       setIsEditing(false)
     } catch (err: any) {
-      console.error("Failed to submit review:", err)
       setError(err.response?.data?.message || "Nepavyko pateikti atsiliepimo")
     } finally {
       setLoading(false)

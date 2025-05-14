@@ -39,7 +39,6 @@ const categoryColors: Record<TagCategory, string> = {
   [TagCategory.TravelPreference]: "#AB47BC",
 }
 
-// Constants for tag name validation
 const MIN_TAG_LENGTH = 2
 const MAX_TAG_LENGTH = 40
 
@@ -60,7 +59,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
     }
   }, [open])
 
-  // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       resetForm()
@@ -81,12 +79,10 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       })
       setTags(response.data || {})
     } catch (err: any) {
-      console.error("Failed to fetch tags:", err)
       showSnackbar("Nepavyko gauti žymeklių. Bandykite dar kartą.", "error")
     }
   }
 
-  // Validate tag name length
   const validateTagName = (name: string): boolean => {
     if (name.length < MIN_TAG_LENGTH) {
       setNameError(`Žymeklio pavadinimas turi būti bent ${MIN_TAG_LENGTH} simbolių ilgio.`)
@@ -110,7 +106,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       return
     }
 
-    // Validate tag name length
     if (!validateTagName(newTagName)) {
       return
     }
@@ -147,10 +142,8 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       resetForm()
       fetchTags()
 
-      // Call onTagsUpdated to refresh the filter panel
       onTagsUpdated()
     } catch (err) {
-      console.error("Failed to save tag:", err)
       showSnackbar("Nepavyko išsaugoti žymeklio. Bandykite dar kartą.", "error")
     } finally {
       setIsSaving(false)
@@ -168,7 +161,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
       showSnackbar("Žymeklis sėkmingai ištrintas!", "success")
       onTagsUpdated()
     } catch (err) {
-      console.error("Failed to delete tag:", err)
       showSnackbar("Nepavyko ištrinti žymeklio. Bandykite dar kartą.", "error")
     } finally {
       setDeleteConfirmOpen(false)
@@ -180,14 +172,13 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
     setNewTagName(tag.name)
     setNewTagCategory(tag.category)
     setEditingTag(tag)
-    setNameError(null) // Clear any previous errors
+    setNameError(null) 
   }
 
   const handleTagNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setNewTagName(value)
 
-    // Clear error when user starts typing again
     if (nameError) {
       setNameError(null)
     }
@@ -242,7 +233,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
             ))
           )}
 
-          {/* ADD/EDIT TAG */}
           <Box display="flex" flexDirection="column" gap={2} mt={2}>
             <TextField
               label="Žymeklio pavadinimas"
@@ -292,7 +282,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
         </DialogContent>
       </Dialog>
 
-      {/* Custom Confirmation Dialog for deleting tags */}
       <ConfirmationDialog
         open={deleteConfirmOpen}
         title="Patvirtinti ištrynimą"
@@ -301,7 +290,6 @@ const ClientTagManager: React.FC<Props> = ({ open, onClose, onTagsUpdated }) => 
         onCancel={() => setDeleteConfirmOpen(false)}
       />
 
-      {/* Custom Snackbar for success/error messages */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

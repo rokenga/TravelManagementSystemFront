@@ -18,14 +18,12 @@ export function useItineraryEvents(initialItinerary: Day[]) {
   const [itinerary, setItinerary] = useState<Day[]>(initialItinerary)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
 
-  // Get current day
   const currentDay = itinerary[selectedDayIndex] || {
     dayLabel: "",
     dayDescription: "",
     events: [],
   }
 
-  // Add events
   const addTransport = () => {
     addEventToCurrentDay(createTransportEvent())
   }
@@ -48,21 +46,18 @@ export function useItineraryEvents(initialItinerary: Day[]) {
     setItinerary(updated)
   }
 
-  // Remove event from day
   const removeEvent = (dayIndex: number, eventIndex: number) => {
     const updated = [...itinerary]
     updated[dayIndex].events.splice(eventIndex, 1)
     setItinerary(updated)
   }
 
-  // Day description
   const handleDayDescriptionChange = (dayIndex: number, value: string) => {
     const updated = [...itinerary]
     updated[dayIndex].dayDescription = value
     setItinerary(updated)
   }
 
-  // If user edits an event, update state
   const handleEventChange = (dayIndex: number, eventIndex: number, field: string, value: any) => {
     const updated = [...itinerary]
     updated[dayIndex].events[eventIndex] = {
@@ -72,7 +67,6 @@ export function useItineraryEvents(initialItinerary: Day[]) {
     setItinerary(updated)
   }
 
-  // Navigate to next/previous day
   const goToNextDay = () => {
     if (selectedDayIndex < itinerary.length - 1) {
       setSelectedDayIndex(selectedDayIndex + 1)

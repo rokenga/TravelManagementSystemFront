@@ -36,7 +36,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
   const [timeErrors, setTimeErrors] = useState<Record<string, string | null>>({})
 
-  // If startDate/endDate are set, do immediate validation
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
       const validation = validateDateTimeConstraints(formData.startDate, formData.endDate)
@@ -49,10 +48,9 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       setDateError(null)
     }
 
-    // Validate validUntil date is in the future and not after startDate
     if (formData.validUntil) {
       const now = new Date()
-      now.setHours(0, 0, 0, 0) // Set to start of today
+      now.setHours(0, 0, 0, 0) 
 
       if (formData.validUntil.toDate() < now) {
         setValidUntilError("Galiojimo data turi būti ateityje")
@@ -97,7 +95,7 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
 
     if (field === "validUntil" && newValue) {
       const now = new Date()
-      now.setHours(0, 0, 0, 0) // Set to start of today
+      now.setHours(0, 0, 0, 0)
       if (newValue.toDate() < now) {
         setSnackbarMessage("Galiojimo data turi būti ateityje")
         setSnackbarSeverity("error")
@@ -106,7 +104,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }
   }
 
-  // Validate time constraints and show error if needed
   const validateTimeConstraint = (startTime: any, endTime: any, errorKey: string): boolean => {
     if (startTime && endTime && endTime.isBefore(startTime)) {
       const errorMessage = "Pabaigos laikas negali būti ankstesnis už pradžios laiką"
@@ -120,7 +117,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
         }
       })
 
-      // Also show in snackbar
       setSnackbarMessage(errorMessage)
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -140,16 +136,13 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }
   }
 
-  // Handle accommodation date changes with validation
   const handleAccommodationDateChange = (accIndex: number, field: "checkIn" | "checkOut", value: any) => {
     const acc = formData.accommodations[accIndex]
     const errorKey = `acc-${accIndex}`
 
-    // Determine which dates to validate
     const startDate = field === "checkIn" ? value : acc.checkIn
     const endDate = field === "checkOut" ? value : acc.checkOut
 
-    // Update the value first
     const updatedAccommodations = [...formData.accommodations]
     updatedAccommodations[accIndex] = {
       ...updatedAccommodations[accIndex],
@@ -160,22 +153,18 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       accommodations: updatedAccommodations,
     }))
 
-    // Then validate if both dates exist
     if (startDate && endDate) {
       validateTimeConstraint(startDate, endDate, errorKey)
     }
   }
 
-  // Handle transport time changes with validation
   const handleTransportTimeChange = (transIndex: number, field: "departureTime" | "arrivalTime", value: any) => {
     const trans = formData.transports[transIndex]
     const errorKey = `trans-${transIndex}`
 
-    // Determine which times to validate
     const startTime = field === "departureTime" ? value : trans.departureTime
     const endTime = field === "arrivalTime" ? value : trans.arrivalTime
 
-    // Update the value first
     const updatedTransports = [...formData.transports]
     updatedTransports[transIndex] = {
       ...updatedTransports[transIndex],
@@ -186,22 +175,18 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       transports: updatedTransports,
     }))
 
-    // Then validate if both times exist
     if (startTime && endTime) {
       validateTimeConstraint(startTime, endTime, errorKey)
     }
   }
 
-  // Handle cruise time changes with validation
   const handleCruiseTimeChange = (cruiseIndex: number, field: "departureTime" | "arrivalTime", value: any) => {
     const cruise = formData.cruises[cruiseIndex]
     const errorKey = `cruise-${cruiseIndex}`
 
-    // Determine which times to validate
     const startTime = field === "departureTime" ? value : cruise.departureTime
     const endTime = field === "arrivalTime" ? value : cruise.arrivalTime
 
-    // Update the value first
     const updatedCruises = [...formData.cruises]
     updatedCruises[cruiseIndex] = {
       ...updatedCruises[cruiseIndex],
@@ -212,17 +197,14 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       cruises: updatedCruises,
     }))
 
-    // Then validate if both times exist
     if (startTime && endTime) {
       validateTimeConstraint(startTime, endTime, errorKey)
     }
   }
 
-  // Handle accommodation field changes
   const handleAccommodationChange = (accIndex: number, field: keyof Accommodation, value: any) => {
     const updatedAccommodations = [...formData.accommodations]
     if (field === "price") {
-      // Ensure price is stored as a number
       updatedAccommodations[accIndex][field] = typeof value === "string" ? Number.parseFloat(value) || 0 : value
     } else {
       updatedAccommodations[accIndex][field] = value
@@ -233,11 +215,9 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Handle transport field changes
   const handleTransportChange = (transIndex: number, field: keyof Transport, value: any) => {
     const updatedTransports = [...formData.transports]
     if (field === "price") {
-      // Ensure price is stored as a number
       updatedTransports[transIndex][field] = typeof value === "string" ? Number.parseFloat(value) || 0 : value
     } else {
       updatedTransports[transIndex][field] = value
@@ -248,11 +228,9 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Handle cruise field changes
   const handleCruiseChange = (cruiseIndex: number, field: keyof Cruise, value: any) => {
     const updatedCruises = [...formData.cruises]
     if (field === "price") {
-      // Ensure price is stored as a number
       updatedCruises[cruiseIndex][field] = typeof value === "string" ? Number.parseFloat(value) || 0 : value
     } else {
       updatedCruises[cruiseIndex][field] = value
@@ -263,7 +241,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Add a new accommodation
   const handleAddAccommodation = () => {
     setFormData((prev) => ({
       ...prev,
@@ -284,7 +261,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Remove an accommodation
   const handleRemoveAccommodation = (accIndex: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -292,7 +268,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Add a new transport
   const handleAddTransport = () => {
     setFormData((prev) => ({
       ...prev,
@@ -315,7 +290,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Remove a transport
   const handleRemoveTransport = (transIndex: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -323,7 +297,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Add a new cruise
   const handleAddCruise = () => {
     setFormData((prev) => ({
       ...prev,
@@ -345,7 +318,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Remove a cruise
   const handleRemoveCruise = (cruiseIndex: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -353,7 +325,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Handle image changes
   const handleImageChange = (files: File[]) => {
     setFormData((prev) => ({
       ...prev,
@@ -361,10 +332,8 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     }))
   }
 
-  // Handle existing image deletion - memoized to prevent unnecessary re-renders
   const handleExistingImageDelete = useCallback(
     (imageId: string) => {
-      console.log("Step1OfferDetails: Deleting image with ID:", imageId)
       if (onExistingImageDelete) {
         onExistingImageDelete(imageId)
       }
@@ -375,7 +344,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Check for date errors
     if (dateError || validUntilError) {
       setSnackbarMessage("Prašome ištaisyti klaidas prieš tęsiant.")
       setSnackbarSeverity("error")
@@ -383,7 +351,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       return
     }
 
-    // Check for time errors
     const hasTimeErrors = Object.values(timeErrors).some((error) => error !== null)
     if (hasTimeErrors) {
       setSnackbarMessage("Prašome ištaisyti laiko klaidas prieš tęsiant.")
@@ -392,7 +359,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       return
     }
 
-    // Validate that all events have required fields filled
     const validationErrors = validateEventRequiredFields()
     if (validationErrors.length > 0) {
       setFormData((prev) => ({ ...prev, showValidationErrors: true }))
@@ -402,7 +368,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       return
     }
 
-    // Validate that all event dates are within the offer date range
     const dateRangeErrors = validateEventDateRanges()
     if (dateRangeErrors.length > 0) {
       setFormData((prev) => ({ ...prev, showValidationErrors: true }))
@@ -415,11 +380,9 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     onSubmit(formData)
   }
 
-  // Function to validate required fields for all events
   const validateEventRequiredFields = (): string[] => {
     const errors: string[] = []
 
-    // Validate accommodations
     formData.accommodations.forEach((acc, index) => {
       if (!acc.hotelName || acc.hotelName.trim() === "") {
         errors.push(`Apgyvendinimas #${index + 1}: Viešbučio pavadinimas yra privalomas`)
@@ -432,7 +395,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       }
     })
 
-    // Validate transports
     formData.transports.forEach((trans, index) => {
       if (!trans.departurePlace || trans.departurePlace.trim() === "") {
         errors.push(`Transportas #${index + 1}: Išvykimo vieta yra privaloma`)
@@ -448,7 +410,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       }
     })
 
-    // Validate cruises
     formData.cruises.forEach((cruise, index) => {
       if (!cruise.departurePlace || cruise.departurePlace.trim() === "") {
         errors.push(`Kruizas #${index + 1}: Išvykimo uostas yra privalomas`)
@@ -467,20 +428,16 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
     return errors
   }
 
-  // Function to validate that all event dates are within the offer date range
   const validateEventDateRanges = (): string[] => {
     const errors: string[] = []
 
-    // If offer dates aren't set, we can't validate event dates
     if (!formData.startDate || !formData.endDate) {
       return errors
     }
 
     const offerStartDate = formData.startDate.startOf("day")
-    // Set the end date to 23:59:59 of the last day instead of 00:00
     const offerEndDate = formData.endDate.endOf("day")
 
-    // Validate accommodations
     formData.accommodations.forEach((acc, index) => {
       if (acc.checkIn && acc.checkIn.isBefore(offerStartDate)) {
         errors.push(`Apgyvendinimas #${index + 1}: Atvykimo data negali būti ankstesnė nei kelionės pradžios data`)
@@ -490,7 +447,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       }
     })
 
-    // Validate transports
     formData.transports.forEach((trans, index) => {
       if (trans.departureTime && trans.departureTime.isBefore(offerStartDate)) {
         errors.push(`Transportas #${index + 1}: Išvykimo laikas negali būti ankstesnis nei kelionės pradžios data`)
@@ -500,7 +456,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
       }
     })
 
-    // Validate cruises
     formData.cruises.forEach((cruise, index) => {
       if (cruise.departureTime && cruise.departureTime.isBefore(offerStartDate)) {
         errors.push(`Kruizas #${index + 1}: Išvykimo laikas negali būti ankstesnis nei kelionės pradžios data`)
@@ -521,7 +476,6 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      {/* Basic Trip Information */}
       <TripBasicInfoForm
         formData={formData}
         handleInputChange={handleInputChange}
@@ -533,14 +487,12 @@ const Step1OfferDetails: React.FC<Step1Props> = ({
         isEditing={isEditing}
       />
 
-      {/* Divider between main info and offer details */}
       <Divider sx={{ my: 4 }}>
         <Typography variant="h6" color="text.secondary">
           Pasiūlymo elementai
         </Typography>
       </Divider>
 
-      {/* Trip Elements Section */}
       <TripElementsSection
         formData={formData}
         handleAddAccommodation={handleAddAccommodation}

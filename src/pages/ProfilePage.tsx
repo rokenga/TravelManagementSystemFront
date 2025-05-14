@@ -38,14 +38,13 @@ import { useNavigate } from "react-router-dom"
 import EditProfileModal from "../components/EditProfileModal"
 import CustomSnackbar from "../components/CustomSnackBar"
 
-// Define the User interface with WantsToReceiveReminders
 interface User {
   id: string
   email: string
   role: "Admin" | "Agent" | null
   firstName: string
   lastName: string
-  birthday: string // Changed from birthDay to birthday
+  birthday: string 
   wantsToReceiveReminders: boolean
 }
 
@@ -73,7 +72,6 @@ const ProfilePage: React.FC = () => {
         })
         setUser(response.data)
       } catch (err) {
-        console.error("Failed to fetch user data:", err)
         setError("Nepavyko užkrauti vartotojo duomenų. Bandykite dar kartą vėliau.")
       } finally {
         setLoading(false)
@@ -83,12 +81,10 @@ const ProfilePage: React.FC = () => {
     fetchUserData()
   }, [])
 
-  // Format date to a more readable format
   const formatDate = (dateString: string) => {
     if (!dateString) return "Nepateikta"
     try {
       const date = new Date(dateString)
-      // Check if date is valid
       if (isNaN(date.getTime())) return "Nepateikta"
       return date.toLocaleDateString("lt-LT", {
         year: "numeric",
@@ -96,12 +92,10 @@ const ProfilePage: React.FC = () => {
         day: "numeric",
       })
     } catch (error) {
-      console.error("Error formatting date:", error)
       return "Nepateikta"
     }
   }
 
-  // Get user initials for avatar
   const getUserInitials = () => {
     if (!user) return "?"
     return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
@@ -111,10 +105,8 @@ const ProfilePage: React.FC = () => {
     setIsEditModalOpen(true)
   }
 
-  const handleToggleReminders = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    // This would be implemented to update the user's preference
-    console.log("Toggle reminders:", event.target.checked)
-    // In a real implementation, you would make an API call here
+  const handleToggleReminders = async () => {
+    return
   }
 
   const handleChangePassword = () => {
@@ -136,7 +128,6 @@ const ProfilePage: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Action Bar for consistency with other pages */}
       <ActionBar
         title="Mano profilis"
         showBackButton={true}
@@ -163,7 +154,6 @@ const ProfilePage: React.FC = () => {
       )}
 
       <Grid container spacing={3}>
-        {/* Left Column - Profile Summary */}
         <Grid item xs={12} md={4}>
           <Card elevation={3} sx={{ borderRadius: 2, height: "100%" }}>
             <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", pt: 3 }}>
@@ -211,27 +201,12 @@ const ProfilePage: React.FC = () => {
                 <Skeleton variant="rectangular" width="100%" height={50} sx={{ mb: 2, borderRadius: 1 }} />
               ) : (
                 <Box sx={{ width: "100%", mb: 2 }}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<SecurityIcon />}
-                    sx={{
-                      textTransform: "none",
-                      justifyContent: "flex-start",
-                      py: 1.5,
-                      borderRadius: 2,
-                    }}
-                  >
-                    Saugumo nustatymai
-                  </Button>
                 </Box>
               )}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Right Column - Detailed Information */}
         <Grid item xs={12} md={8}>
           <Card elevation={3} sx={{ borderRadius: 2, mb: 3 }}>
             <CardHeader
@@ -374,7 +349,6 @@ const ProfilePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Notifications Card */}
           <Card elevation={3} sx={{ borderRadius: 2 }}>
             <CardHeader
               title={
@@ -407,6 +381,7 @@ const ProfilePage: React.FC = () => {
                     checked={user?.wantsToReceiveReminders || false}
                     onChange={handleToggleReminders}
                     color="primary"
+                    disabled={true}
                   />
                 </Box>
               )}
@@ -415,7 +390,6 @@ const ProfilePage: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Edit Profile Modal */}
       <EditProfileModal
         open={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -423,10 +397,8 @@ const ProfilePage: React.FC = () => {
         user={user}
       />
 
-      {/* Password Change Modal */}
       <ChangePasswordModal open={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

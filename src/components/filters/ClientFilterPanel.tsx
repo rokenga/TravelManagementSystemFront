@@ -121,11 +121,9 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
       const tags = response.data || []
       setGroupedTags(tags)
 
-      // Check if there are any tags available to filter by
       const hasTags = tags.some((group: GroupedTagItem) => group.tags && group.tags.length > 0)
       setHasFilters(hasTags)
     } catch (err) {
-      console.error("Failed to fetch grouped tags:", err)
       setError("Nepavyko gauti žymeklių.")
       setHasFilters(false)
     } finally {
@@ -179,7 +177,6 @@ const ClientFilterPanel: React.FC<ClientFilterPanelProps> = ({
     setSelectedTags({})
   }
 
-  // If there are no filters and we're not loading, don't render the panel at all
   if (!hasFilters && !loading && !isMobile) {
     return null
   }

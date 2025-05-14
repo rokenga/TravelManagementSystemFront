@@ -6,7 +6,6 @@ import { Typography, Box, Paper, useTheme, useMediaQuery, Button, Grid, Divider 
 import { ArrowBack, ArrowForward } from "@mui/icons-material"
 import dayjs from "dayjs"
 
-// Import components
 import DaySidebar from "./itinerary/DaySidebar"
 import MobileDaySelector from "./itinerary/MobileDaySelector"
 import MobileDayDrawer from "./itinerary/MobileDayDrawer"
@@ -15,7 +14,6 @@ import AddEventMenu from "./itinerary/AddEventMenu"
 import EventList from "./itinerary/EventList"
 import CustomSnackbar from "../CustomSnackBar"
 
-// Import utilities
 import { getEarliestTime, validateAllEvents, checkEventsOutsideRange } from "../../Utils/eventValidation"
 import {
   createTransportEvent,
@@ -24,7 +22,6 @@ import {
   createCruiseEvent,
 } from "../../Utils/eventFactory"
 
-// Import types
 import type {
   TripFormData,
   ItineraryDay,
@@ -35,7 +32,6 @@ import type {
   ActivityEvent,
 } from "../../types"
 
-// Declare global window properties
 declare global {
   interface Window {
     __currentStepImagesData: {
@@ -46,12 +42,10 @@ declare global {
   }
 }
 
-// Add global state management functions
 export function getCurrentStepImagesData() {
   return window.__currentStepImagesData || null
 }
 
-// Export a function to get the current itinerary data
 export function getCurrentItineraryData() {
   return window.__currentItineraryData || null
 }
@@ -69,36 +63,28 @@ interface Step2Props {
 
 const SIDEBAR_WIDTH = 240
 
-// Generate a unique key for localStorage based on trip ID or name
 function getStorageKey(tripData: TripFormData): string {
-  // Use trip ID if available, otherwise use name + start date
   const identifier = tripData.id || `${tripData.tripName || "unnamed"}_${tripData.startDate || "nodate"}`
   return `nonDayByDayDescription_${identifier}`
 }
 
-// Export a function to validate the itinerary data
 export function validateItineraryData(itinerary: ItineraryDay[]): { valid: boolean; message: string } {
-  // Check if there are any events
   const hasEvents = itinerary.some((day) => day.events.length > 0)
 
   if (!hasEvents) {
-    return { valid: true, message: "" } // No events, so no validation needed
+    return { valid: true, message: "" } 
   }
 
-  // Validate that all events have valid dates
   return validateAllEvents(itinerary)
 }
 
-// Helper function to check if an event's date matches its day's date
 function checkEventDateMatchesDay(event: any, dayDate: string): boolean {
-  if (!dayDate) return true // If no day date, can't validate
+  if (!dayDate) return true 
 
   const dayStart = dayjs(dayDate).startOf("day")
   const dayEnd = dayjs(dayDate).endOf("day")
 
-  // Check based on event type
   if (event.type === "transport" || event.type === "cruise") {
-    // For transport and cruise, check departure time
     if (event.departureTime) {
       const departureTime = dayjs(event.departureTime)
       if (departureTime.isBefore(dayStart) || departureTime.isAfter(dayEnd)) {
@@ -106,7 +92,6 @@ function checkEventDateMatchesDay(event: any, dayDate: string): boolean {
       }
     }
   } else if (event.type === "accommodation") {
-    // For accommodation, check check-in time
     if (event.checkIn) {
       const checkInTime = dayjs(event.checkIn)
       if (checkInTime.isBefore(dayStart) || checkInTime.isAfter(dayEnd)) {
@@ -114,7 +99,6 @@ function checkEventDateMatchesDay(event: any, dayDate: string): boolean {
       }
     }
   } else if (event.type === "activity") {
-    // For activity, check activity time
     if (event.activityTime) {
       const activityTime = dayjs(event.activityTime)
       if (activityTime.isBefore(dayStart) || activityTime.isAfter(dayEnd)) {
@@ -126,7 +110,6 @@ function checkEventDateMatchesDay(event: any, dayDate: string): boolean {
   return true
 }
 
-// Function to validate that all events in day-by-day mode have dates matching their day
 function validateDayByDayEventDates(itinerary: ItineraryDay[]): {
   valid: boolean
   message: string
@@ -167,10 +150,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
   existingStepImages = {},
   onStepImageDelete,
 }) => {
-  // Add console logs to debug
-  console.log("Step2Itinerary - itinerary:", itinerary)
-  console.log("Step2Itinerary - stepImages:", stepImages)
-  console.log("Step2Itinerary - existingStepImages:", existingStepImages)
 
   const [localItinerary, setLocalItinerary] = useState<ItineraryDay[]>(itinerary)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
@@ -183,27 +162,21 @@ const Step2Itinerary: React.FC<Step2Props> = ({
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [addMenuAnchorEl, setAddMenuAnchorEl] = useState<null | HTMLElement>(null)
 
-  // Add new state variables for step images management
   const [currentStepImages, setCurrentStepImages] = useState(stepImages || {})
   const [stepImagesToDelete, setStepImagesToDelete] = useState<{ [key: number]: string[] }>({})
   const [existingStepImagesState, setExistingStepImages] = useState(existingStepImages || {})
 
-  // Get a unique storage key for this trip
   const storageKey = getStorageKey(tripData)
 
-  // Store the non-day-by-day description separately to preserve it
   const [nonDayByDayDescription, setNonDayByDayDescription] = useState<string>("")
 
-  // Initialize nonDayByDayDescription from localStorage or itinerary if available
   useEffect(() => {
     if (!tripData.dayByDayItineraryNeeded) {
-      // Try to get description from localStorage first
       const savedDescription = localStorage.getItem(storageKey)
 
       if (savedDescription) {
         setNonDayByDayDescription(savedDescription)
 
-        // Also update the itinerary with this description
         if (localItinerary.length > 0) {
           const updatedItinerary = localItinerary.map((day) => ({
             ...day,
@@ -212,13 +185,11 @@ const Step2Itinerary: React.FC<Step2Props> = ({
           setLocalItinerary(updatedItinerary)
         }
       } else if (itinerary.length > 0 && itinerary[0].dayDescription) {
-        // If not in localStorage, try to get from itinerary
         setNonDayByDayDescription(itinerary[0].dayDescription)
       }
     }
   }, [tripData.dayByDayItineraryNeeded, storageKey])
 
-  // Save nonDayByDayDescription to localStorage whenever it changes
   useEffect(() => {
     if (!tripData.dayByDayItineraryNeeded && nonDayByDayDescription) {
       localStorage.setItem(storageKey, nonDayByDayDescription)
@@ -226,8 +197,7 @@ const Step2Itinerary: React.FC<Step2Props> = ({
   }, [nonDayByDayDescription, tripData.dayByDayItineraryNeeded, storageKey])
 
   useEffect(() => {
-    // Update the global currentItineraryData whenever localItinerary changes
-    // If not day-by-day, ensure all days have the same description
+
     if (!tripData.dayByDayItineraryNeeded) {
       const updatedItinerary = localItinerary.map((day) => ({
         ...day,
@@ -237,15 +207,9 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     } else {
       window.__currentItineraryData = [...localItinerary]
     }
-    console.log("Updated current itinerary data:", window.__currentItineraryData)
 
-    // Notify parent component about changes if the itinerary has changed from the initial state
     if (JSON.stringify(window.__currentItineraryData) !== JSON.stringify(itinerary)) {
-      console.log("Itinerary changed, notifying parent")
-      // This will trigger the hasChanges state in the parent
       if (onSubmit) {
-        // We're not actually submitting, just notifying about changes
-        // The parent should detect this and update its state
         onStepImagesChange(selectedDayIndex, stepImages[selectedDayIndex] || [])
       }
     }
@@ -260,14 +224,12 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     stepImages,
   ])
 
-  // Store the current step images data in a global variable for access from outside
   useEffect(() => {
     window.__currentStepImagesData = {
       stepImages: currentStepImages,
       stepImagesToDelete,
     }
 
-    // Clean up when component unmounts
     return () => {
       window.__currentStepImagesData = null
     }
@@ -284,22 +246,12 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     events: [],
   }
 
-  // Check if current day already has an image event
   const hasImageEvent = currentDay.events.some((event) => event.type === "images")
 
-  // Get existing image URLs for the current day
   const currentDayExistingImages = existingStepImagesState[selectedDayIndex] || []
   const currentDayExistingImageUrls = currentDayExistingImages.map((img) => img.url || img.urlInline).filter(Boolean)
 
-  // Add more detailed logging
-  console.log("Step2Itinerary - currentDayExistingImages:", currentDayExistingImages)
-  console.log("Step2Itinerary - currentDayExistingImageUrls:", currentDayExistingImageUrls)
 
-  // Log the current day's existing image URLs
-  console.log("Step2Itinerary - currentDay:", currentDay)
-  console.log("Step2Itinerary - selectedDayIndex:", selectedDayIndex)
-
-  // Handle step image change
   const handleStepImagesChange = (dayIndex: number, files: File[]) => {
     setCurrentStepImages((prev) => {
       const updated = {
@@ -307,7 +259,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         [dayIndex]: files,
       }
 
-      // Call the parent handler
       if (onStepImagesChange) {
         onStepImagesChange(dayIndex, files)
       }
@@ -316,18 +267,13 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     })
   }
 
-  // Handle step image delete
   const handleStepImageDelete = (dayIndex: number, imageIdOrUrl: string) => {
-    console.log(`Step2Itinerary - handleStepImageDelete called with imageIdOrUrl:`, imageIdOrUrl)
 
-    // Find the image in existingStepImages by URL or ID
     const images = existingStepImagesState[dayIndex] || []
     const imageToDelete = images.find((img) => img.url === imageIdOrUrl || img.id === imageIdOrUrl)
 
     if (imageToDelete) {
-      console.log(`Found image to delete:`, imageToDelete)
 
-      // Add the image ID to the list of images to delete
       setStepImagesToDelete((prev) => {
         const current = prev[dayIndex] || []
         const updated = {
@@ -335,7 +281,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
           [dayIndex]: [...current, imageToDelete.id],
         }
 
-        // Call the parent handler
         if (onStepImageDelete) {
           onStepImageDelete(dayIndex, imageToDelete.id)
         }
@@ -343,7 +288,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         return updated
       })
 
-      // Also remove it from the existingStepImages array in local state
       setExistingStepImages((prev) => {
         const updatedImages = [...(prev[dayIndex] || [])].filter(
           (img) => img.id !== imageToDelete.id && img.url !== imageIdOrUrl,
@@ -354,39 +298,29 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         }
       })
     } else {
-      console.warn(`Could not find image with ID or URL: ${imageIdOrUrl} in day ${dayIndex}`)
 
-      // If we can't find the image by ID, try to delete it directly
       if (onStepImageDelete) {
         onStepImageDelete(dayIndex, imageIdOrUrl)
       }
     }
   }
 
-  // Update the existing handleImageChange to use the new handler
   const handleImageChange = (files: File[]) => {
-    console.log("Step2Itinerary - handleImageChange called with files:", files)
     handleStepImagesChange(selectedDayIndex, files)
   }
 
-  // Update the existing handleExistingImageDelete to use the new handler
   const handleExistingImageDelete = (imageIdOrUrl: string) => {
-    console.log("Step2Itinerary - handleExistingImageDelete called with imageIdOrUrl:", imageIdOrUrl)
     handleStepImageDelete(selectedDayIndex, imageIdOrUrl)
   }
 
-  // Day description
   const handleDayDescriptionChange = (value: string) => {
     if (isDayByDay) {
-      // For day-by-day mode, update the current day's description
       const updated = [...localItinerary]
       updated[selectedDayIndex].dayDescription = value
       setLocalItinerary(updated)
     } else {
-      // For non-day-by-day mode, store the description in a separate state
       setNonDayByDayDescription(value)
 
-      // Also update all days to have this description
       const updated = [...localItinerary]
       updated.forEach((day) => {
         day.dayDescription = value
@@ -394,14 +328,10 @@ const Step2Itinerary: React.FC<Step2Props> = ({
       setLocalItinerary(updated)
     }
 
-    // Notify about changes by triggering the image change handler
-    // This is a bit of a hack, but it will ensure the parent detects changes
     onStepImagesChange(selectedDayIndex, stepImages[selectedDayIndex] || [])
   }
 
-  // When user clicks "Toliau"
   const handleNext = () => {
-    // Ensure all days have the same description in non-day-by-day mode
     let finalItinerary = [...localItinerary]
     if (!isDayByDay) {
       finalItinerary = finalItinerary.map((day) => ({
@@ -409,7 +339,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         dayDescription: nonDayByDayDescription,
       }))
     } else {
-      // In day-by-day mode, check if all events have dates matching their day
       const dayByDayValidation = validateDayByDayEventDates(finalItinerary)
       if (!dayByDayValidation.valid) {
         setSnackbar({
@@ -421,7 +350,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
       }
     }
 
-    // First validate that all events have valid dates
     const dateValidationResult = validateAllEvents(finalItinerary)
 
     if (!dateValidationResult.valid) {
@@ -433,8 +361,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
       return
     }
 
-    // Then validate that all events have required fields filled
-    // For image events, we need to include both stepImages and existingImageUrls
     const itineraryWithImages = finalItinerary.map((day, dayIndex) => ({
       ...day,
       events: day.events.map((event) =>
@@ -459,7 +385,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
       return
     }
 
-    // Check if events are within trip date range
     const eventsOutsideRange = checkEventsOutsideRange(finalItinerary, tripData.startDate, tripData.endDate)
 
     if (eventsOutsideRange.length > 0) {
@@ -471,7 +396,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
       return
     }
 
-    // Sort events by earliest time
     const sortedItinerary = finalItinerary.map((day) => ({
       ...day,
       events: [...day.events].sort((a, b) => (getEarliestTime(a) || 0) - (getEarliestTime(b) || 0)),
@@ -480,7 +404,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     onSubmit(sortedItinerary)
   }
 
-  // Helper function to check if events are outside the trip date range
   const checkEventsOutsideRange = (
     itinerary: ItineraryDay[],
     startDateStr: string | null,
@@ -489,10 +412,10 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     if (!startDateStr || !endDateStr) return []
 
     const startDate = new Date(startDateStr)
-    startDate.setHours(0, 0, 0, 0) // Start of day
+    startDate.setHours(0, 0, 0, 0) 
 
     const endDate = new Date(endDateStr)
-    endDate.setHours(23, 59, 59, 999) // End of day
+    endDate.setHours(23, 59, 59, 999) 
 
     const eventsOutsideRange: TripEvent[] = []
 
@@ -550,7 +473,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     return eventsOutsideRange
   }
 
-  // Add events
   const addTransport = () => {
     addEventToCurrentDay(createTransportEvent())
     handleCloseAddMenu()
@@ -576,64 +498,50 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     updated[selectedDayIndex].events.push(newEvent)
     setLocalItinerary(updated)
 
-    // Notify about changes
     onStepImagesChange(selectedDayIndex, stepImages[selectedDayIndex] || [])
   }
 
-  // Handle add menu close
   const handleCloseAddMenu = () => {
     setAddMenuAnchorEl(null)
     setAddMenuOpen(false)
   }
 
-  // Remove event from day
   const removeEvent = (eventIndex: number) => {
     const updated = [...localItinerary]
     const eventToRemove = updated[selectedDayIndex].events[eventIndex]
 
-    // If removing an image event, mark all existing images for deletion
     if (eventToRemove.type === "images") {
-      // Get all existing images for this day
       const existingImages = existingStepImagesState[selectedDayIndex] || []
 
-      // Mark all existing images for deletion
       if (existingImages.length > 0) {
-        console.log(`Marking all ${existingImages.length} images for deletion in day ${selectedDayIndex}`)
 
-        // Add all image IDs to the stepImagesToDelete array
         const imageIds = existingImages.map((img) => img.id)
         setStepImagesToDelete((prev) => ({
           ...prev,
           [selectedDayIndex]: [...(prev[selectedDayIndex] || []), ...imageIds],
         }))
 
-        // Call onStepImageDelete for each image
         if (onStepImageDelete) {
           existingImages.forEach((img) => {
             onStepImageDelete(selectedDayIndex, img.id)
           })
         }
 
-        // Clear the existing images for this day
         setExistingStepImages((prev) => ({
           ...prev,
           [selectedDayIndex]: [],
         }))
       }
 
-      // Clear the new images for this day
       handleStepImagesChange(selectedDayIndex, [])
     }
 
-    // Remove the event
     updated[selectedDayIndex].events.splice(eventIndex, 1)
     setLocalItinerary(updated)
 
-    // Notify about changes
     onStepImagesChange(selectedDayIndex, stepImages[selectedDayIndex] || [])
   }
 
-  // If user edits an event, update local state
   const handleEventChange = (eventIndex: number, field: string, value: any) => {
     const updated = [...localItinerary]
     updated[selectedDayIndex].events[eventIndex] = {
@@ -642,11 +550,9 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     }
     setLocalItinerary(updated)
 
-    // Notify about changes
     onStepImagesChange(selectedDayIndex, stepImages[selectedDayIndex] || [])
   }
 
-  // Navigate to next/previous day
   const goToNextDay = () => {
     if (selectedDayIndex < localItinerary.length - 1) {
       setSelectedDayIndex(selectedDayIndex + 1)
@@ -659,9 +565,7 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     }
   }
 
-  // Add images function
   const addImages = () => {
-    // Check if this day already has an image event
     if (hasImageEvent) {
       setSnackbar({
         open: true,
@@ -680,7 +584,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
     handleCloseAddMenu()
   }
 
-  // Handle back button click - save description to localStorage before going back
   const handleBack = () => {
     if (!isDayByDay && nonDayByDayDescription) {
       localStorage.setItem(storageKey, nonDayByDayDescription)
@@ -703,7 +606,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
 
   return (
     <Box sx={{ display: "flex", gap: 3, width: "100%" }}>
-      {/* Day sidebar for desktop */}
       {isDayByDay && (
         <DaySidebar
           days={localItinerary}
@@ -713,7 +615,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
         />
       )}
 
-      {/* Mobile day drawer */}
       <MobileDayDrawer
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
@@ -723,7 +624,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
       />
 
       <Box sx={{ flexGrow: 1, width: "100%" }}>
-        {/* Mobile day selector */}
         {isDayByDay && isMobile && (
           <MobileDaySelector
             selectedDayIndex={selectedDayIndex}
@@ -770,7 +670,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Day description */}
           <DayDescription
             description={isDayByDay ? currentDay.dayDescription : nonDayByDayDescription}
             isDayByDay={isDayByDay}
@@ -782,7 +681,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
               Pridėti naują įvykį
             </Typography>
 
-            {/* Add event menu */}
             <AddEventMenu
               isSmall={isSmall}
               addMenuOpen={addMenuOpen}
@@ -798,7 +696,6 @@ const Step2Itinerary: React.FC<Step2Props> = ({
             />
           </Box>
 
-          {/* Event list */}
           <Grid container spacing={3}>
             <EventList
               events={currentDay.events}

@@ -189,7 +189,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                   }}
                   onClick={() => navigateTo(item.path)}
                   startIcon={item.icon}
-                  data-path={item.path} // Add data-path attribute
+                  data-path={item.path} 
                 >
                   {item.text}
                 </Button>
@@ -243,7 +243,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                         alignItems: "center",
                         gap: 1,
                       }}
-                      data-path="/profile-page" // Add data-path attribute
+                      data-path="/profile-page" 
                     >
                       <ProfileIcon sx={{ fontSize: 20 }} />
                       Peržiūrėti paskyrą
@@ -258,7 +258,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                         alignItems: "center",
                         gap: 1,
                       }}
-                      data-path="/login" // Add data-path attribute
+                      data-path="/login" 
                     >
                       <LogoutIcon sx={{ fontSize: 20 }} />
                       Atsijungti

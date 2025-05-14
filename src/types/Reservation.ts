@@ -3,7 +3,8 @@ export enum ReservationStatus {
     Contacted = 1,
     InProgress = 2,
     Confirmed = 3,
-    Cancelled = 4
+    Cancelled = 4,
+    PendingReassignment = 5
   }
   
   export interface ParticipantResponse {
@@ -20,6 +21,8 @@ export enum ReservationStatus {
     status: ReservationStatus
     createdAt: string
     participants: ParticipantResponse[]
+    pendingAgentId: string | null
+    agentId: string | null
   }
   
   export interface PublicOfferWithReservationCountResponse {

@@ -70,7 +70,7 @@ const TripBasicInfoForm: React.FC<TripBasicInfoFormProps> = ({
           value={formData.startDate}
           onChange={(newDate) => handleDateChange("startDate", newDate)}
           slotProps={{ textField: { fullWidth: true } }}
-          disablePast={!isEditing} // Only disable past dates when creating a new offer
+          disablePast={!isEditing} 
         />
       </Grid>
 
@@ -80,7 +80,7 @@ const TripBasicInfoForm: React.FC<TripBasicInfoFormProps> = ({
           value={formData.endDate}
           onChange={(newDate) => handleDateChange("endDate", newDate)}
           slotProps={{ textField: { fullWidth: true } }}
-          disablePast={!isEditing} // Only disable past dates when creating a new offer
+          disablePast={!isEditing} 
         />
         {dateError && (
           <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>
@@ -97,7 +97,7 @@ const TripBasicInfoForm: React.FC<TripBasicInfoFormProps> = ({
           slotProps={{
             textField: { fullWidth: true },
           }}
-          disablePast={!isEditing} // Only disable past dates when creating a new offer
+          disablePast={!isEditing} 
         />
         {validUntilError && (
           <Typography color="error" variant="caption" sx={{ mt: 1, display: "block" }}>

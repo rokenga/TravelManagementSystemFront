@@ -63,14 +63,12 @@ interface Step2Props {
   onDataChange?: (hasData: boolean) => void
 }
 
-// Add this to store the current step data globally
 declare global {
   interface Window {
     __currentStepData?: OfferStep[]
   }
 }
 
-// Export a function to get the current step data
 export function getCurrentStepData() {
   return window.__currentStepData || null
 }
@@ -88,32 +86,23 @@ const Step2Offers = forwardRef<any, Step2Props>(
     const [selectedOfferIndex, setSelectedOfferIndex] = useState<number>(0)
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
-    // Track validation errors for each offer
     const [offerErrors, setOfferErrors] = useState<Record<number, boolean>>({})
 
-    // Track images to delete for each step
     const [stepsImagesToDelete, setStepsImagesToDelete] = useState<Record<number, string[]>>({})
 
-    // Track new images for each step
     const [stepNewImages, setStepNewImages] = useState<Record<number, File[]>>({})
 
-    // Snackbar state for validation errors
     const [snackbarOpen, setSnackbarOpen] = useState(false)
     const [snackbarMessage, setSnackbarMessage] = useState("")
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info" | "warning">("error")
 
-    // Track date validation errors for each offer
     const [dateValidationErrors, setDateValidationErrors] = useState<Record<number, string[]>>({})
 
-    // Expose methods to parent component
     useImperativeHandle(ref, () => ({
       collectFormData: async () => {
-        // Return the current steps data
         return localSteps
       },
       collectCurrentFormData: async () => {
-        // This method is called when the user tries to leave the form
-        // It should update the global state with the current step data
         window.__currentStepData = localSteps
         return localSteps
       },
@@ -125,20 +114,16 @@ const Step2Offers = forwardRef<any, Step2Props>(
       },
     }))
 
-    // Store the current step data in a global variable for access from outside
     useEffect(() => {
       window.__currentStepData = localSteps
 
-      // Clean up when component unmounts
       return () => {
         window.__currentStepData = null
       }
     }, [localSteps])
 
-    // Notify parent of data changes
     useEffect(() => {
       if (onDataChange) {
-        // Check if there's any meaningful data in the steps
         const hasData = localSteps.some(
           (step) =>
             step.accommodations.length > 0 ||
@@ -151,17 +136,13 @@ const Step2Offers = forwardRef<any, Step2Props>(
       }
     }, [localSteps, onDataChange])
 
-    // Initialize with at least one step if none provided
     useEffect(() => {
       if (steps.length > 0) {
-        // Make a deep copy of the steps to avoid modifying the original
         const updatedSteps = steps.map((step) => {
-          // Only preserve existing image sections, don't create new ones
           return { ...step }
         })
         setLocalSteps(updatedSteps)
       } else {
-        // Create a default step if none exists
         setLocalSteps([
           {
             name: "Pasiūlymas 1",
@@ -170,20 +151,17 @@ const Step2Offers = forwardRef<any, Step2Props>(
             cruises: [],
             isExpanded: true,
             destination: null,
-            // Don't initialize stepImages at all
           },
         ])
       }
     }, [steps])
 
-    // Set the first offer as selected when steps change
     useEffect(() => {
       if (localSteps.length > 0 && selectedOfferIndex >= localSteps.length) {
         setSelectedOfferIndex(0)
       }
     }, [localSteps, selectedOfferIndex])
 
-    // Helper arrays for dropdowns
     const boardBasisOptions = [
       { value: "BedAndBreakfast", label: "Nakvynė su pusryčiais" },
       { value: "HalfBoard", label: "Pusryčiai ir vakarienė" },
@@ -200,12 +178,10 @@ const Step2Offers = forwardRef<any, Step2Props>(
       { value: "Ferry", label: "Keltas", icon: <Sailing fontSize="small" /> },
     ]
 
-    // Helper function to remap indices when steps are reordered
     const reorderTrackingHandler = (draggedIndex: number, targetIndex: number) => {
       setStepNewImages((prev) => prev)
     }
 
-    // Toggle dropdown menu
     const toggleDropdown = (stepIndex: number) => {
       setOpenDropdowns((prev) => ({
         ...prev,
@@ -213,7 +189,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       }))
     }
 
-    // Toggle expand/collapse for an offer
     const toggleExpand = (stepIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -222,46 +197,38 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Add a new step (offer option)
     const handleAddStep = () => {
       setLocalSteps((prev) => {
         const newSteps = [
           ...prev,
           {
-            name: `Pasiūlymas ${prev.length + 1}`, // Default name
+            name: `Pasiūlymas ${prev.length + 1}`, 
             accommodations: [],
             transports: [],
             cruises: [],
-            isExpanded: true, // New steps are expanded by default
+            isExpanded: true, 
             destination: null,
-            // Don't initialize stepImages
           },
         ]
-        // Select the newly added offer
         setSelectedOfferIndex(newSteps.length - 1)
         return newSteps
       })
     }
 
-    // Remove an entire step
     const handleRemoveStep = (stepIndex: number) => {
       setLocalSteps((prev) => {
         const newSteps = prev.filter((_: OfferStep, idx: number) => idx !== stepIndex)
 
-        // Adjust selected index if needed
         if (selectedOfferIndex >= newSteps.length) {
           setSelectedOfferIndex(Math.max(0, newSteps.length - 1))
         } else if (stepIndex === selectedOfferIndex && newSteps.length > 0) {
-          // Keep the same index if possible
           setSelectedOfferIndex(Math.min(selectedOfferIndex, newSteps.length - 1))
         }
 
-        // Remove errors for this step
         setOfferErrors((prev) => {
           const newErrors = { ...prev }
           delete newErrors[stepIndex]
 
-          // Shift indices for steps after the removed one
           const shiftedErrors: Record<number, boolean> = {}
           Object.entries(newErrors).forEach(([idx, hasError]) => {
             const index = Number.parseInt(idx, 10)
@@ -275,12 +242,10 @@ const Step2Offers = forwardRef<any, Step2Props>(
           return shiftedErrors
         })
 
-        // Remove images to delete for this step
         setStepsImagesToDelete((prev) => {
           const newImagesToDelete = { ...prev }
           delete newImagesToDelete[stepIndex]
 
-          // Shift indices for steps after the removed one
           const shiftedImagesToDelete: Record<number, string[]> = {}
           Object.entries(newImagesToDelete).forEach(([idx, imageIds]) => {
             const index = Number.parseInt(idx, 10)
@@ -294,12 +259,10 @@ const Step2Offers = forwardRef<any, Step2Props>(
           return shiftedImagesToDelete
         })
 
-        // Remove new images for this step
         setStepNewImages((prev) => {
           const newStepImages = { ...prev }
           delete newStepImages[stepIndex]
 
-          // Shift indices for steps after the removed one
           const shiftedStepImages: Record<number, File[]> = {}
           Object.entries(newStepImages).forEach(([idx, files]) => {
             const index = Number.parseInt(idx, 10)
@@ -317,7 +280,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Update step name
     const handleStepNameChange = (stepIndex: number, name: string) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -326,7 +288,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Update step destination
     const handleStepDestinationChange = (stepIndex: number, destination: Country | null) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -335,7 +296,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Add an accommodation to a step
     const handleAddAccommodation = (stepIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -347,13 +307,12 @@ const Step2Offers = forwardRef<any, Step2Props>(
           description: "",
           boardBasis: "",
           roomType: "",
-          price: 0, // Default price
+          price: 0, 
         })
         return updatedSteps
       })
     }
 
-    // Remove an accommodation from a step
     const handleRemoveAccommodation = (stepIndex: number, accIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -364,7 +323,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Update an accommodation field
     const handleAccommodationChange = (
       stepIndex: number,
       accIndex: number,
@@ -374,7 +332,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
         if (field === "price") {
-          // Ensure price is stored as a number
           updatedSteps[stepIndex].accommodations[accIndex][field] =
             typeof value === "string" ? Number.parseFloat(value) || 0 : (value as number)
         } else {
@@ -384,12 +341,11 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Add a transport to a step
     const handleAddTransport = (stepIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
         updatedSteps[stepIndex].transports.push({
-          transportType: "Flight", // Set Flight as default
+          transportType: "Flight", 
           departureTime: null,
           arrivalTime: null,
           departurePlace: "",
@@ -399,13 +355,12 @@ const Step2Offers = forwardRef<any, Step2Props>(
           transportName: "",
           transportCode: "",
           cabinType: "",
-          price: 0, // Default price
+          price: 0, 
         })
         return updatedSteps
       })
     }
 
-    // Remove a transport from a step
     const handleRemoveTransport = (stepIndex: number, transIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -416,7 +371,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Update a transport field
     const handleTransportChange = (
       stepIndex: number,
       transIndex: number,
@@ -426,7 +380,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
         if (field === "price") {
-          // Ensure price is stored as a number
           updatedSteps[stepIndex].transports[transIndex][field] =
             typeof value === "string" ? Number.parseFloat(value) || 0 : (value as number)
         } else {
@@ -436,7 +389,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Add a cruise to a step
     const handleAddCruise = (stepIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -453,13 +405,12 @@ const Step2Offers = forwardRef<any, Step2Props>(
           transportName: "",
           transportCode: "",
           cabinType: "",
-          price: 0, // Default price
+          price: 0, 
         })
         return updatedSteps
       })
     }
 
-    // Remove a cruise from a step
     const handleRemoveCruise = (stepIndex: number, cruiseIndex: number) => {
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
@@ -472,7 +423,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Update a cruise field
     const handleCruiseChange = (
       stepIndex: number,
       cruiseIndex: number,
@@ -485,7 +435,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
           updatedSteps[stepIndex].cruises = []
         }
         if (field === "price") {
-          // Ensure price is stored as a number
           updatedSteps[stepIndex].cruises[cruiseIndex][field] =
             typeof value === "string" ? Number.parseFloat(value) || 0 : (value as number)
         } else {
@@ -495,55 +444,40 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Handle image upload
     const handleAddImages = (stepIndex: number) => {
-      // This function will be called when the user selects "Images" from the dropdown
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
-        // Initialize an empty array for stepImages to indicate the section exists
         updatedSteps[stepIndex].stepImages = []
         return updatedSteps
       })
     }
 
-    // Handle image change
     const handleImageChange = (stepIndex: number, files: File[]) => {
-      console.log(`Adding ${files.length} new images to step ${stepIndex}`)
 
-      // Update the local steps state
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
         updatedSteps[stepIndex].stepImages = files
         return updatedSteps
       })
 
-      // Also update our separate tracking of new images
       setStepNewImages((prev) => ({
         ...prev,
         [stepIndex]: files,
       }))
     }
 
-    // Remove image section
     const handleRemoveImageSection = (stepIndex: number) => {
-      // First, collect all existing image IDs that need to be deleted
       const step = localSteps[stepIndex]
       if (step && step.existingStepImages && step.existingStepImages.length > 0) {
-        console.log(
-          `Removing entire image section for step ${stepIndex} with ${step.existingStepImages.length} existing images`,
-        )
 
-        // Add all existing images to the deletion list
         setStepsImagesToDelete((prev) => {
           const newState = { ...prev }
           if (!newState[stepIndex]) {
             newState[stepIndex] = []
           }
 
-          // Add all image IDs from existingStepImages to the deletion list
           step.existingStepImages.forEach((img) => {
             if (!newState[stepIndex].includes(img.id)) {
-              console.log(`Adding image ${img.id} to deletion list for step ${stepIndex}`)
               newState[stepIndex].push(img.id)
             }
           })
@@ -551,26 +485,20 @@ const Step2Offers = forwardRef<any, Step2Props>(
           return newState
         })
 
-        // Also call the parent's onStepImageDelete for each image if it exists
         if (onStepImageDelete) {
           step.existingStepImages.forEach((img) => {
-            console.log(`Calling parent onStepImageDelete for image ${img.id} in step ${stepIndex}`)
             onStepImageDelete(stepIndex, img.id)
           })
         }
       }
 
-      // Then update the local steps state as before
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
-        // Set stepImages to null explicitly to mark it as removed
         updatedSteps[stepIndex].stepImages = null
-        // Also clear existing images to ensure complete removal
         updatedSteps[stepIndex].existingStepImages = []
         return updatedSteps
       })
 
-      // Also clear any new images for this step
       setStepNewImages((prev) => {
         const newState = { ...prev }
         delete newState[stepIndex]
@@ -578,12 +506,9 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Handle existing image deletion - memoized to prevent unnecessary re-renders
     const handleExistingImageDelete = useCallback(
       (stepIndex: number, imageId: string) => {
-        console.log(`Deleting image with ID: ${imageId} from step ${stepIndex}`)
 
-        // Add to the list of images to delete for this step
         setStepsImagesToDelete((prev) => {
           const newState = { ...prev }
           if (!newState[stepIndex]) {
@@ -593,7 +518,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
           return newState
         })
 
-        // Update the local steps state to remove the image from UI
         setLocalSteps((prevSteps) => {
           const updatedSteps = [...prevSteps]
           const step = updatedSteps[stepIndex]
@@ -605,7 +529,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
           return updatedSteps
         })
 
-        // Call the parent component's delete handler if provided
         if (onStepImageDelete) {
           onStepImageDelete(stepIndex, imageId)
         }
@@ -613,22 +536,18 @@ const Step2Offers = forwardRef<any, Step2Props>(
       [onStepImageDelete],
     )
 
-    // Drag and drop handlers for sidebar only
     const handleDragStart = (e: React.DragEvent, stepIndex: number) => {
       setDraggedStepIndex(stepIndex)
       e.dataTransfer.effectAllowed = "move"
 
-      // Store the index as data to ensure we have it during drop
       e.dataTransfer.setData("text/plain", stepIndex.toString())
 
-      // Make the ghost image semi-transparent
       if (e.target instanceof HTMLElement) {
         const ghostElement = e.target.cloneNode(true) as HTMLElement
         ghostElement.style.opacity = "0.7"
         document.body.appendChild(ghostElement)
         e.dataTransfer.setDragImage(ghostElement, 20, 20)
 
-        // Remove the ghost element after a short delay
         setTimeout(() => {
           document.body.removeChild(ghostElement)
         }, 0)
@@ -641,7 +560,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
 
       if (draggedStepIndex === null || draggedStepIndex === targetIndex) return
 
-      // Add a visual indicator for the drop target
       const targetElement = e.currentTarget as HTMLElement
       targetElement.style.borderTop = draggedStepIndex > targetIndex ? "2px solid #4caf50" : "none"
       targetElement.style.borderBottom = draggedStepIndex < targetIndex ? "2px solid #4caf50" : "none"
@@ -653,7 +571,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
     }
 
     const handleDragLeave = (e: React.DragEvent) => {
-      // Remove the visual indicator when leaving the drop target
       const targetElement = e.currentTarget as HTMLElement
       targetElement.style.borderTop = "none"
       targetElement.style.borderBottom = "none"
@@ -663,14 +580,12 @@ const Step2Offers = forwardRef<any, Step2Props>(
       e.preventDefault()
       e.stopPropagation()
 
-      // Remove visual indicators
       const targetElement = e.currentTarget as HTMLElement
       targetElement.style.borderTop = "none"
       targetElement.style.borderBottom = "none"
 
       if (draggedStepIndex === null || draggedStepIndex === targetIndex) return
 
-      // Reorder the steps
       setLocalSteps((prevSteps) => {
         const newSteps = [...prevSteps]
         const [draggedStep] = newSteps.splice(draggedStepIndex, 1)
@@ -678,7 +593,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         return newSteps
       })
 
-      // Update tracking state for images
       const updateTracking = (
         prevState: Record<number, any>,
         draggedIdx: number,
@@ -686,35 +600,28 @@ const Step2Offers = forwardRef<any, Step2Props>(
       ): Record<number, any> => {
         const newState = { ...prevState }
 
-        // Handle the case where we're moving an item with data
         if (newState[draggedIdx] !== undefined) {
           const draggedData = newState[draggedIdx]
 
-          // Shift items between source and target
           if (draggedIdx < targetIdx) {
-            // Moving down: shift items up
             for (let i = draggedIdx; i < targetIdx; i++) {
               newState[i] = newState[i + 1]
             }
           } else {
-            // Moving up: shift items down
             for (let i = draggedIdx; i > targetIdx; i--) {
               newState[i] = newState[i - 1]
             }
           }
 
-          // Place dragged item at target position
           newState[targetIdx] = draggedData
         }
 
         return newState
       }
 
-      // Update image tracking state
       setStepNewImages((prev) => updateTracking(prev, draggedStepIndex, targetIndex))
       setStepsImagesToDelete((prev) => updateTracking(prev, draggedStepIndex, targetIndex))
 
-      // Update selected index if needed
       if (selectedOfferIndex === draggedStepIndex) {
         setSelectedOfferIndex(targetIndex)
       } else if (
@@ -723,7 +630,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
           selectedOfferIndex <= targetIndex) ||
         (draggedStepIndex > targetIndex && selectedOfferIndex >= targetIndex && selectedOfferIndex < draggedStepIndex)
       ) {
-        // Adjust selected index based on drag direction
         if (draggedStepIndex < targetIndex) {
           setSelectedOfferIndex(selectedOfferIndex - 1)
         } else {
@@ -735,7 +641,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
     const handleDragEnd = (e: React.DragEvent) => {
       e.preventDefault()
 
-      // Clear any remaining visual indicators
       document.querySelectorAll('[data-tab-button="true"]').forEach((element) => {
         ;(element as HTMLElement).style.borderTop = "none"(element as HTMLElement).style.borderBottom = "none"
       })
@@ -743,22 +648,16 @@ const Step2Offers = forwardRef<any, Step2Props>(
       setDraggedStepIndex(null)
     }
 
-    // Improve the reorderTracking function to handle image state properly
     const reorderTracking = (draggedIndex: number, targetIndex: number) => {
-      // Update stepNewImages
       setStepNewImages((prev) => {
         const newState = { ...prev }
 
-        // If we have images for the dragged step, we need to move them
         if (newState[draggedIndex]) {
           const draggedImages = newState[draggedIndex]
 
-          // Remove the dragged step's images
           delete newState[draggedIndex]
 
-          // Adjust indices for steps between source and target
           if (draggedIndex < targetIndex) {
-            // Moving down: shift indices between source and target up by 1
             for (let i = draggedIndex + 1; i <= targetIndex; i++) {
               if (newState[i] !== undefined) {
                 newState[i - 1] = newState[i]
@@ -766,7 +665,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
               }
             }
           } else {
-            // Moving up: shift indices between target and source down by 1
             for (let i = targetIndex; i < draggedIndex; i++) {
               if (newState[i] !== undefined) {
                 newState[i + 1] = newState[i]
@@ -775,14 +673,12 @@ const Step2Offers = forwardRef<any, Step2Props>(
             }
           }
 
-          // Place the dragged images at the target index
           newState[targetIndex] = draggedImages
         }
 
         return newState
       })
 
-      // Update stepsImagesToDelete similarly
       setStepsImagesToDelete((prev) => {
         const newState = { ...prev }
 
@@ -814,9 +710,7 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Handle validation errors from OfferOption
     const handleValidationError = (stepIndex: number, hasError: boolean, errorMessage?: string) => {
-      // Only update if the error state actually changes
       setOfferErrors((prev) => {
         if (prev[stepIndex] === hasError) {
           return prev
@@ -827,7 +721,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         }
       })
 
-      // Show error message in snackbar if provided and error state changed
       if (hasError && errorMessage) {
         setSnackbarMessage(errorMessage)
         setSnackbarSeverity("error")
@@ -835,20 +728,16 @@ const Step2Offers = forwardRef<any, Step2Props>(
       }
     }
 
-    // Validate that all dates in a step are within trip date range
     const validateStepDates = (step: OfferStep, stepIndex: number): string[] => {
       const errors: string[] = []
 
-      // If no trip dates are set, no validation needed
       if (!tripData.startDate && !tripData.endDate) {
         return errors
       }
 
       const tripStart = tripData.startDate ? tripData.startDate.startOf("day") : null
-      // Important change: Use end of day for the trip end date to include the full last day
       const tripEnd = tripData.endDate ? tripData.endDate.endOf("day") : null
 
-      // Check accommodations
       step.accommodations.forEach((acc, accIndex) => {
         if (acc.checkIn && tripStart && acc.checkIn.isBefore(tripStart)) {
           errors.push(`Apgyvendinimas #${accIndex + 1}: Įsiregistravimo data yra prieš kelionės pradžią`)
@@ -858,7 +747,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         }
       })
 
-      // Check transports
       step.transports.forEach((trans, transIndex) => {
         if (trans.departureTime && tripStart && trans.departureTime.isBefore(tripStart)) {
           errors.push(`Transportas #${transIndex + 1}: Išvykimo laikas yra prieš kelionės pradžią`)
@@ -868,7 +756,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         }
       })
 
-      // Check cruises
       if (step.cruises) {
         step.cruises.forEach((cruise, cruiseIndex) => {
           if (cruise.departureTime && tripStart && cruise.departureTime.isBefore(tripStart)) {
@@ -883,7 +770,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
       return errors
     }
 
-    // Validate all steps when trip dates change or steps change
     useEffect(() => {
       const newErrors: Record<number, string[]> = {}
       let hasErrors = false
@@ -898,7 +784,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
 
       setDateValidationErrors(newErrors)
 
-      // If there are errors, show a snackbar message
       if (hasErrors && (tripData.startDate || tripData.endDate)) {
         setSnackbarMessage("Kai kurie įvykiai yra už kelionės datų ribų. Prašome pataisyti prieš tęsiant.")
         setSnackbarSeverity("warning")
@@ -906,14 +791,11 @@ const Step2Offers = forwardRef<any, Step2Props>(
       }
     }, [tripData.startDate, tripData.endDate, localSteps])
 
-    // Check if there are any validation errors in any offer
     const hasValidationErrors = () => {
       return Object.values(offerErrors).some((hasError) => hasError)
     }
 
-    // Simplified validation for all steps before submission
     const validateAllSteps = (): { valid: boolean; message?: string } => {
-      // First check for existing validation errors
       if (hasValidationErrors()) {
         return {
           valid: false,
@@ -921,7 +803,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         }
       }
 
-      // Check for date validation errors
       const hasDateErrors = Object.values(dateValidationErrors).some((errors) => errors.length > 0)
       if (hasDateErrors) {
         return {
@@ -931,7 +812,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         }
       }
 
-      // Check for completely empty steps
       for (let i = 0; i < localSteps.length; i++) {
         const step = localSteps[i]
         const isEmpty =
@@ -951,9 +831,7 @@ const Step2Offers = forwardRef<any, Step2Props>(
       return { valid: true }
     }
 
-    // Save changes before submitting to ensure persistence
     const handleSubmit = () => {
-      // Validate all steps before proceeding
       const validation = validateAllSteps()
       if (!validation.valid) {
         setSnackbarMessage(validation.message || "Prašome ištaisyti klaidas prieš tęsiant.")
@@ -962,19 +840,15 @@ const Step2Offers = forwardRef<any, Step2Props>(
         return
       }
 
-      // Synchronize the step images with our tracking state before submission
       synchronizeStepImages()
 
       onSubmit(localSteps, true)
     }
 
-    // Synchronize step images with tracking state
     const synchronizeStepImages = () => {
-      // Ensure stepImages in localSteps match our tracking state
       setLocalSteps((prevSteps) => {
         const updatedSteps = [...prevSteps]
 
-        // Update each step's images based on stepNewImages
         Object.entries(stepNewImages).forEach(([indexStr, files]) => {
           const index = Number.parseInt(indexStr, 10)
           if (index >= 0 && index < updatedSteps.length) {
@@ -986,9 +860,7 @@ const Step2Offers = forwardRef<any, Step2Props>(
       })
     }
 
-    // Fix for the back button - save changes before going back
     const handleBack = () => {
-      // Validate all steps before proceeding
       const validation = validateAllSteps()
       if (!validation.valid) {
         setSnackbarMessage(validation.message || "Prašome ištaisyti klaidas prieš grįžimą.")
@@ -997,7 +869,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         return
       }
 
-      // Synchronize the step images with our tracking state before going back
       synchronizeStepImages()
 
       onSubmit(localSteps, false)
@@ -1020,9 +891,7 @@ const Step2Offers = forwardRef<any, Step2Props>(
       setSnackbarOpen(false)
     }
 
-    // Fix for mobile drawer
     useEffect(() => {
-      // Reset drawer state when switching between mobile and desktop
       if (!isMobile) {
         setDrawerOpen(false)
       }
@@ -1030,7 +899,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
 
     return (
       <Box sx={{ display: "flex", gap: 3, width: "100%" }}>
-        {/* Sidebar for desktop */}
         {!isMobile && (
           <OfferSidebar
             offers={localSteps}
@@ -1048,7 +916,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
           />
         )}
 
-        {/* Mobile drawer */}
         <MobileOfferDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
@@ -1069,7 +936,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
         />
 
         <Box sx={{ flexGrow: 1, width: "100%" }}>
-          {/* Mobile selector */}
           {isMobile && localSteps.length > 0 && (
             <MobileOfferSelector
               selectedOfferIndex={selectedOfferIndex}
@@ -1081,7 +947,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
             />
           )}
 
-          {/* Display only the selected offer */}
           {localSteps.length > 0 && (
             <OfferOption
               key={selectedOfferIndex}
@@ -1123,7 +988,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
             />
           )}
 
-          {/* Navigation buttons - centered across the entire width */}
           <Box
             sx={{
               position: "relative",
@@ -1161,7 +1025,6 @@ const Step2Offers = forwardRef<any, Step2Props>(
           </Box>
         </Box>
 
-        {/* Snackbar for validation errors */}
         <CustomSnackbar
           open={snackbarOpen}
           message={snackbarMessage}

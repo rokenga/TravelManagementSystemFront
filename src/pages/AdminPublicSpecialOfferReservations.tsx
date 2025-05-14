@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
@@ -17,6 +17,7 @@ import ReservationFilterPanel, {
 } from "../components/filters/ReservationFilterPanel"
 import PageSizeSelector from "../components/PageSizeSelector"
 import Pagination from "../components/Pagination"
+import { UserContext } from "../contexts/UserContext" 
 import {
   Container,
   Typography,
@@ -45,6 +46,7 @@ import {
   Button,
   useMediaQuery,
   CircularProgress,
+  Tooltip,
 } from "@mui/material"
 import {
   Email as EmailIcon,
@@ -64,12 +66,13 @@ import {
   PersonAdd,
   LocalOffer,
   FilterList,
+  Check,
+  Close,
+  Lock,
 } from "@mui/icons-material"
 import CustomSnackbar from "../components/CustomSnackBar"
-// Import the new dialog component
 import ReservationStatusChangeDialog from "../components/status/ReservationStatusChangeModal"
 
-// Helper function to format dates in Lithuanian
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
   const options: Intl.DateTimeFormatOptions = {
@@ -80,7 +83,6 @@ const formatDate = (dateString: string): string => {
   return new Intl.DateTimeFormat("lt-LT", options).format(date)
 }
 
-// Helper function to format date and time
 const formatDateTime = (dateString: string): string => {
   const date = new Date(dateString)
   const options: Intl.DateTimeFormatOptions = {
@@ -93,9 +95,7 @@ const formatDateTime = (dateString: string): string => {
   return new Intl.DateTimeFormat("lt-LT", options).format(date)
 }
 
-// Helper function to get status chip color and icon
 const getStatusChip = (status: string | number) => {
-  // Handle string status values
   if (typeof status === "string") {
     switch (status) {
       case "New":
@@ -128,6 +128,12 @@ const getStatusChip = (status: string | number) => {
           icon: <Cancel fontSize="small" />,
           label: "Atšaukta",
         }
+      case "PendingReassignment":
+        return {
+          color: "warning" as const,
+          icon: <PersonAdd fontSize="small" />,
+          label: "Laukiama perdavimo",
+        }
       default:
         return {
           color: "default" as const,
@@ -137,37 +143,42 @@ const getStatusChip = (status: string | number) => {
     }
   }
 
-  // Handle numeric status values
   switch (status) {
-    case 0: // New
+    case 0: 
       return {
         color: "info" as const,
         icon: <HourglassEmpty fontSize="small" />,
         label: "Nauja",
       }
-    case 1: // Contacted
+    case 1: 
       return {
         color: "primary" as const,
         icon: <EmailIcon fontSize="small" />,
         label: "Susisiekta",
       }
-    case 2: // InProgress
+    case 2:
       return {
         color: "warning" as const,
         icon: <HourglassEmpty fontSize="small" />,
         label: "Vykdoma",
       }
-    case 3: // Confirmed
+    case 3:
       return {
         color: "success" as const,
         icon: <CheckCircle fontSize="small" />,
         label: "Patvirtinta",
       }
-    case 4: // Cancelled
+    case 4:
       return {
         color: "error" as const,
         icon: <Cancel fontSize="small" />,
         label: "Atšaukta",
+      }
+    case 5: 
+      return {
+        color: "warning" as const,
+        icon: <PersonAdd fontSize="small" />,
+        label: "Laukiama perdavimo",
       }
     default:
       return {
@@ -178,7 +189,6 @@ const getStatusChip = (status: string | number) => {
   }
 }
 
-// Calculate trip duration in days
 const calculateDuration = (startDate?: string, endDate?: string) => {
   if (!startDate || !endDate) return null
 
@@ -190,20 +200,25 @@ const calculateDuration = (startDate?: string, endDate?: string) => {
   return diffDays
 }
 
-// Helper function to check if status is cancelled
 const isStatusCancelled = (status: string | number): boolean => {
   if (typeof status === "string") {
     return status === "Cancelled"
   }
-  return status === 4 // Numeric value for Cancelled
+  return status === 4 
 }
 
-// Helper function to check if status is new
 const isStatusNew = (status: string | number): boolean => {
   if (typeof status === "string") {
     return status === "New"
   }
-  return status === 0 // Numeric value for New
+  return status === 0
+}
+
+const isStatusPendingReassignment = (status: string | number): boolean => {
+  if (typeof status === "string") {
+    return status === "PendingReassignment"
+  }
+  return status === 5 
 }
 
 const SpecialOfferReservationsPage: React.FC = () => {
@@ -211,17 +226,17 @@ const SpecialOfferReservationsPage: React.FC = () => {
   const navigate = useNavigate()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+  const user = useContext(UserContext) 
   const [reservations, setReservations] = useState<ReservationResponse[]>([])
   const [loading, setLoading] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [offerDetails, setOfferDetails] = useState<any>(null)
 
-  // Menu state
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null)
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null)
   const [selectedReservation, setSelectedReservation] = useState<ReservationResponse | null>(null)
 
-  // Dialog states
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [reassignmentWizardOpen, setReassignmentWizardOpen] = useState(false)
   const [statusDialogOpen, setStatusDialogOpen] = useState(false)
@@ -230,49 +245,60 @@ const SpecialOfferReservationsPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Filter state
+  const [acceptLoading, setAcceptLoading] = useState(false)
+  const [rejectLoading, setRejectLoading] = useState(false)
+
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<ReservationFilters>(defaultReservationFilters)
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
-  // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "info" as "success" | "error" | "info" | "warning",
   })
 
+  const handleBackClick = () => {
+    if (offerId) {
+      navigate(`/public-offers/${offerId}`)
+    } else {
+      navigate("/public-offers")
+    }
+  }
+
   useEffect(() => {
     if (selectedReservation) {
-      console.log("Selected reservation:", selectedReservation)
-      console.log("Status type:", typeof selectedReservation.status)
-      console.log("Status value:", selectedReservation.status)
     }
   }, [selectedReservation])
 
   useEffect(() => {
-    if (!offerId) return
-
     const fetchOfferDetails = async () => {
       try {
-        const offerResponse = await axios.get(`${API_URL}/PublicTripOfferFacade/${offerId}`, {
+        setLoading(true)
+        const response = await axios.get(`${API_URL}/PublicTripOfferFacade/${offerId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         })
-        setOfferDetails(offerResponse.data)
-      } catch (offerErr) {
-        console.error("Failed to fetch offer details:", offerErr)
+        setOfferDetails(response.data)
+      } catch (err) {
+        setError("Nepavyko gauti pasiūlymo detalių.")
+      } finally {
+        setLoading(false)
+        setTimeout(() => {
+          setIsInitialLoading(false)
+        }, 1000)
       }
     }
 
-    fetchOfferDetails()
-    fetchReservations(currentPage, pageSize, selectedFilters)
+    if (offerId) {
+      fetchOfferDetails()
+      fetchReservations(1, pageSize, defaultReservationFilters)
+    }
   }, [offerId])
 
   const fetchReservations = async (page: number, size: number, filters: ReservationFilters) => {
@@ -281,20 +307,16 @@ const SpecialOfferReservationsPage: React.FC = () => {
     try {
       setLoading(true)
 
-      // Prepare query params
       const queryParams: ReservationQueryParams = {
         pageNumber: page,
         pageSize: size,
       }
 
-      // Add status filters if selected
       if (filters.statuses && filters.statuses.length > 0) {
         queryParams.statuses = filters.statuses.map((status) => ReservationStatus[status])
       }
 
-      console.log("Fetching reservations with params:", queryParams)
 
-      // Make API call
       const response = await axios.post<PaginatedResponse<ReservationResponse>>(
         `${API_URL}/Reservation/trips/${offerId}/paginated`,
         queryParams,
@@ -305,28 +327,19 @@ const SpecialOfferReservationsPage: React.FC = () => {
         },
       )
 
-      // Update state with response data
       setReservations(response.data.items)
       setCurrentPage(response.data.pageNumber)
       setPageSize(response.data.pageSize)
       setTotalCount(response.data.totalCount)
       setTotalPages(Math.ceil(response.data.totalCount / response.data.pageSize))
 
-      console.log("Pagination data:", {
-        currentPage: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: Math.ceil(response.data.totalCount / response.data.pageSize),
-      })
     } catch (err) {
-      console.error("Failed to fetch reservations:", err)
       setError("Nepavyko gauti rezervacijų duomenų. Bandykite vėliau.")
     } finally {
       setLoading(false)
     }
   }
 
-  // Menu handlers
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, reservationId: string) => {
     const reservation = reservations.find((r) => r.id === reservationId)
     setMenuAnchorEl(event.currentTarget)
@@ -338,7 +351,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
     setMenuAnchorEl(null)
   }
 
-  // Action handlers
   const handleDeleteClick = () => {
     handleMenuClose()
     setDeleteDialogOpen(true)
@@ -348,34 +360,27 @@ const SpecialOfferReservationsPage: React.FC = () => {
     if (!selectedReservationId) return
 
     try {
-      // Set loading state to true
       setDeleteLoading(true)
 
-      // Make API request to delete the reservation
       await axios.delete(`${API_URL}/Reservation/${selectedReservationId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       })
 
-      // Show success message
       setSnackbar({
         open: true,
         message: "Rezervacija sėkmingai ištrinta",
         severity: "success",
       })
 
-      // Close the dialog after success
       setDeleteDialogOpen(false)
 
-      // Refresh the reservations list
       fetchReservations(currentPage, pageSize, selectedFilters)
     } catch (err: any) {
-      console.error("Failed to delete reservation:", err)
 
       let errorMessage = "Nepavyko ištrinti rezervacijos. Bandykite dar kartą."
 
-      // Extract error message from different response formats
       if (err.response) {
         if (err.response.status === 404) {
           errorMessage = "Rezervacija nerasta. Ji gali būti jau ištrinta."
@@ -390,17 +395,14 @@ const SpecialOfferReservationsPage: React.FC = () => {
         }
       }
 
-      // Show error message
       setSnackbar({
         open: true,
         message: errorMessage,
         severity: "error",
       })
 
-      // Close the dialog on error
       setDeleteDialogOpen(false)
     } finally {
-      // Always set loading state back to false
       setDeleteLoading(false)
     }
   }
@@ -415,7 +417,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
     setReassignmentWizardOpen(true)
   }
 
-  // Status change handlers
   const handleStatusChangeClick = (reservation: ReservationResponse) => {
     if (!reservation) {
       setSnackbar({
@@ -425,10 +426,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
       })
       return
     }
-
-    console.log("Opening status dialog for reservation:", reservation)
-    console.log("Status type:", typeof reservation.status)
-    console.log("Status value:", reservation.status)
 
     setSelectedReservation(reservation)
     setStatusDialogOpen(true)
@@ -441,11 +438,9 @@ const SpecialOfferReservationsPage: React.FC = () => {
       message: "Rezervacijos statusas sėkmingai pakeistas",
       severity: "success",
     })
-    // Refresh the reservations list
     fetchReservations(currentPage, pageSize, selectedFilters)
   }
 
-  // Create offer handlers
   const handleCreateOfferClick = () => {
     handleMenuClose()
     setCreateOfferDialogOpen(true)
@@ -455,10 +450,8 @@ const SpecialOfferReservationsPage: React.FC = () => {
     if (!selectedReservationId) return
 
     try {
-      // Set loading state to true
       setCreateOfferLoading(true)
 
-      // Make API request to convert reservation to offer
       const response = await axios.post(
         `${API_URL}/ClientTripOfferFacade/${selectedReservationId}/convert`,
         {},
@@ -469,27 +462,22 @@ const SpecialOfferReservationsPage: React.FC = () => {
         },
       )
 
-      // Show success message
       setSnackbar({
         open: true,
         message: "Pasiūlymas sėkmingai sukurtas",
         severity: "success",
       })
 
-      // Close the dialog after success
       setCreateOfferDialogOpen(false)
 
-      // Navigate to the newly created offer after a short delay
       const newOfferId = response.data.id
       setTimeout(() => {
         navigate(`/special-offers/${newOfferId}`)
-      }, 1000) // Short delay to allow user to see the success message
+      }, 1000) 
     } catch (err: any) {
-      console.error("Failed to create offer:", err)
 
       let errorMessage = "Nepavyko sukurti pasiūlymo. Bandykite dar kartą."
 
-      // Extract error message from different response formats
       if (err.response) {
         if (typeof err.response.data === "string") {
           errorMessage = err.response.data
@@ -500,58 +488,166 @@ const SpecialOfferReservationsPage: React.FC = () => {
         }
       }
 
-      // Show error message
       setSnackbar({
         open: true,
         message: errorMessage,
         severity: "error",
       })
 
-      // Close the dialog on error
       setCreateOfferDialogOpen(false)
     } finally {
-      // Always set loading state back to false
       setCreateOfferLoading(false)
     }
   }
 
-  // Filter handlers
+  const handleAcceptReservation = async (reservationId: string) => {
+    try {
+      setAcceptLoading(true)
+
+      await axios.put(`${API_URL}/Reservation/${reservationId}/accept`, null, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+
+      setSnackbar({
+        open: true,
+        message: "Rezervacija sėkmingai perimta",
+        severity: "success",
+      })
+
+      fetchReservations(currentPage, pageSize, selectedFilters)
+    } catch (err: any) {
+
+      let errorMessage = "Nepavyko perimti rezervacijos. Bandykite dar kartą."
+
+      if (err.response) {
+        if (err.response.status === 404) {
+          errorMessage = "Rezervacija nerasta."
+        } else if (err.response.status === 403) {
+          errorMessage = "Jūs neturite teisių perimti šios rezervacijos."
+        } else if (typeof err.response.data === "string") {
+          errorMessage = err.response.data
+        } else if (err.response.data && err.response.data.error) {
+          errorMessage = err.response.data.error
+        }
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      })
+    } finally {
+      setAcceptLoading(false)
+    }
+  }
+
+  const handleRejectReservation = async (reservationId: string) => {
+    try {
+      setRejectLoading(true)
+
+      await axios.put(`${API_URL}/Reservation/${reservationId}/reject`, null, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+
+      setSnackbar({
+        open: true,
+        message: "Rezervacijos perdavimas atmestas",
+        severity: "success",
+      })
+
+      fetchReservations(currentPage, pageSize, selectedFilters)
+    } catch (err: any) {
+
+      let errorMessage = "Nepavyko atmesti rezervacijos perdavimo. Bandykite dar kartą."
+
+      if (err.response) {
+        if (err.response.status === 404) {
+          errorMessage = "Rezervacija nerasta."
+        } else if (err.response.status === 403) {
+          errorMessage = "Jūs neturite teisių atmesti šios rezervacijos perdavimo."
+        } else if (typeof err.response.data === "string") {
+          errorMessage = err.response.data
+        } else if (err.response.data && err.response.data.error) {
+          errorMessage = err.response.data.error
+        }
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      })
+    } finally {
+      setRejectLoading(false)
+    }
+  }
+
   const handleApplyFilters = (filters: ReservationFilters) => {
-    console.log("Applied filters:", filters)
     setSelectedFilters(filters)
-    setCurrentPage(1) // Reset to first page when filtering
+    setCurrentPage(1) 
     fetchReservations(1, pageSize, filters)
     setIsFilterDrawerOpen(false)
   }
 
-  // Pagination handlers
   const handlePageChange = (newPage: number) => {
-    console.log(`Changing to page ${newPage}`)
     setCurrentPage(newPage)
     fetchReservations(newPage, pageSize, selectedFilters)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
-    console.log(`Changing page size to ${newPageSize}`)
     setPageSize(newPageSize)
-    setCurrentPage(1) // Reset to first page when changing page size
+    setCurrentPage(1) 
     fetchReservations(1, newPageSize, selectedFilters)
   }
 
-  // Get active filter count
   const getActiveFilterCount = () => {
     return selectedFilters.statuses.length
   }
 
-  if (loading && !reservations.length) {
+  const isPendingAgent = (reservation: ReservationResponse): boolean => {
+    return isStatusPendingReassignment(reservation.status) && reservation.pendingAgentId === user?.id
+  }
+
+  const isReservationOwner = (reservation: ReservationResponse): boolean => {
+    return reservation.agentId === user?.id
+  }
+
+  const shouldDisableMenu = (reservation: ReservationResponse): boolean => {
+    if (isStatusCancelled(reservation.status)) return true
+
+    if (isPendingAgent(reservation)) return true
+
+    if (!isReservationOwner(reservation)) return true
+
+    return false
+  }
+
+  const getMenuTooltipText = (reservation: ReservationResponse): string => {
+    if (isStatusCancelled(reservation.status)) {
+      return "Atšauktos rezervacijos negalima redaguoti"
+    }
+
+    if (isPendingAgent(reservation)) {
+      return "Pirmiausia priimkite arba atmeskite rezervaciją"
+    }
+
+    if (!isReservationOwner(reservation)) {
+      return "Tik rezervacijos savininkas gali atlikti veiksmus"
+    }
+
+    return "Veiksmai"
+  }
+
+  if (isInitialLoading) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <ActionBar showBackButton={true} onBackClick={() => navigate(-1)} />
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-          <Skeleton variant="text" height={40} sx={{ mb: 2 }} />
-          <Skeleton variant="rectangular" height={100} sx={{ mb: 2 }} />
-          <Skeleton variant="rectangular" height={200} />
-        </Paper>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
       </Container>
     )
   }
@@ -559,7 +655,7 @@ const SpecialOfferReservationsPage: React.FC = () => {
   if (error && !reservations.length) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <ActionBar showBackButton={true} onBackClick={() => navigate(-1)} />
+        <ActionBar showBackButton={true} onBackClick={handleBackClick} />
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
@@ -571,9 +667,8 @@ const SpecialOfferReservationsPage: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <ActionBar showBackButton={true} onBackClick={() => navigate(-1)} />
+      <ActionBar showBackButton={true} onBackClick={handleBackClick} />
 
-      {/* Improved Offer Details Card */}
       <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 3 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <Box>
@@ -645,7 +740,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
         )}
       </Paper>
 
-      {/* Filters and Pagination Controls */}
       <Box
         sx={{
           mt: 2,
@@ -707,7 +801,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
                   <Grid item xs={12} key={reservation.id}>
                     <Card sx={{ borderRadius: 2 }}>
                       <CardContent sx={{ p: 3 }}>
-                        {/* Contact Information - Now with clickable email and phone */}
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
                             <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -748,22 +841,65 @@ const SpecialOfferReservationsPage: React.FC = () => {
                               sx={{ fontWeight: "medium", fontSize: "1rem", height: "32px", px: 1 }}
                             />
 
-                            {/* Actions Menu - Disable if status is cancelled */}
-                            <IconButton
-                              aria-label="more"
-                              aria-controls="reservation-menu"
-                              aria-haspopup="true"
-                              onClick={(e) => handleMenuOpen(e, reservation.id)}
-                              disabled={isStatusCancelled(reservation.status)}
-                            >
-                              <MoreVert />
-                            </IconButton>
+                            <Tooltip title={getMenuTooltipText(reservation)}>
+                              <span>
+                                <IconButton
+                                  aria-label="more"
+                                  aria-controls="reservation-menu"
+                                  aria-haspopup="true"
+                                  onClick={(e) => handleMenuOpen(e, reservation.id)}
+                                  disabled={shouldDisableMenu(reservation)}
+                                >
+                                  {shouldDisableMenu(reservation) && !isStatusCancelled(reservation.status) ? (
+                                    <Lock fontSize="small" color="disabled" />
+                                  ) : (
+                                    <MoreVert />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </Box>
                         </Box>
 
+                        {isPendingAgent(reservation) && (
+                          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+                            <Box sx={{ display: "flex", gap: 2 }}>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<Check />}
+                                onClick={() => handleAcceptReservation(reservation.id)}
+                                disabled={acceptLoading || rejectLoading}
+                                sx={{
+                                  minWidth: "140px",
+                                  fontWeight: 500,
+                                  boxShadow: 2,
+                                  "&:hover": { boxShadow: 4 },
+                                }}
+                              >
+                                {acceptLoading ? <CircularProgress size={24} /> : "Patvirtinti"}
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={<Close />}
+                                onClick={() => handleRejectReservation(reservation.id)}
+                                disabled={acceptLoading || rejectLoading}
+                                sx={{
+                                  minWidth: "140px",
+                                  fontWeight: 500,
+                                  borderWidth: "1.5px",
+                                  "&:hover": { borderWidth: "1.5px" },
+                                }}
+                              >
+                                {rejectLoading ? <CircularProgress size={24} /> : "Atmesti"}
+                              </Button>
+                            </Box>
+                          </Box>
+                        )}
+
                         <Divider sx={{ my: 2 }} />
 
-                        {/* Participants Table - Larger font, no heading */}
                         <TableContainer component={Paper} elevation={0} sx={{ bgcolor: "background.default" }}>
                           <Table>
                             <TableHead>
@@ -794,7 +930,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
                 ))}
               </Grid>
 
-              {/* Pagination Controls */}
               {totalPages > 1 && (
                 <Box
                   sx={{
@@ -812,7 +947,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Reservation Actions Menu */}
       <Menu
         id="reservation-menu"
         anchorEl={menuAnchorEl}
@@ -820,46 +954,54 @@ const SpecialOfferReservationsPage: React.FC = () => {
         open={Boolean(menuAnchorEl)}
         onClose={handleMenuClose}
       >
-        {/* Update the menu items based on status */}
-        {selectedReservation && !isStatusCancelled(selectedReservation.status) && (
-          <MenuItem onClick={() => handleStatusChangeClick(selectedReservation)}>
-            <ListItemIcon>
-              <Edit fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Keisti statusą" />
-          </MenuItem>
+        {selectedReservation && isReservationOwner(selectedReservation) && (
+          <>
+            {!isStatusCancelled(selectedReservation.status) && (
+              <MenuItem onClick={() => handleStatusChangeClick(selectedReservation)}>
+                <ListItemIcon>
+                  <Edit fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary="Keisti statusą" />
+              </MenuItem>
+            )}
+
+            {isStatusNew(selectedReservation.status) && (
+              <MenuItem onClick={handleReassignClick}>
+                <ListItemIcon>
+                  <PersonAdd fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary="Perduoti kitam agentui" />
+              </MenuItem>
+            )}
+
+            {!isStatusCancelled(selectedReservation.status) && (
+              <MenuItem onClick={handleCreateOfferClick} disabled={createOfferLoading}>
+                <ListItemIcon>
+                  {createOfferLoading ? <CircularProgress size={20} /> : <LocalOffer fontSize="small" />}
+                </ListItemIcon>
+                <ListItemText primary={createOfferLoading ? "Kuriamas..." : "Sukurti pasiūlymą"} />
+              </MenuItem>
+            )}
+
+            {!isStatusCancelled(selectedReservation.status) && (
+              <MenuItem onClick={handleDeleteClick} disabled={deleteLoading}>
+                <ListItemIcon>
+                  {deleteLoading ? <CircularProgress size={20} /> : <Delete fontSize="small" />}
+                </ListItemIcon>
+                <ListItemText primary={deleteLoading ? "Trinama..." : "Ištrinti"} />
+              </MenuItem>
+            )}
+          </>
         )}
 
-        {/* Only show "Perduoti kitam agentui" if status is New */}
-        {selectedReservation && isStatusNew(selectedReservation.status) && (
-          <MenuItem onClick={handleReassignClick}>
-            <ListItemIcon>
-              <PersonAdd fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Perduoti kitam agentui" />
-          </MenuItem>
-        )}
-
-        {/* Create offer - available for all non-cancelled statuses */}
-        {selectedReservation && !isStatusCancelled(selectedReservation.status) && (
-          <MenuItem onClick={handleCreateOfferClick} disabled={createOfferLoading}>
-            <ListItemIcon>
-              {createOfferLoading ? <CircularProgress size={20} /> : <LocalOffer fontSize="small" />}
-            </ListItemIcon>
-            <ListItemText primary={createOfferLoading ? "Kuriamas..." : "Sukurti pasiūlymą"} />
-          </MenuItem>
-        )}
-
-        {/* Delete option - available for all non-cancelled statuses */}
-        {selectedReservation && !isStatusCancelled(selectedReservation.status) && (
-          <MenuItem onClick={handleDeleteClick} disabled={deleteLoading}>
-            <ListItemIcon>{deleteLoading ? <CircularProgress size={20} /> : <Delete fontSize="small" />}</ListItemIcon>
-            <ListItemText primary={deleteLoading ? "Trinama..." : "Ištrinti"} />
-          </MenuItem>
-        )}
+        {selectedReservation &&
+          (!isReservationOwner(selectedReservation) || isStatusCancelled(selectedReservation.status)) && (
+            <MenuItem disabled>
+              <ListItemText primary="Nėra galimų veiksmų" />
+            </MenuItem>
+          )}
       </Menu>
 
-      {/* Confirmation Dialog for Reassignment */}
       <ConfirmationDialog
         open={confirmDialogOpen}
         title="Rezervacijos perdavimas"
@@ -868,16 +1010,18 @@ const SpecialOfferReservationsPage: React.FC = () => {
         onCancel={() => setConfirmDialogOpen(false)}
       />
 
-      {/* Reassignment Wizard */}
       {selectedReservationId && (
         <ReservationReassignmentWizard
           open={reassignmentWizardOpen}
           onClose={() => setReassignmentWizardOpen(false)}
           reservationId={selectedReservationId}
+          onSuccess={() => {
+            setReassignmentWizardOpen(false)
+            fetchReservations(currentPage, pageSize, selectedFilters)
+          }}
         />
       )}
 
-      {/* Create Offer Confirmation Dialog */}
       <ConfirmationDialog
         open={createOfferDialogOpen}
         title="Sukurti pasiūlymą"
@@ -888,7 +1032,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
         loadingText="Kuriamas pasiūlymas..."
       />
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteDialogOpen}
         title="Ištrinti rezervaciją"
@@ -899,7 +1042,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
         loadingText="Trinama rezervacija..."
       />
 
-      {/* Mobile Filter Panel */}
       {isMobile && (
         <ReservationFilterPanel
           isOpen={isFilterDrawerOpen}
@@ -909,7 +1051,6 @@ const SpecialOfferReservationsPage: React.FC = () => {
         />
       )}
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}
@@ -917,12 +1058,11 @@ const SpecialOfferReservationsPage: React.FC = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
       />
 
-      {/* Status Change Dialog */}
       {selectedReservation && (
         <ReservationStatusChangeDialog
           open={statusDialogOpen}
           reservationId={selectedReservation.id}
-          currentStatus={selectedReservation.status} // Pass the status as-is, the dialog will handle conversion
+          currentStatus={selectedReservation.status}
           onClose={() => setStatusDialogOpen(false)}
           onSuccess={handleStatusChangeSuccess}
         />

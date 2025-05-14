@@ -13,7 +13,6 @@ interface TripInfoCardProps {
 const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting = false }) => {
   const theme = useTheme()
 
-  // Get category label
   const getCategoryLabel = (category: string): string => {
     const categories: Record<string, string> = {
       Tourist: "Pažintinė",
@@ -25,7 +24,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
     return categories[category] || category || "Nepasirinkta"
   }
 
-  // Helper function to determine if a field should be highlighted
   const shouldHighlight = (condition: boolean): boolean => {
     return !hideHighlighting && condition
   }
@@ -33,7 +31,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
   return (
     <Grid item xs={12}>
       <Paper elevation={3} sx={{ p: 3, mb: 2, borderRadius: 2 }}>
-        {/* Trip title at the top */}
         <Typography
           variant="h5"
           gutterBottom
@@ -57,10 +54,8 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
         </Typography>
 
         <Grid container spacing={3}>
-          {/* Left column - Main trip details */}
           <Grid item xs={12} md={6}>
             <List disablePadding>
-              {/* Destination */}
               {tripData.destination && (
                 <ListItem alignItems="center" sx={{ py: 1 }}>
                   <ListItemIcon>
@@ -81,7 +76,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
                 </ListItem>
               )}
 
-              {/* Dates */}
               <ListItem
                 alignItems="center"
                 sx={{
@@ -119,7 +113,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
                 />
               </ListItem>
 
-              {/* Category */}
               <ListItem
                 alignItems="center"
                 sx={{
@@ -157,10 +150,8 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
             </List>
           </Grid>
 
-          {/* Right column */}
           <Grid item xs={12} md={6}>
             <List disablePadding>
-              {/* Client */}
               <ListItem
                 alignItems="center"
                 sx={{
@@ -198,7 +189,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
                 />
               </ListItem>
 
-              {/* Travelers */}
               <ListItem
                 alignItems="center"
                 sx={{
@@ -240,7 +230,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
                 />
               </ListItem>
 
-              {/* Price */}
               <ListItem
                 alignItems="center"
                 sx={{
@@ -284,13 +273,11 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ tripData, hideHighlighting 
               </ListItem>
             </List>
 
-            {/* Description */}
             {tripData.description && (
               <Box sx={{ mt: 2 }}>
                 <ListItem alignItems="flex-start" sx={{ py: 1, pl: 0 }}>
                   <ListItemIcon>
                     <Box sx={{ width: 40, display: "flex", justifyContent: "center" }}>
-                      {/* No specific icon for description, so we'll just maintain the spacing */}
                     </Box>
                   </ListItemIcon>
                   <ListItemText

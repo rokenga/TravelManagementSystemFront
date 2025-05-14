@@ -38,7 +38,6 @@ interface Step2ReviewProps {
   offerData: PublicOfferWizardData
 }
 
-// Combined type for all offer elements
 type OfferElement = {
   type: "accommodation" | "transport" | "cruise"
   name: string
@@ -56,7 +55,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Format date for display
   const formatDate = (date: Dayjs | null | string): string => {
     if (!date) return "Nenustatyta"
     if (typeof date === "string") {
@@ -65,7 +63,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     return date.format("YYYY-MM-DD")
   }
 
-  // Format date and time for display
   const formatDateTime = (date: Dayjs | null | string): string => {
     if (!date) return "Nenustatyta"
     if (typeof date === "string") {
@@ -74,7 +71,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     return date.format("YYYY-MM-DD HH:mm")
   }
 
-  // Get category label
   const getCategoryLabel = (category: string): string => {
     const categories: Record<string, string> = {
       Tourist: "Turistinė",
@@ -86,7 +82,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     return categories[category] || category || "Nepasirinkta"
   }
 
-  // Get transport type icon
   const getTransportIcon = (type: string) => {
     switch (type) {
       case "Flight":
@@ -104,7 +99,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     }
   }
 
-  // Get transport type label in Lithuanian
   const getTransportTypeLabel = (type: string): string => {
     const transportTypes: Record<string, string> = {
       Flight: "Skrydis",
@@ -117,7 +111,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     return transportTypes[type] || type || "Transportas"
   }
 
-  // Get board basis label
   const getBoardBasisLabel = (basis: string): string => {
     const options: Record<string, string> = {
       BedAndBreakfast: "Nakvynė su pusryčiais",
@@ -129,7 +122,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     return options[basis] || basis || "Nepasirinkta"
   }
 
-  // Calculate total price for the offer
   const calculateTotalPrice = (): number => {
     const accommodationTotal = offerData.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
     const transportTotal = offerData.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
@@ -137,16 +129,13 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     return accommodationTotal + transportTotal + cruiseTotal
   }
 
-  // Function to get all offer elements in a single array and sort them chronologically
   const getChronologicalOfferElements = (): OfferElement[] => {
     const elements: OfferElement[] = []
 
-    // Add accommodations
     offerData.accommodations.forEach((acc) => {
       const details: (string | React.ReactNode)[] = []
       const detailsBox = (
         <Box key="details" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* First row with room type, board basis, star rating, and hotel link */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {acc.roomType && (
               <Typography variant="body2" color="text.secondary">
@@ -173,7 +162,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
             )}
           </Box>
 
-          {/* Second row with description */}
           {acc.description && (
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography variant="body2" color="text.secondary">
@@ -196,12 +184,10 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
       })
     })
 
-    // Add transports
     offerData.transports.forEach((trans) => {
       const details: (string | React.ReactNode)[] = []
       const detailsBox = (
         <Box key="details" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* First row with company, transport code, and cabin type */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {trans.companyName && (
               <Typography variant="body2" color="text.secondary">
@@ -220,7 +206,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
             )}
           </Box>
 
-          {/* Second row with description */}
           {trans.description && (
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography variant="body2" color="text.secondary">
@@ -245,13 +230,11 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
       })
     })
 
-    // Add cruises
     if (offerData.cruises) {
       offerData.cruises.forEach((cruise) => {
         const details: (string | React.ReactNode)[] = []
         const detailsBox = (
           <Box key="details" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {/* First row with company, cruise code, and cabin type */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {cruise.companyName && (
                 <Typography variant="body2" color="text.secondary">
@@ -270,7 +253,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
               )}
             </Box>
 
-            {/* Second row with description */}
             {cruise.description && (
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Typography variant="body2" color="text.secondary">
@@ -296,7 +278,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
       })
     }
 
-    // Sort by start date
     return elements.sort((a, b) => {
       if (!a.startDate) return 1
       if (!b.startDate) return -1
@@ -304,7 +285,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
     })
   }
 
-  // Get icon for element type
   const getElementIcon = (element: OfferElement) => {
     if (element.type === "accommodation") {
       return <Hotel sx={{ color: theme.palette.primary.main }} />
@@ -321,7 +301,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Main Trip Information */}
       <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
         <Tooltip title={offerData.tripName || "Nepavadinta kelionė"} placement="top-start">
           <Typography
@@ -343,7 +322,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
         </Tooltip>
 
         <Grid container spacing={3}>
-          {/* Left column - Main trip details */}
           <Grid item xs={12} md={6}>
             <List disablePadding>
               <ListItem alignItems="center" sx={{ py: 1 }}>
@@ -441,7 +419,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
             </List>
           </Grid>
 
-          {/* Right column - Description */}
           <Grid item xs={12} md={6}>
             {offerData.description && (
               <Box sx={{ mb: 2, textAlign: "left" }}>
@@ -456,7 +433,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
           </Grid>
         </Grid>
 
-        {/* Images preview */}
         {offerData.images && offerData.images.length > 0 && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle1" color="primary" gutterBottom sx={{ fontWeight: "bold" }}>
@@ -490,7 +466,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
           </Box>
         )}
 
-        {/* Existing images preview */}
         {offerData.existingImages && offerData.existingImages.length > 0 && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="subtitle1" color="primary" gutterBottom sx={{ fontWeight: "bold" }}>
@@ -524,7 +499,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
           </Box>
         )}
 
-        {/* Total price */}
         <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
           <Chip
             label={`Bendra kaina: ${totalPrice.toFixed(2)} €`}
@@ -534,7 +508,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
         </Box>
       </Paper>
 
-      {/* Offer Elements */}
       <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 500, color: theme.palette.primary.main }}>
         Pasiūlymo elementai
       </Typography>
@@ -549,7 +522,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
             {offerElements.map((element, elementIndex) => (
               <Grid item xs={12} key={elementIndex}>
                 <Paper sx={{ p: 2, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
-                  {/* First row: Name, dates, locations, price */}
                   <Box sx={{ display: "flex", alignItems: "center", mb: element.details.length > 0 ? 1 : 0 }}>
                     <Box sx={{ mr: 1 }}>{getElementIcon(element)}</Box>
                     <Typography variant="subtitle2" fontWeight="medium">
@@ -578,7 +550,6 @@ const Step2ReviewConfirm: React.FC<Step2ReviewProps> = ({ offerData }) => {
                     </Typography>
                   </Box>
 
-                  {/* Second row: Additional details */}
                   {element.details.length > 0 && (
                     <Box sx={{ pl: 4 }}>
                       {element.details.map((detail, index) => (

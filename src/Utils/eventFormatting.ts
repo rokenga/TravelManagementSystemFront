@@ -1,6 +1,5 @@
 import type { TripEvent } from "../types"
 
-/* Return time information from event */
 export function formatEarliestTime(e: TripEvent): {
   timeStr: string
   date: Date | null
@@ -15,7 +14,6 @@ export function formatEarliestTime(e: TripEvent): {
   let departureTimeStr = ""
   let arrivalTimeStr = ""
 
-  // Get departure and arrival times for transport and cruise
   if (e.type === "transport" || e.type === "cruise") {
     if (e.departureTime) {
       departureTime = new Date(e.departureTime)
@@ -33,7 +31,6 @@ export function formatEarliestTime(e: TripEvent): {
     }
   }
 
-  // Find earliest time for sorting
   const times: number[] = []
   if (e.type === "transport" || e.type === "cruise") {
     if (e.departureTime) times.push(new Date(e.departureTime).getTime())
@@ -60,7 +57,6 @@ export function formatEarliestTime(e: TripEvent): {
   const earliest = Math.min(...valid)
   const d = new Date(earliest)
 
-  // Check if transport or cruise spans multiple days
   const isMultiDay = departureTime && arrivalTime && departureTime.toDateString() !== arrivalTime.toDateString()
 
   return {
@@ -77,7 +73,6 @@ export function formatEarliestTime(e: TripEvent): {
   }
 }
 
-/* Build main line for event */
 export function buildLine(e: TripEvent): string {
   switch (e.type) {
     case "transport":
@@ -93,14 +88,12 @@ export function buildLine(e: TripEvent): string {
   }
 }
 
-/* For transport, e.g. "Skrydis iš ??? į ???" */
 export function transportLine(e: TripEvent): string {
   if (e.type !== "transport") return ""
 
   const from = e.departurePlace || "?"
   const to = e.arrivalPlace || "?"
 
-  // Map transport type to Lithuanian label
   const transportTypes = [
     { value: "flight", label: "Skrydis" },
     { value: "train", label: "Traukinys" },
@@ -115,7 +108,6 @@ export function transportLine(e: TripEvent): string {
   return `${type} iš ${from} į ${to}`
 }
 
-/* For cruise, e.g. "Kruizas iš ??? į ???" */
 export function cruiseLine(e: TripEvent): string {
   if (e.type !== "cruise") return ""
 
@@ -126,7 +118,6 @@ export function cruiseLine(e: TripEvent): string {
   return `Kruizas ${cruiseName} iš ${from} į ${to}`
 }
 
-/* For accommodation, e.g. "Įsiregistravimas: Hotel X" or "Įsiregistravimas/Išsiregistravimas: Hotel X" */
 export function accommodationLine(e: TripEvent): string {
   if (e.type !== "accommodation") return ""
 

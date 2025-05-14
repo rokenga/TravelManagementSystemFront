@@ -17,15 +17,14 @@ import {
 import { translateTripCategory, translateTripStatus } from "../Utils/translateEnums"
 
 interface TripInfoCardProps {
-  trip: any // Using any for simplicity, but you can create a union type of both response types
-  variant?: "trip" | "offer" // To distinguish between trip and offer if needed
+  trip: any 
+  variant?: "trip" | "offer" 
 }
 
 const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Format date for display
   const formatDate = (dateString?: string) => {
     if (!dateString) return "—"
     const d = new Date(dateString)
@@ -36,13 +35,11 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
     })
   }
 
-  // Determine if this is a trip or an offer
   const isOffer = variant === "offer" || trip.tripType === "ClientSpecialOffer"
 
   return (
     <Card elevation={3} sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}>
       <CardContent sx={{ p: 0 }}>
-        {/* Header with trip name and status */}
         <Box
           sx={{
             p: 3,
@@ -68,13 +65,10 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
           </Box>
         </Box>
 
-        {/* Trip details in a grid layout */}
         <Box sx={{ p: 3, bgcolor: "rgba(0,0,0,0.02)" }}>
           <Grid container spacing={3}>
-            {/* Left column: Basic trip info */}
             <Grid item xs={12} md={6}>
               <Grid container spacing={2}>
-                {/* Category */}
                 {trip.category && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -87,7 +81,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                   </Grid>
                 )}
 
-                {/* Destination */}
                 {trip.destination && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -99,7 +92,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                   </Grid>
                 )}
 
-                {/* Price */}
                 {trip.price !== undefined && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -111,7 +103,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                   </Grid>
                 )}
 
-                {/* Date Range - show as a single item with both dates */}
                 {(trip.startDate || trip.endDate) && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -125,7 +116,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                   </Grid>
                 )}
 
-                {/* Insurance - only for trips, not offers */}
                 {!isOffer && trip.insuranceTaken !== undefined && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -138,7 +128,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                   </Grid>
                 )}
 
-                {/* Adults */}
                 {trip.adultsCount !== undefined && trip.adultsCount > 0 && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -150,7 +139,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                   </Grid>
                 )}
 
-                {/* Children */}
                 {trip.childrenCount !== undefined && trip.childrenCount > 0 && (
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -164,9 +152,7 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
               </Grid>
             </Grid>
 
-            {/* Right column: Description and client wishes */}
             <Grid item xs={12} md={6}>
-              {/* Description */}
               {trip.description && (
                 <Box sx={{ mb: trip.clientWishes ? 3 : 0 }}>
                   <Typography
@@ -188,7 +174,6 @@ const TripInfoCard: React.FC<TripInfoCardProps> = ({ trip, variant = "trip" }) =
                 </Box>
               )}
 
-              {/* Client wishes - only for offers */}
               {isOffer && trip.clientWishes && (
                 <Box>
                   <Typography

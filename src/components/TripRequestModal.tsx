@@ -25,6 +25,7 @@ import PersonIcon from "@mui/icons-material/Person"
 import MoreVertIcon from "@mui/icons-material/MoreVert"
 import DeleteIcon from "@mui/icons-material/Delete"
 import EditIcon from "@mui/icons-material/Edit"
+import PersonAddIcon from "@mui/icons-material/PersonAdd"
 import { format } from "date-fns"
 import { lt } from "date-fns/locale"
 import axios from "axios"
@@ -33,8 +34,9 @@ import { type TripRequestResponse, TripRequestStatus } from "../types/TripReques
 import { translateTripRequestStatus } from "../Utils/translateEnums"
 import CustomSnackbar from "./CustomSnackBar"
 import ConfirmationDialog from "./ConfirmationDialog"
-import { UserContext } from "../contexts/UserContext" // Assuming you have a UserContext
+import { UserContext } from "../contexts/UserContext" 
 import TripRequestStatusChangeDialog from "./status/TripRequestStatusChangeModal"
+import { useNavigate } from "react-router-dom"
 
 interface TripRequestModalProps {
   open: boolean
@@ -45,19 +47,20 @@ interface TripRequestModalProps {
 const getStatusColor = (status: TripRequestStatus) => {
   switch (status) {
     case TripRequestStatus.New:
-      return "#4caf50" // Green
+      return "#4caf50" 
     case TripRequestStatus.Confirmed:
-      return "#2196f3" // Blue
+      return "#2196f3"
     case TripRequestStatus.Completed:
-      return "#757575" // Grey
+      return "#757575" 
     default:
-      return "#757575" // Grey
+      return "#757575"
   }
 }
 
 const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requestId }) => {
   const user = useContext(UserContext)
   const isAdmin = user?.role === "Admin"
+  const navigate = useNavigate()
   const [request, setRequest] = useState<TripRequestResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,8 +69,8 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+  const [clientCreationLoading, setClientCreationLoading] = useState(false)
 
-  // Menu state
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null)
   const menuOpen = Boolean(menuAnchorEl)
 
@@ -91,7 +94,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
       })
       setRequest(response.data)
     } catch (err) {
-      console.error("Klaida gaunant užklausos detales:", err)
       setError("Nepavyko gauti užklausos detalių.")
     } finally {
       setLoading(false)
@@ -120,9 +122,7 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
       fetchRequestDetails(request.id)
       setSnackbar({ open: true, message: "Užklausa sėkmingai patvirtinta!", severity: "success" })
     } catch (err: any) {
-      console.error("Klaida patvirtinant užklausą:", err)
 
-      // Check for specific error response
       if (err.response && err.response.status === 404) {
         setSnackbar({
           open: true,
@@ -144,20 +144,15 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
   const handleSendEmail = () => {
     if (!request) return
 
-    // Create email subject with client name
     const subject = `Kelionės užklausa - ${request.fullName}`
 
-    // Create email body with some basic information
     const body = `Sveiki ${request.fullName},\n\nDėkojame už jūsų kelionės užklausą.\n\n`
 
-    // Create mailto link with recipient, subject and body
     const mailtoLink = `mailto:${request.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 
-    // Open default email client
     window.location.href = mailtoLink
   }
 
-  // Menu handlers
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setMenuAnchorEl(event.currentTarget)
   }
@@ -193,6 +188,49 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
     })
   }
 
+  const handleCreateClient = async () => {
+    if (!request) return
+    setClientCreationLoading(true)
+    handleMenuClose() 
+
+    try {
+      const response = await axios.post(`${API_URL}/TripRequest/${request.id}/create-client`, null, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+
+      setSnackbar({
+        open: true,
+        message: `Klientas "${request.fullName}" sėkmingai sukurtas!`,
+        severity: "success",
+      })
+
+      if (response.data && response.data.id) {
+        setTimeout(() => {
+          navigate(`/admin-client-list/${response.data.id}`)
+        }, 1500) 
+      }
+    } catch (err: any) {
+
+      if (err.response && err.response.data && err.response.data.error) {
+        setSnackbar({
+          open: true,
+          message: err.response.data.error,
+          severity: "error",
+        })
+      } else {
+        setSnackbar({
+          open: true,
+          message: "Nepavyko sukurti kliento.",
+          severity: "error",
+        })
+      }
+    } finally {
+      setClientCreationLoading(false)
+    }
+  }
+
   const handleDeleteConfirm = async () => {
     if (!request) return
     setDeleteDialogOpen(false)
@@ -211,12 +249,10 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
         severity: "success",
       })
 
-      // Close the modal after a short delay to allow the user to see the success message
       setTimeout(() => {
         onClose()
       }, 1500)
     } catch (err: any) {
-      console.error("Klaida ištrinant užklausą:", err)
 
       setSnackbar({
         open: true,
@@ -228,19 +264,16 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
     }
   }
 
-  // Check if we should show agent info (admin user and agent info exists)
   const showAgentInfo = isAdmin && (request?.agentFirstName || request?.agentLastName || request?.agentId)
   const agentName =
     request && showAgentInfo ? `${request.agentFirstName || ""} ${request.agentLastName || ""}`.trim() : ""
 
-  // Determine if the delete button should be shown based on user role and request status
   const canDelete =
     request &&
-    ((isAdmin && request.status === TripRequestStatus.New && !request.agentId) || // Admin can delete new unassigned requests
-      (request.status === TripRequestStatus.Confirmed && request.agentId === user?.id)) // Anyone (admin or agent) can delete their own confirmed requests
+    ((isAdmin && request.status === TripRequestStatus.New && !request.agentId) || 
+      (request.status === TripRequestStatus.Confirmed && request.agentId === user?.id)) 
 
-  // Determine if the status change button should be shown
-  const canChangeStatus = request && request.agentId === user?.id // Only the assigned agent can change status
+  const canChangeStatus = request && request.agentId === user?.id 
 
   return (
     <>
@@ -265,7 +298,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
           </Box>
         </DialogTitle>
 
-        {/* Action buttons at the top */}
         {request && !loading && !error && (
           <Box
             sx={{
@@ -292,19 +324,20 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
                 </Button>
               )}
               {request.status === TripRequestStatus.Confirmed && (
-                <Button
-                  startIcon={<EmailIcon />}
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSendEmail}
-                  sx={{ textTransform: "none" }}
-                >
-                  Siųsti el. laišką
-                </Button>
+                <>
+                  <Button
+                    startIcon={<EmailIcon />}
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSendEmail}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Siųsti el. laišką
+                  </Button>
+                </>
               )}
             </Box>
 
-            {/* Three-dot menu button - always visible */}
             <IconButton
               aria-label="more"
               aria-controls="trip-request-menu"
@@ -325,7 +358,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
             <Alert severity="error">{error}</Alert>
           ) : request ? (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {/* Status and Created date */}
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Chip
                   label={translateTripRequestStatus(request.status)}
@@ -341,7 +373,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
                 </Typography>
               </Box>
 
-              {/* Client information */}
               <Box
                 sx={{
                   p: 3,
@@ -376,7 +407,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
                 </Box>
               </Box>
 
-              {/* Agent information - only show for admins and if agent info exists */}
               {showAgentInfo && (
                 <Box
                   sx={{
@@ -397,7 +427,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
                 </Box>
               )}
 
-              {/* Message */}
               {request.message && (
                 <Box
                   sx={{
@@ -423,7 +452,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
         </DialogContent>
       </Dialog>
 
-      {/* Menu for additional actions */}
       <Menu
         id="trip-request-menu"
         anchorEl={menuAnchorEl}
@@ -440,7 +468,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
           },
         }}
       >
-        {/* Status change option - only for the assigned agent */}
         {canChangeStatus && (
           <MenuItem onClick={handleChangeStatusClick}>
             <ListItemIcon>
@@ -450,7 +477,16 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
           </MenuItem>
         )}
 
-        {/* Delete option */}
+        {request?.status === TripRequestStatus.Confirmed && request.agentId === user?.id && (
+          <MenuItem onClick={handleCreateClient} disabled={clientCreationLoading}>
+            <ListItemIcon>
+              <PersonAddIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Sukurti klientą</ListItemText>
+            {clientCreationLoading && <CircularProgress size={16} sx={{ ml: 1 }} />}
+          </MenuItem>
+        )}
+
         {canDelete && (
           <MenuItem onClick={handleDeleteClick} sx={{ color: "error.main" }}>
             <ListItemIcon>
@@ -460,7 +496,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
           </MenuItem>
         )}
 
-        {/* Show message if no actions available */}
         {!canDelete && !canChangeStatus && (
           <MenuItem disabled>
             <Typography variant="body2" color="text.secondary">
@@ -470,7 +505,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
         )}
       </Menu>
 
-      {/* Confirmation Dialog for confirming trip request */}
       <ConfirmationDialog
         open={confirmDialogOpen}
         title="Patvirtinti užklausą"
@@ -479,7 +513,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
         onCancel={handleConfirmDialogClose}
       />
 
-      {/* Confirmation Dialog for deleting trip request */}
       <ConfirmationDialog
         open={deleteDialogOpen}
         title="Ištrinti užklausą"
@@ -488,7 +521,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
         onCancel={handleDeleteDialogClose}
       />
 
-      {/* Status Change Dialog */}
       {request && (
         <TripRequestStatusChangeDialog
           open={statusDialogOpen}
@@ -499,7 +531,6 @@ const TripRequestModal: React.FC<TripRequestModalProps> = ({ open, onClose, requ
         />
       )}
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

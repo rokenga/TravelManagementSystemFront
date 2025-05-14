@@ -27,7 +27,6 @@ import { FilterList } from "@mui/icons-material"
 import Pagination from "../components/Pagination"
 import PageSizeSelector from "../components/PageSizeSelector"
 
-// Add interface for paginated response
 interface PaginatedResponse<T> {
   items: T[]
   totalCount: number
@@ -45,7 +44,6 @@ const SpecialOffers: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<PublicOfferFilters>(defaultPublicOfferFilters)
   const [hasFilterOptions, setHasFilterOptions] = useState(false)
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalPages, setTotalPages] = useState(1)
@@ -56,14 +54,12 @@ const SpecialOffers: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const isTablet = useMediaQuery(theme.breakpoints.down("lg"))
 
-  // Check if filter options exist
   useEffect(() => {
     const checkFilterOptions = async () => {
       try {
         const response = await axios.get(`${API_URL}/PublicTripOfferFacade/public-filter`)
         const filterOptions = response.data
 
-        // Check if any filter options exist
         const hasOptions =
           filterOptions.destinations.length > 0 ||
           filterOptions.categories.length > 0 ||
@@ -72,7 +68,6 @@ const SpecialOffers: React.FC = () => {
 
         setHasFilterOptions(hasOptions)
       } catch (error) {
-        console.error("Failed to check filter options:", error)
         setHasFilterOptions(false)
       }
     }
@@ -80,12 +75,10 @@ const SpecialOffers: React.FC = () => {
     checkFilterOptions()
   }, [])
 
-  // Fetch offers with pagination and filters
   const fetchOffers = async () => {
     try {
       setLoading(true)
 
-      // Create query params object
       const queryParams = {
         pageNumber: currentPage,
         pageSize: pageSize,
@@ -95,29 +88,25 @@ const SpecialOffers: React.FC = () => {
         tripLengths: selectedFilters.tripLengths.length > 0 ? selectedFilters.tripLengths : null,
       }
 
-      // Use the new paginated-offers endpoint
       const response = await axios.post<PaginatedResponse<TripResponse>>(
         `${API_URL}/PublicTripOfferFacade/paginated-offers`,
         queryParams,
       )
 
-      // Update state with paginated response data
       setOffers(response.data.items)
       setTotalPages(response.data.totalPages)
       setTotalItems(response.data.totalCount)
 
-      // Ensure current page is valid
       if (currentPage > response.data.totalPages && response.data.totalPages > 0) {
         setCurrentPage(1)
       }
     } catch (error) {
-      console.error("Failed to fetch special offers:", error)
+      setLoading(false)
     } finally {
       setLoading(false)
     }
   }
 
-  // Fetch offers when pagination, filters, or page size changes
   useEffect(() => {
     fetchOffers()
   }, [currentPage, pageSize, selectedFilters])
@@ -128,20 +117,18 @@ const SpecialOffers: React.FC = () => {
 
   const handleApplyFilters = (filters: PublicOfferFilters) => {
     setSelectedFilters(filters)
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1)
   }
 
-  // Pagination handlers
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
-    setCurrentPage(1) // Reset to first page when changing page size
+    setCurrentPage(1) 
   }
 
-  // Count active filters
   const getActiveFilterCount = () => {
     let count = 0
     count += selectedFilters.destinations.length
@@ -154,7 +141,6 @@ const SpecialOffers: React.FC = () => {
   return (
     <Box sx={{ width: "100%", py: 0 }}>
       <Container maxWidth="xl" disableGutters={!isMobile} sx={{ px: isMobile ? 2 : 3 }}>
-        {/* Header with title and controls */}
         <Box
           sx={{
             display: "flex",
@@ -167,10 +153,8 @@ const SpecialOffers: React.FC = () => {
         >
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* Page size selector */}
             <PageSizeSelector pageSize={pageSize} onPageSizeChange={handlePageSizeChange} options={[25, 50, 100]} />
 
-            {/* Filter button for mobile */}
             {hasFilterOptions && isMobile && (
               <Button
                 variant="outlined"
@@ -187,7 +171,6 @@ const SpecialOffers: React.FC = () => {
         </Box>
 
         <Box sx={{ display: "flex", gap: 3, position: "relative" }}>
-          {/* Filter panel for desktop - positioned on the left side */}
           {hasFilterOptions && !isMobile && (
             <Box
               sx={{
@@ -210,7 +193,6 @@ const SpecialOffers: React.FC = () => {
             </Box>
           )}
 
-          {/* Main content area */}
           <Box sx={{ flex: 1 }}>
             {loading ? (
               <Box display="flex" justifyContent="center" my={6}>
@@ -226,7 +208,6 @@ const SpecialOffers: React.FC = () => {
                   ))}
                 </Grid>
 
-                {/* Pagination Controls */}
                 {totalPages > 1 && (
                   <Box
                     sx={{
@@ -264,7 +245,6 @@ const SpecialOffers: React.FC = () => {
         </Box>
       </Container>
 
-      {/* Filter panel for mobile - shown as a drawer */}
       {hasFilterOptions && isMobile && (
         <PublicOfferFilterPanel
           isOpen={isFilterDrawerOpen}

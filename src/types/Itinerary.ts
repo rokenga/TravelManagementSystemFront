@@ -1,4 +1,3 @@
-// Types for itinerary and itinerary steps
 
 import type { TripEvent } from "./Events"
 
@@ -9,13 +8,12 @@ export interface ItineraryDay {
   events: TripEvent[]
   originalIndex?: number
   
-  // New approach:
   existingStepImages?: Array<{ 
     id: string; 
     url: string; 
   }>
-  newStepImages?: File[]         // local files user uploads
-  stepImagesToDelete?: string[]  // IDs of images to delete
+  newStepImages?: File[]        
+  stepImagesToDelete?: string[] 
 }
 
 export interface ItineraryStep {
@@ -26,8 +24,8 @@ export interface ItineraryStep {
   accommodations?: any[]
   activities?: any[]
   stepImages?: File[]
-  stepImageUrls?: string[] // For displaying existing images
-  stepImagesToDelete?: string[] // IDs of images to delete
+  stepImageUrls?: string[] 
+  stepImagesToDelete?: string[] 
 }
 
 export interface Itinerary {
@@ -37,7 +35,6 @@ export interface Itinerary {
   itinerarySteps?: ItineraryStep[]
 }
 
-// New interface for edit requests
 export interface EditItineraryRequest {
   title?: string
   description?: string
@@ -51,5 +48,5 @@ export interface EditItineraryStepRequest {
   transports?: any[]
   accommodations?: any[]
   activities?: any[]
-  stepImagesToDelete?: string[] // IDs of images to delete
+  stepImagesToDelete?: string[] 
 }

@@ -145,8 +145,6 @@ function WizardEditForm({ onDataChange }) {
     window.globalStepImages = {}
     window.globalExistingStepImages = {}
     window.globalStepImagesToDelete = {}
-
-    console.log("EditTripWizardForm - Cleared all global file state")
   }
 
   useEffect(() => {
@@ -162,7 +160,6 @@ function WizardEditForm({ onDataChange }) {
     fetchTripData(tripId)
   }, [tripId])
 
-  // Initialize global state for step images
   useEffect(() => {
     window.globalStepImages = stepImages
     window.globalExistingStepImages = existingStepImages
@@ -178,11 +175,9 @@ function WizardEditForm({ onDataChange }) {
       })
       if (response.status === 200) {
         const trip = response.data
-        console.log("EditTripWizardForm - Fetched trip data:", trip)
 
         if (trip.itinerary?.itinerarySteps) {
           setOriginalSteps(trip.itinerary.itinerarySteps as unknown as ExtendedItineraryStep[])
-          console.log("EditTripWizardForm - Original steps:", trip.itinerary.itinerarySteps)
         }
 
         const normalized = mapServerResponseToWizardState(trip)
@@ -196,13 +191,9 @@ function WizardEditForm({ onDataChange }) {
           const stepImagesMap: Record<number, StepImage[]> = {}
 
           trip.itinerary.itinerarySteps.forEach((step, index) => {
-            console.log(`EditTripWizardForm - Processing step ${index}:`, step)
-
             const dayIndex = trip.dayByDayItineraryNeeded ? (step.dayNumber || index + 1) - 1 : 0
 
             const extendedStep = step as unknown as ExtendedItineraryStep
-
-            console.log(`EditTripWizardForm - Step ${index} images:`, extendedStep.images)
 
             if (extendedStep.images && extendedStep.images.length > 0) {
               if (!stepImagesMap[dayIndex]) {
@@ -211,8 +202,6 @@ function WizardEditForm({ onDataChange }) {
 
               extendedStep.images.forEach((img) => {
                 const imageUrl = img.urlInline || img.url || ""
-                console.log(`EditTripWizardForm - Image data:`, img)
-                console.log(`EditTripWizardForm - Using image URL:`, imageUrl)
 
                 if (imageUrl) {
                   stepImagesMap[dayIndex].push({
@@ -221,18 +210,12 @@ function WizardEditForm({ onDataChange }) {
                   })
                 }
               })
-
-              console.log(`EditTripWizardForm - Added images for day ${dayIndex}:`, stepImagesMap[dayIndex])
             }
           })
 
           if (trip.itinerary?.sortedEvents) {
-            console.log("EditTripWizardForm - Processing sortedEvents:", trip.itinerary.sortedEvents)
-
             trip.itinerary.sortedEvents.forEach((event) => {
               if (event.images && event.images.length > 0) {
-                console.log("EditTripWizardForm - Found images in sortedEvent:", event.images)
-
                 const dayIndex = trip.dayByDayItineraryNeeded ? event.stepDayNumber || 0 : 0
 
                 if (!stepImagesMap[dayIndex]) {
@@ -241,7 +224,6 @@ function WizardEditForm({ onDataChange }) {
 
                 event.images.forEach((img) => {
                   const imageUrl = img.urlInline || img.url || ""
-                  console.log(`EditTripWizardForm - Adding image from sortedEvent: id=${img.id}, url=${imageUrl}`)
 
                   if (imageUrl) {
                     stepImagesMap[dayIndex].push({
@@ -250,11 +232,6 @@ function WizardEditForm({ onDataChange }) {
                     })
                   }
                 })
-
-                console.log(
-                  `EditTripWizardForm - Updated images for day ${dayIndex} from sortedEvents:`,
-                  stepImagesMap[dayIndex],
-                )
               }
             })
           }
@@ -264,10 +241,8 @@ function WizardEditForm({ onDataChange }) {
             stepImagesMap[dayIndexNum] = deduplicateImages(stepImagesMap[dayIndexNum])
           })
 
-          console.log("EditTripWizardForm - Final stepImagesMap after deduplication:", stepImagesMap)
           setExistingStepImages(stepImagesMap)
 
-          // Initialize global state with existing step images
           window.globalExistingStepImages = stepImagesMap
         }
       }
@@ -278,7 +253,6 @@ function WizardEditForm({ onDataChange }) {
         },
       })
       if (imagesResp.status === 200) {
-        console.log("EditTripWizardForm - Fetched existing images:", imagesResp.data)
         setExistingImages(imagesResp.data)
       }
 
@@ -293,7 +267,6 @@ function WizardEditForm({ onDataChange }) {
 
       setLoading(false)
     } catch (error) {
-      console.error("Failed to load trip or files:", error)
       setSnackbar({
         open: true,
         message: "Nepavyko įkelti kelionės duomenų ar failų.",
@@ -322,10 +295,7 @@ function WizardEditForm({ onDataChange }) {
       destination,
     } = tripResponse
 
-    console.log("Mapping server response to wizard state, destination:", destination)
-
     const destinationObj = stringToCountry(destination)
-    console.log("Converted destination to:", destinationObj)
 
     const tripData: TripFormData = {
       tripName: tripName || "",
@@ -376,16 +346,12 @@ function WizardEditForm({ onDataChange }) {
 
   function extractStepImages(steps: ExtendedItineraryStep[]): StepImage[] {
     const images: StepImage[] = []
-    console.log("EditTripWizardForm - extractStepImages input steps:", steps)
 
     steps.forEach((step) => {
       if (step.images && step.images.length > 0) {
-        console.log(`EditTripWizardForm - Processing step images:`, step.images)
-
         step.images.forEach((img) => {
           if (img.id) {
             const imageUrl = img.urlInline || img.url || ""
-            console.log(`EditTripWizardForm - Adding image with id ${img.id}, url: ${imageUrl}`)
 
             if (imageUrl) {
               images.push({
@@ -399,8 +365,6 @@ function WizardEditForm({ onDataChange }) {
     })
 
     const uniqueImages = deduplicateImages(images)
-
-    console.log("EditTripWizardForm - extractStepImages result after deduplication:", uniqueImages)
     return uniqueImages
   }
 
@@ -495,7 +459,6 @@ function WizardEditForm({ onDataChange }) {
 
     const extendedStep = step as unknown as ExtendedItineraryStep
     if (extendedStep.images && extendedStep.images.length > 0) {
-      console.log("EditTripWizardForm - Adding images event for step with images:", extendedStep.images)
       events.push({
         type: "images",
         description: "Nuotraukos",
@@ -508,7 +471,6 @@ function WizardEditForm({ onDataChange }) {
     window.saveEditFormAsDraft = async (destination?: string | null) => {
       try {
         if (isSavingRef.current) {
-          console.log("Save operation already in progress, skipping duplicate call")
           return false
         }
 
@@ -521,7 +483,6 @@ function WizardEditForm({ onDataChange }) {
 
         return result
       } catch (error) {
-        console.error("Error saving draft:", error)
         setSnackbar({
           open: true,
           message: "Nepavyko išsaugoti juodraščio. Bandykite dar kartą.",
@@ -591,13 +552,11 @@ function WizardEditForm({ onDataChange }) {
   }
 
   const handleStepImagesChange = (dayIndex: number, files: File[]) => {
-    console.log(`EditTripWizardForm - handleStepImagesChange for day ${dayIndex}:`, files)
     setStepImages((prev) => ({
       ...prev,
       [dayIndex]: files,
     }))
 
-    // Update global state
     window.globalStepImages = {
       ...window.globalStepImages,
       [dayIndex]: files,
@@ -605,14 +564,10 @@ function WizardEditForm({ onDataChange }) {
   }
 
   const handleStepImageDelete = (dayIndex: number, imageIdOrUrl: string) => {
-    console.log(`EditTripWizardForm - handleStepImageDelete for day ${dayIndex}, imageIdOrUrl:`, imageIdOrUrl)
-
     const images = existingStepImages[dayIndex] || []
     const imageToDelete = images.find((img) => img.url === imageIdOrUrl || img.id === imageIdOrUrl)
 
     if (imageToDelete) {
-      console.log(`Found image to delete:`, imageToDelete)
-
       setStepImagesToDelete((prev) => {
         const current = prev[dayIndex] || []
         return {
@@ -631,7 +586,6 @@ function WizardEditForm({ onDataChange }) {
         }
       })
 
-      // Update global state
       window.globalStepImagesToDelete = {
         ...window.globalStepImagesToDelete,
         [dayIndex]: [...(window.globalStepImagesToDelete?.[dayIndex] || []), imageToDelete.id],
@@ -643,29 +597,15 @@ function WizardEditForm({ onDataChange }) {
           (img) => img.id !== imageToDelete.id && img.url !== imageIdOrUrl,
         ),
       }
-    } else {
-      console.warn(`Could not find image with ID or URL: ${imageIdOrUrl} in day ${dayIndex}`)
     }
   }
 
   async function handleSaveTrip(status: "Draft" | "Confirmed", destination?: string | null): Promise<boolean> {
-    // Get the most up-to-date form data directly from the Step1TripInfo component
     const latestTripData = getCurrentFormData()
-    console.log("Getting latest trip data for save:", latestTripData)
-
-    // Get the most up-to-date itinerary data directly from the Step2Itinerary component
     const latestItinerary = getCurrentItineraryData()
-    console.log("Getting latest itinerary data for save:", latestItinerary)
-
-    // Get the most up-to-date file data from the UnifiedFileUploadStep component
     const latestFileData = getCurrentFileData()
-    console.log("Getting latest file data for save:", latestFileData)
-
-    // Get the most up-to-date step images data from the Step2Itinerary component
     const latestStepImagesData = getCurrentStepImagesData()
-    console.log("Getting latest step images data for save:", latestStepImagesData)
 
-    // Update the formState with the latest data
     setFormState((prev) => ({
       ...prev,
       tripData: latestTripData || prev.tripData,
@@ -674,7 +614,6 @@ function WizardEditForm({ onDataChange }) {
       documents: latestFileData?.newDocuments || prev.documents,
     }))
 
-    // Update image deletion lists if available
     if (latestFileData?.imagesToDelete) {
       setImagesToDelete(latestFileData.imagesToDelete)
     }
@@ -683,7 +622,6 @@ function WizardEditForm({ onDataChange }) {
       setDocumentsToDelete(latestFileData.documentsToDelete)
     }
 
-    // Update step images if available
     if (latestStepImagesData?.stepImages) {
       setStepImages(latestStepImagesData.stepImages)
     }
@@ -692,11 +630,9 @@ function WizardEditForm({ onDataChange }) {
       setStepImagesToDelete(latestStepImagesData.stepImagesToDelete)
     }
 
-    // Use the latest data or fall back to the current state
     const currentTripData = latestTripData || formState.tripData
     const currentItinerary = latestItinerary || formState.itinerary
 
-    // Basic validation from Step2
     const validationResult = validateTrip(currentTripData, currentItinerary, status === "Confirmed")
     if (!validationResult.isValid) {
       return false
@@ -706,17 +642,13 @@ function WizardEditForm({ onDataChange }) {
       validationWarnings: validationResult.warnings,
     }))
 
-    // Set saving state to true when starting the save operation
     setIsSaving(true)
 
     try {
-      // 1) Build a normal request body for everything except images
       const finalData = buildFinalData(status, currentTripData, currentItinerary)
 
-      // 2) We'll pass images in a FormData
       const formData = new FormData()
 
-      // A) Append top-level trip data to FormData
       const fd = currentTripData
       formData.append("clientId", fd.clientId || "")
       formData.append("tripName", fd.tripName || "")
@@ -726,10 +658,8 @@ function WizardEditForm({ onDataChange }) {
       formData.append("paymentStatus", fd.paymentStatus || "Unpaid")
       formData.append("insuranceTaken", String(fd.insuranceTaken || false))
 
-      // Add destination to form data
       if (fd.destination) {
         formData.append("destination", fd.destination)
-        console.log("Adding destination to form data:", fd.destination)
       }
 
       if (fd.startDate) {
@@ -745,58 +675,36 @@ function WizardEditForm({ onDataChange }) {
       formData.append("adultsCount", String(fd.adultsCount || 0))
       formData.append("childrenCount", String(fd.childrenCount || 0))
 
-      // B) Build the EditItineraryRequest
       const editItineraryData = {
         title: fd.itineraryTitle || "",
         description: fd.itineraryDescription || "",
         steps: convertWizardItineraryToEditSteps(currentItinerary, fd.dayByDayItineraryNeeded),
       }
 
-      console.log("EditTripWizardForm - Sending steps:", editItineraryData.steps)
-
-      // Append the editItinerary JSON
       formData.append("editItinerary", JSON.stringify(editItineraryData))
 
-      // C) Append editRequestJson as a backup
       formData.append("editRequestJson", JSON.stringify(finalData))
 
-      // Use the latest file data for the request
       const currentImages = latestFileData?.newImages || formState.images
       const currentDocuments = latestFileData?.newDocuments || formState.documents
       const currentImagesToDelete = latestFileData?.imagesToDelete || imagesToDelete
       const currentDocumentsToDelete = latestFileData?.documentsToDelete || documentsToDelete
 
-      // Use the latest step images data or fall back to global state
       const currentStepImages = latestStepImagesData?.stepImages || window.globalStepImages || stepImages
       const currentStepImagesToDelete =
         latestStepImagesData?.stepImagesToDelete || window.globalStepImagesToDelete || stepImagesToDelete
 
-      // Log what we're sending to the server for debugging
-      console.log("EditTripWizardForm - Sending to server:", {
-        newImages: currentImages.length,
-        newDocuments: currentDocuments.length,
-        imagesToDelete: currentImagesToDelete,
-        documentsToDelete: currentDocumentsToDelete,
-        stepImages: Object.keys(currentStepImages).length,
-        stepImagesToDelete: Object.keys(currentStepImagesToDelete).length,
-      })
-
-      // D) Append newly added images
       currentImages.forEach((file) => {
         formData.append("NewImages", file)
       })
 
-      // E) Append newly added documents
       currentDocuments.forEach((file) => {
         formData.append("NewDocuments", file)
       })
 
-      // F) Append IDs of images to delete - ensure we get all deleted images from all sources
       const allImagesToDelete = [...currentImagesToDelete]
 
-      // Also check global variables for any additional deleted images
       if (window.globalImagesToDelete && window.globalImagesToDelete.length > 0) {
-        // Add any IDs that aren't already in the array
         window.globalImagesToDelete.forEach((id) => {
           if (!allImagesToDelete.includes(id)) {
             allImagesToDelete.push(id)
@@ -804,18 +712,13 @@ function WizardEditForm({ onDataChange }) {
         })
       }
 
-      console.log("EditTripWizardForm - All images to delete:", allImagesToDelete)
-
       allImagesToDelete.forEach((id) => {
         formData.append("ImagesToDelete", id)
       })
 
-      // G) Append IDs of documents to delete - ensure we get all deleted documents from all sources
       const allDocumentsToDelete = [...currentDocumentsToDelete]
 
-      // Also check global variables for any additional deleted documents
       if (window.globalDocumentsToDelete && window.globalDocumentsToDelete.length > 0) {
-        // Add any IDs that aren't already in the array
         window.globalDocumentsToDelete.forEach((id) => {
           if (!allDocumentsToDelete.includes(id)) {
             allDocumentsToDelete.push(id)
@@ -823,39 +726,26 @@ function WizardEditForm({ onDataChange }) {
         })
       }
 
-      console.log("EditTripWizardForm - All documents to delete:", allDocumentsToDelete)
-
       allDocumentsToDelete.forEach((id) => {
         formData.append("DocumentsToDelete", id)
       })
 
-      // H) Append step images to FormData - FIX: Use NewStepImages_{dayIndex} instead of StepImages_{dayIndex}
       Object.entries(currentStepImages).forEach(([dayIndex, files]) => {
         if (files && files.length > 0) {
           files.forEach((file) => {
-            // Use the correct parameter name that the backend expects
             formData.append(`NewStepImages_${dayIndex}`, file)
-            console.log(`Appending step image for day ${dayIndex}:`, file.name)
           })
         }
       })
 
-      // I) Append step images to delete
       Object.entries(currentStepImagesToDelete).forEach(([dayIndex, imageIds]) => {
         if (imageIds && imageIds.length > 0) {
           imageIds.forEach((imageId) => {
             formData.append(`StepImagesToDelete_${dayIndex}`, imageId)
-            console.log(`Appending step image to delete for day ${dayIndex}:`, imageId)
           })
         }
       })
 
-      // Log all form data entries for debugging
-      for (const pair of formData.entries()) {
-        console.log(`Form data entry: ${pair[0]} = ${pair[1]}`)
-      }
-
-      // Send PUT
       const resp = await axios.put(`${API_URL}/client-trips/${tripId}`, formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -869,12 +759,9 @@ function WizardEditForm({ onDataChange }) {
           severity: "success",
         })
 
-        // Navigate based on destination parameter
         if (destination) {
-          // If we have a specific destination, navigate there
           setTimeout(() => navigate(destination), 1500)
         } else {
-          // Otherwise, navigate back to the trip detail page
           setTimeout(
             () =>
               navigate(`/admin-trip-list/${tripId}`, {
@@ -891,24 +778,20 @@ function WizardEditForm({ onDataChange }) {
           message: `Nepavyko atnaujinti kelionės (HTTP ${resp.status}).`,
           severity: "error",
         })
-        // Set saving state to false on error
         setIsSaving(false)
         return false
       }
     } catch (err) {
-      console.error(err)
       setSnackbar({
         open: true,
         message: "Nepavyko atnaujinti kelionės (server error).",
         severity: "error",
       })
-      // Set saving state to false on error
       setIsSaving(false)
       return false
     }
   }
 
-  // "Flatten" the wizard data into your typical request body
   function buildFinalData(
     status: "Draft" | "Confirmed",
     tripData: TripFormData,
@@ -939,10 +822,7 @@ function WizardEditForm({ onDataChange }) {
     }
   }
 
-  // Reuse your existing logic to flatten wizard itinerary -> steps
-  // But now ensure we preserve original step IDs
   function convertWizardItineraryToEditSteps(wizardItinerary: ExtendedItineraryDay[], dayByDay: boolean) {
-    // Map original steps by day number for quick lookup
     const stepsByDayNumber: Record<number, ExtendedItineraryStep> = {}
 
     originalSteps.forEach((step) => {
@@ -953,10 +833,8 @@ function WizardEditForm({ onDataChange }) {
     return wizardItinerary.map((dayObj, idx) => {
       const dayNumber = dayByDay ? idx + 1 : null
 
-      // Get the step ID - either from the stepId property or from original steps by day number
       let stepId = (dayObj as ExtendedItineraryDay).stepId
 
-      // If we don't have a stepId, try to get it from the original steps
       if (!stepId && dayByDay) {
         const originalStep = stepsByDayNumber[idx + 1]
         if (originalStep) {
@@ -964,14 +842,10 @@ function WizardEditForm({ onDataChange }) {
         }
       }
 
-      // If we're in non-day-by-day mode and don't have a stepId, use the first original step
       if (!dayByDay && !stepId && originalSteps.length > 0) {
         stepId = originalSteps[0].id
       }
 
-      console.log(`Day ${idx + 1} step ID: ${stepId}`)
-
-      // separate events by type, etc.
       const transports = dayObj.events
         .filter((e) => e.type === "transport" || e.type === "cruise")
         .map((t: any) => ({
@@ -989,7 +863,6 @@ function WizardEditForm({ onDataChange }) {
       const accommodations = dayObj.events
         .filter((e) => e.type === "accommodation")
         .map((a: any) => {
-          // Convert numeric star rating to enum string before saving
           const starRatingEnum = typeof a.starRating === "number" ? numberToStarRatingEnum(a.starRating) : a.starRating
 
           return {
@@ -1022,7 +895,6 @@ function WizardEditForm({ onDataChange }) {
     })
   }
 
-  // ---------------- VALIDATION UTILS ----------------
   function isEventValid(event: TripEvent): boolean {
     switch (event.type) {
       case "transport":
@@ -1033,7 +905,7 @@ function WizardEditForm({ onDataChange }) {
       case "activity":
         return !!(event.activityTime && event.description)
       case "images":
-        return true // Images are always valid
+        return true 
       default:
         return true
     }
@@ -1080,7 +952,6 @@ function WizardEditForm({ onDataChange }) {
         })
         return { isValid: false, warnings }
       }
-      // Validate each event
       for (const day of itinerary) {
         for (const event of day.events) {
           if (!isEventValid(event)) {
@@ -1114,13 +985,11 @@ function WizardEditForm({ onDataChange }) {
         </Stepper>
 
         <Paper elevation={3} sx={{ p: 4 }}>
-          {/* STEP 0: Trip Info */}
           {activeStep === 0 && (
             <Step1TripInfo
               initialData={formState.tripData}
               currentItinerary={formState.itinerary}
               onSubmit={(updatedData, updatedItinerary) => {
-                // Preserve step IDs when updating itinerary
                 const updatedItineraryWithIds =
                   updatedItinerary?.map((day, idx) => {
                     const originalDay = formState.itinerary[idx] as ExtendedItineraryDay
@@ -1141,13 +1010,11 @@ function WizardEditForm({ onDataChange }) {
             />
           )}
 
-          {/* STEP 1: Itinerary */}
           {activeStep === 1 && (
             <Step2Itinerary
               tripData={formState.tripData}
               itinerary={formState.itinerary}
               onSubmit={(updatedItinerary) => {
-                // Preserve step IDs when updating itinerary
                 const updatedItineraryWithIds =
                   updatedItinerary?.map((day, idx) => {
                     const originalDay = formState.itinerary[idx] as ExtendedItineraryDay
@@ -1157,7 +1024,6 @@ function WizardEditForm({ onDataChange }) {
                     }
                   }) || []
 
-                // run partial validation
                 const validationResult = validateTrip(formState.tripData, updatedItineraryWithIds, false)
                 setFormState((prev) => ({
                   ...prev,
@@ -1181,7 +1047,6 @@ function WizardEditForm({ onDataChange }) {
             />
           )}
 
-          {/* STEP 2: Files - Using the unified component */}
           {activeStep === 2 && (
             <UnifiedFileUploadStep
               initialImages={formState.images}
@@ -1197,7 +1062,6 @@ function WizardEditForm({ onDataChange }) {
             />
           )}
 
-          {/* STEP 3: Review & confirm */}
           {activeStep === 3 && (
             <Step3ReviewConfirm
               tripData={formState.tripData}

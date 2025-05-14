@@ -5,18 +5,15 @@ import { useEffect, useState } from "react"
 import { Grid, Typography, Paper, Box, Divider, Chip } from "@mui/material"
 import { Image, Description, AttachFile } from "@mui/icons-material"
 
-// Import the getCurrentFileData function
 import { getCurrentFileData as getCreateFileData } from "../Step2_5FileUploads"
 
-// Define the props interface
 interface TripMediaCardProps {
-  // Add props for existing images and documents
   existingStepImages?: { [key: number]: Array<{ id: string; url: string; urlInline?: string }> }
   tripImages?: File[] | Array<{ id: string; url: string; fileName?: string }>
   tripDocuments?: File[] | Array<{ id: string; url: string; fileName: string }>
   existingTripImages?: Array<{ id: string; url: string; fileName?: string }>
   existingTripDocuments?: Array<{ id: string; url: string; fileName: string }>
-  tripId?: string // Add tripId prop
+  tripId?: string 
 }
 
 const TripMediaCard: React.FC<TripMediaCardProps> = ({
@@ -27,7 +24,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
   existingTripDocuments = [],
   tripId,
 }) => {
-  // State to store file data
   const [fileData, setFileData] = useState<{
     newImages: File[]
     newDocuments: File[]
@@ -44,7 +40,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
     documentsToDelete: [],
   })
 
-  // Add a function to deduplicate documents by id and name
   function deduplicateDocuments(
     documents: Array<{ id: string; url: string; fileName: string }>,
   ): Array<{ id: string; url: string; fileName: string }> {
@@ -53,28 +48,21 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
     const seenFileNames = new Set<string>()
 
     documents.forEach((doc) => {
-      // Skip if we've seen this ID or fileName before
       if (doc.id && seenIds.has(doc.id)) return
       if (doc.fileName && seenFileNames.has(doc.fileName)) return
 
-      // Add to our tracking sets
       if (doc.id) seenIds.add(doc.id)
       if (doc.fileName) seenFileNames.add(doc.fileName)
 
-      // Add to our result array
       uniqueDocuments.push(doc)
     })
 
     return uniqueDocuments
   }
 
-  // Modify the useEffect hook to properly handle new images and respect deletions
   useEffect(() => {
-    // Try to get data from create mode
     const createData = getCreateFileData()
-    console.log("TripMediaCard - Retrieved create file data:", createData)
 
-    // Initialize combined data
     const combinedData = {
       newImages: [] as File[],
       newDocuments: [] as File[],
@@ -84,16 +72,13 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
       documentsToDelete: [] as string[],
     }
 
-    // Use Set to prevent duplicates in deletion arrays
     const imagesToDeleteSet = new Set<string>()
     const documentsToDeleteSet = new Set<string>()
 
-    // Add data from create mode if available
     if (createData) {
       combinedData.newImages = [...combinedData.newImages, ...(createData.newImages || [])]
       combinedData.newDocuments = [...combinedData.newDocuments, ...(createData.newDocuments || [])]
 
-      // Add to Sets to prevent duplicates
       if (createData.imagesToDelete) {
         createData.imagesToDelete.forEach((id) => imagesToDeleteSet.add(id))
       }
@@ -102,13 +87,10 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
       }
     }
 
-    // Try to get data from window.__currentFileData directly as a fallback
     if (window.__currentFileData && (!tripId || window.__currentFileData.tripId === tripId)) {
-      console.log("TripMediaCard - Retrieved file data from window:", window.__currentFileData)
       combinedData.newImages = [...combinedData.newImages, ...(window.__currentFileData.newImages || [])]
       combinedData.newDocuments = [...combinedData.newDocuments, ...(window.__currentFileData.newDocuments || [])]
 
-      // Add to Sets to prevent duplicates
       if (window.__currentFileData.imagesToDelete) {
         window.__currentFileData.imagesToDelete.forEach((id) => imagesToDeleteSet.add(id))
       }
@@ -117,15 +99,7 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
       }
     }
 
-    // Try to access global variables directly as a last resort
     if (typeof window.globalNewImages !== "undefined") {
-      console.log("TripMediaCard - Found global variables:", {
-        images: window.globalNewImages?.length || 0,
-        documents: window.globalNewDocuments?.length || 0,
-        imagesToDelete: window.globalImagesToDelete?.length || 0,
-        documentsToDelete: window.globalDocumentsToDelete?.length || 0,
-      })
-
       if (window.globalNewImages && window.globalNewImages.length > 0) {
         combinedData.newImages = [...combinedData.newImages, ...window.globalNewImages]
       }
@@ -134,7 +108,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
         combinedData.newDocuments = [...combinedData.newDocuments, ...window.globalNewDocuments]
       }
 
-      // Add to Sets to prevent duplicates
       if (window.globalImagesToDelete && window.globalImagesToDelete.length > 0) {
         window.globalImagesToDelete.forEach((id) => imagesToDeleteSet.add(id))
       }
@@ -144,16 +117,10 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
       }
     }
 
-    // Process tripImages from props
     if (tripImages && tripImages.length > 0) {
-      console.log("TripMediaCard - Processing tripImages from props:", tripImages)
-
-      // Check if the items are File objects or existing image objects
       if (tripImages[0] instanceof File) {
-        // These are new images (File objects)
         combinedData.newImages = [...combinedData.newImages, ...(tripImages as File[])]
       } else {
-        // These are existing images
         combinedData.existingImages = [
           ...combinedData.existingImages,
           ...(tripImages as Array<{ id: string; url: string; fileName?: string }>),
@@ -161,16 +128,10 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
       }
     }
 
-    // Process tripDocuments from props
     if (tripDocuments && tripDocuments.length > 0) {
-      console.log("TripMediaCard - Processing tripDocuments from props:", tripDocuments)
-
-      // Check if the items are File objects or existing document objects
       if (tripDocuments[0] instanceof File) {
-        // These are new documents (File objects)
         combinedData.newDocuments = [...combinedData.newDocuments, ...(tripDocuments as File[])]
       } else {
-        // These are existing documents
         combinedData.existingDocuments = [
           ...combinedData.existingDocuments,
           ...(tripDocuments as Array<{ id: string; url: string; fileName: string }>),
@@ -178,45 +139,22 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
       }
     }
 
-    // Process existingTripImages from props
     if (existingTripImages && existingTripImages.length > 0) {
-      console.log("TripMediaCard - Processing existingTripImages from props:", existingTripImages)
-
-      // Filter out images that are marked for deletion
       const filteredExistingImages = existingTripImages.filter((img) => !imagesToDeleteSet.has(img.id))
-
       combinedData.existingImages = [...combinedData.existingImages, ...filteredExistingImages]
     }
 
-    // Process existingTripDocuments from props
     if (existingTripDocuments && existingTripDocuments.length > 0) {
-      console.log("TripMediaCard - Processing existingTripDocuments from props:", existingTripDocuments)
-
-      // Filter out documents that are marked for deletion
       const filteredExistingDocuments = existingTripDocuments.filter((doc) => !documentsToDeleteSet.has(doc.id))
-
       combinedData.existingDocuments = [...combinedData.existingDocuments, ...filteredExistingDocuments]
     }
 
-    // Convert Sets back to arrays
     combinedData.imagesToDelete = [...imagesToDeleteSet]
     combinedData.documentsToDelete = [...documentsToDeleteSet]
 
-    // Log the combined data
-    console.log("TripMediaCard - Combined file data:", {
-      newImages: combinedData.newImages.length,
-      newDocuments: combinedData.newDocuments.length,
-      existingImages: combinedData.existingImages.length,
-      existingDocuments: combinedData.existingDocuments.length,
-      imagesToDelete: combinedData.imagesToDelete.length,
-      documentsToDelete: combinedData.documentsToDelete.length,
-    })
-
-    // Update state with the combined data
     setFileData(combinedData)
   }, [tripImages, tripDocuments, existingTripImages, existingTripDocuments, tripId])
 
-  // Deduplicate new images by name
   const uniqueNewImages = fileData.newImages.reduce((acc, current) => {
     const isDuplicate = acc.some((item) => item.name === current.name && item.size === current.size)
     if (!isDuplicate) {
@@ -225,7 +163,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
     return acc
   }, [] as File[])
 
-  // Deduplicate existing images by id
   const uniqueExistingImages = fileData.existingImages.reduce(
     (acc, current) => {
       const isDuplicate = acc.some((item) => item.id === current.id)
@@ -237,7 +174,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
     [] as Array<{ id: string; url: string; fileName?: string }>,
   )
 
-  // Deduplicate new documents by name
   const uniqueNewDocuments = fileData.newDocuments.reduce((acc, current) => {
     const isDuplicate = acc.some((item) => item.name === current.name && item.size === current.size)
     if (!isDuplicate) {
@@ -246,28 +182,16 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
     return acc
   }, [] as File[])
 
-  // Deduplicate existing documents by id
   const uniqueExistingDocuments = deduplicateDocuments(fileData.existingDocuments)
 
-  // Update the hasDocuments check
   const hasDocuments = uniqueNewDocuments.length > 0 || uniqueExistingDocuments.length > 0
 
-  // Check if we have any media to display
   const hasImages = fileData.newImages.length > 0 || fileData.existingImages.length > 0
   const hasMedia = hasImages || hasDocuments
 
-  // If no media, don't render anything
   if (!hasMedia) {
-    console.log("TripMediaCard - No media to display, not rendering")
     return null
   }
-
-  console.log("TripMediaCard - Rendering with:", {
-    newImages: fileData.newImages.length,
-    newDocuments: fileData.newDocuments.length,
-    existingImages: fileData.existingImages.length,
-    existingDocuments: fileData.existingDocuments.length,
-  })
 
   return (
     <Grid item xs={12}>
@@ -277,7 +201,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
         </Typography>
         <Divider sx={{ mb: 3 }} />
 
-        {/* Trip Images */}
         {hasImages && (
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -288,7 +211,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
             </Box>
 
             <Grid container spacing={1}>
-              {/* New images */}
               {uniqueNewImages.map((image, index) => (
                 <Grid item key={`new-${index}`} xs={6} sm={4} md={3} lg={2}>
                   <Box
@@ -329,7 +251,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
                 </Grid>
               ))}
 
-              {/* Existing images */}
               {uniqueExistingImages.map((image, index) => (
                 <Grid item key={`existing-${index}`} xs={6} sm={4} md={3} lg={2}>
                   <Box
@@ -363,7 +284,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
           </Box>
         )}
 
-        {/* Trip Documents */}
         {hasDocuments && (
           <Box>
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -374,7 +294,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
             </Box>
 
             <Grid container spacing={1}>
-              {/* New documents */}
               {uniqueNewDocuments.map((doc, index) => (
                 <Grid item key={`new-doc-${index}`} xs={12} sm={6} md={4}>
                   <Box
@@ -413,7 +332,6 @@ const TripMediaCard: React.FC<TripMediaCardProps> = ({
                 </Grid>
               ))}
 
-              {/* Existing documents */}
               {uniqueExistingDocuments.map((doc, index) => (
                 <Grid item key={`existing-doc-${index}`} xs={12} sm={6} md={4}>
                   <Box

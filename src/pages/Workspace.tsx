@@ -15,6 +15,7 @@ const Workspace: React.FC = () => {
   const [expandedOffers, setExpandedOffers] = useState(false)
   const [hasReservations, setHasReservations] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -27,19 +28,17 @@ const Workspace: React.FC = () => {
           },
         })
 
-        // Check if there are any offers with at least one reservation
         const offersWithReservations = response.data.filter((offer: any) => offer.reservationCount > 0)
         setHasReservations(offersWithReservations.length > 0)
 
-        // If there are reservations, auto-expand the section
         if (offersWithReservations.length > 0) {
           setExpandedOffers(true)
         }
       } catch (err) {
-        console.error("Failed to check for reservations:", err)
         setError("Nepavyko patikrinti rezervacijų.")
       } finally {
         setLoading(false)
+        setIsInitialLoading(false)
       }
     }
 
@@ -52,59 +51,63 @@ const Workspace: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Grid container spacing={3} alignItems="flex-start">
-        <Grid item xs={12} md={8}>
-          <Box sx={{ height: "100%" }}>
-            {/* Special Offers with Reservations section - now above Trip Requests */}
-            {hasReservations && (
-              <Paper sx={{ mb: 3, overflow: "hidden" }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    p: 2,
-                    cursor: "pointer",
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                    borderRadius: (theme) => `${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0`,
-                  }}
-                  onClick={toggleExpandedOffers}
-                >
-                  <Typography sx={{ fontSize: "1rem", fontWeight: 400 }}>Pasiūlymai su rezervacijomis</Typography>
-                  <IconButton size="small" sx={{ color: "inherit" }}>
-                    {expandedOffers ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </IconButton>
-                </Box>
-
-                <Collapse in={expandedOffers}>
-                  <Box sx={{ p: 2 }}>
-                    {loading ? (
-                      <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-                        <CircularProgress size={24} />
-                      </Box>
-                    ) : error ? (
-                      <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                      </Alert>
-                    ) : (
-                      <SpecialOffersWithReservations />
-                    )}
+      {isInitialLoading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Grid container spacing={3} alignItems="flex-start">
+          <Grid item xs={12} md={8}>
+            <Box sx={{ height: "100%" }}>
+              {hasReservations && (
+                <Paper sx={{ mb: 3, overflow: "hidden" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      p: 2,
+                      cursor: "pointer",
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                      borderRadius: (theme) => `${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0`,
+                    }}
+                    onClick={toggleExpandedOffers}
+                  >
+                    <Typography sx={{ fontSize: "1rem", fontWeight: 400 }}>Pasiūlymai su rezervacijomis</Typography>
+                    <IconButton size="small" sx={{ color: "inherit" }}>
+                      {expandedOffers ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    </IconButton>
                   </Box>
-                </Collapse>
-              </Paper>
-            )}
 
-            {/* Trip Requests section - now below Special Offers */}
-            <TripRequestList />
-          </Box>
+                  <Collapse in={expandedOffers}>
+                    <Box sx={{ p: 2 }}>
+                      {loading ? (
+                        <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+                          <CircularProgress size={24} />
+                        </Box>
+                      ) : error ? (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                          {error}
+                        </Alert>
+                      ) : (
+                        <SpecialOffersWithReservations />
+                      )}
+                    </Box>
+                  </Collapse>
+                </Paper>
+              )}
+
+              <TripRequestList />
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Box sx={{ height: "100%", mt: { xs: 2, md: 0 } }}>
+              <Calendar />
+            </Box>
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Box sx={{ height: "100%", mt: { xs: 2, md: 0 } }}>
-            <Calendar />
-          </Box>
-        </Grid>
-      </Grid>
+      )}
     </Box>
   )
 }

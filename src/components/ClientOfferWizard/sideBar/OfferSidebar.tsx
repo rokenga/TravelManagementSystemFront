@@ -43,12 +43,10 @@ const OfferSidebar: React.FC<OfferSidebarProps> = ({
     return accommodationTotal + transportTotal + cruiseTotal
   }
 
-  // Update the countOfferItems function to count image sections even when empty
   const countOfferItems = (offer: OfferStep): number => {
     const accommodationsCount = offer.accommodations?.length || 0
     const transportsCount = offer.transports?.length || 0
     const cruisesCount = offer.cruises?.length || 0
-    // Count image section if it exists (is an array), regardless of whether it has images
     const hasImageSection = Array.isArray(offer.stepImages)
 
     return accommodationsCount + transportsCount + cruisesCount + (hasImageSection ? 1 : 0)

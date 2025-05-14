@@ -14,8 +14,8 @@ import exoticImage from "../assets/HomePage.jpg"
 const HeroContainer = styled(Box)(({ theme }) => ({
   position: "relative",
   height: "100vh",
-  minHeight: "500px", // Ensure minimum height on small screens
-  maxHeight: "900px", // Cap maximum height on very large screens
+  minHeight: "500px",
+  maxHeight: "900px", 
   overflow: "hidden",
   display: "flex",
   alignItems: "center",
@@ -64,7 +64,7 @@ const HeroContent = styled(Container)(({ theme }) => ({
 const IconSection = styled(Box)(({ theme }) => ({
   display: "flex",
   justifyContent: "center",
-  flexWrap: "wrap", // Allow wrapping on small screens
+  flexWrap: "wrap", 
   gap: theme.spacing(4),
   marginTop: theme.spacing(4),
   [theme.breakpoints.down("sm")]: {
@@ -140,7 +140,6 @@ const HeroSection: React.FC<{ tripRequestRef: React.RefObject<HTMLDivElement> }>
           Pasirūpinsime viskuo: skrydžiai, viešbučiai, pervežimai, draudimas, vizos ir kitos paslaugos
         </Typography>
 
-        {/* Icon Section */}
         <IconSection>
           <IconWrapper>
             <IconButton>
@@ -188,7 +187,6 @@ const HeroSection: React.FC<{ tripRequestRef: React.RefObject<HTMLDivElement> }>
           </IconWrapper>
         </IconSection>
 
-        {/* Scroll Button */}
         <Button
           variant="contained"
           sx={{

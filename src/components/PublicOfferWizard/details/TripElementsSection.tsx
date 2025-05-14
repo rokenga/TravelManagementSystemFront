@@ -55,7 +55,6 @@ const TripElementsSection: React.FC<TripElementsSectionProps> = ({
 }) => {
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-      {/* Add Event Menu */}
       <Box sx={{ mb: 4 }}>
         <AddEventMenu
           onAddAccommodation={handleAddAccommodation}
@@ -64,14 +63,12 @@ const TripElementsSection: React.FC<TripElementsSectionProps> = ({
         />
       </Box>
 
-      {/* Combined events section */}
       {formData.accommodations.length === 0 && formData.transports.length === 0 && formData.cruises.length === 0 && (
         <Typography variant="body2" sx={{ fontStyle: "italic", color: "text.secondary", mb: 2, textAlign: "center" }}>
           Nėra pridėtų pasiūlymo elementų. Naudokite mygtuką viršuje, kad pridėtumėte elementus.
         </Typography>
       )}
 
-      {/* Accommodations */}
       {formData.accommodations.map((acc, accIndex) => (
         <AccommodationItem
           key={`acc-${accIndex}`}
@@ -89,7 +86,6 @@ const TripElementsSection: React.FC<TripElementsSectionProps> = ({
         />
       ))}
 
-      {/* Transports */}
       {formData.transports.map((trans, transIndex) => (
         <TransportItem
           key={`trans-${transIndex}`}
@@ -107,7 +103,6 @@ const TripElementsSection: React.FC<TripElementsSectionProps> = ({
         />
       ))}
 
-      {/* Cruises */}
       {formData.cruises.map((cruise, cruiseIndex) => (
         <CruiseItem
           key={`cruise-${cruiseIndex}`}

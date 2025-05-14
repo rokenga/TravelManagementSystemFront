@@ -55,23 +55,19 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
     newDayByDay: true,
   })
 
-  // Calculate the duration between original start and end dates
   const calculateTripDuration = () => {
     if (initialStartDate && initialEndDate) {
       const start = dayjs(initialStartDate)
       const end = dayjs(initialEndDate)
-      // Return the difference in days, adding 1 to include the last day
       return end.diff(start, "day") + 1
     }
     return 0
   }
 
-  // Update end date when start date changes
   useEffect(() => {
     if (options.newStartDate) {
       const tripDuration = calculateTripDuration()
       if (tripDuration > 0) {
-        // Calculate new end date by adding the original duration (minus 1 day) to the new start date
         const newEndDate = dayjs(options.newStartDate).add(tripDuration - 1, "day")
         setOptions((prev) => ({
           ...prev,
@@ -143,7 +139,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
                   value={options.newEndDate ? dayjs(options.newEndDate) : null}
                   onChange={(date) => handleDateChange("newEndDate", date)}
                   showTime={false}
-                  readOnly={true} // Use read-only mode instead of disabled
+                  readOnly={true} 
                   helperText="Automatiškai apskaičiuota pagal pradinės kelionės trukmę"
                 />
               </Grid>

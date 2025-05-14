@@ -7,7 +7,6 @@ declare global {
         documentsToDelete: string[]
       } | null
   
-      // Global variables from edit mode
       globalNewImages?: File[]
       globalNewDocuments?: File[]
       globalImagesToDelete?: string[]

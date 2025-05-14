@@ -98,7 +98,6 @@ const TwoFactorSetup = () => {
     setTimeout(() => setKeyCopied(false), 2000)
   }
 
-  // Handle code input to only allow numbers
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (value === "" || /^\d+$/.test(value)) {

@@ -1,7 +1,7 @@
 "use client"
 
 import type * as React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Button,
   CssBaseline,
@@ -15,6 +15,7 @@ import {
   IconButton,
   useMediaQuery,
   Link as MuiLink,
+  CircularProgress,
 } from "@mui/material"
 import { createTheme, ThemeProvider, responsiveFontSizes } from "@mui/material/styles"
 import { useNavigate, Link } from "react-router-dom"
@@ -32,18 +33,17 @@ import {
   DirectionsBoatOutlined,
 } from "@mui/icons-material"
 
-// Create a custom theme with primary and secondary colors
 let travelTheme = createTheme({
   palette: {
     primary: {
-      main: "#004785", // Primary color (deep blue)
-      light: "#1a5e9c", // Lighter shade of primary
-      dark: "#003366", // Darker shade of primary
+      main: "#004785", 
+      light: "#1a5e9c", 
+      dark: "#003366", 
     },
     secondary: {
-      main: "#F58220", // Secondary color (orange)
-      light: "#ff9a47", // Lighter shade of secondary
-      dark: "#d06a0c", // Darker shade of secondary
+      main: "#F58220", 
+      light: "#ff9a47",
+      dark: "#d06a0c", 
     },
     background: {
       default: "#f5f7fa",
@@ -82,7 +82,7 @@ let travelTheme = createTheme({
         root: {
           "& .MuiOutlinedInput-root": {
             "&:hover fieldset": {
-              borderColor: "#004785", // Primary color
+              borderColor: "#004785", 
             },
           },
         },
@@ -98,7 +98,6 @@ let travelTheme = createTheme({
   },
 })
 
-// Make the theme responsive
 travelTheme = responsiveFontSizes(travelTheme)
 
 export default function SignIn() {
@@ -106,7 +105,16 @@ export default function SignIn() {
   const [errors, setErrors] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const isSmallScreen = useMediaQuery(travelTheme.breakpoints.down("sm"))
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false)
+    }, 1000)
+    
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword)
@@ -133,7 +141,6 @@ export default function SignIn() {
     const data = new FormData(event.currentTarget)
 
     if (!validate(data)) {
-      console.error("Validation errors:", errors)
       return
     }
 
@@ -147,8 +154,6 @@ export default function SignIn() {
       const response = await axios.post(API_URL + "/Auth/login", loginData, {
         headers: { "Content-Type": "application/json" },
       })
-
-      console.log("Success:", response.data)
 
       if (response.data.requires2FASetup) {
         localStorage.setItem("accessToken", response.data.accessToken)
@@ -172,7 +177,6 @@ export default function SignIn() {
         localStorage.setItem("accessToken", response.data.accessToken)
         localStorage.setItem("refreshToken", response.data.refreshToken || "")
       } else {
-        console.error("Login failed: No access token returned.")
         setIsLoading(false)
         return
       }
@@ -194,19 +198,15 @@ export default function SignIn() {
     } catch (error) {
       setIsLoading(false)
       if (axios.isAxiosError(error)) {
-        console.error("Response error:", error.response?.data)
         setErrors({
           ...errors,
           email: error.response?.data.Message || "Login failed",
           password: error.response?.data.Message || "Login failed",
         })
-      } else {
-        console.error("Error during Axios request:", error)
       }
     }
   }
 
-  // Travel icons for decoration
   const travelIcons = [
     <FlightTakeoff key="flight" />,
     <ExploreOutlined key="explore" />,
@@ -219,144 +219,134 @@ export default function SignIn() {
     <ThemeProvider theme={travelTheme}>
       <CssBaseline />
       <Container component="main" maxWidth="sm" sx={{ py: 4 }}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            borderRadius: 2,
-            position: "relative",
-            overflow: "hidden",
-            borderTop: 3,
-            borderColor: "primary.main",
-            mt: 4, // Adjusted spacing
-          }}
-        >
-          {/* Decorative travel icons at the top */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-around",
-              width: "100%",
-              mb: 3,
-              color: "primary.main", // Primary color
-              opacity: 0.8,
-            }}
-          >
-            {travelIcons.map((icon, index) => (
-              <Box
-                key={index}
-                sx={{
-                  transform: `rotate(${index % 2 === 0 ? -10 : 10}deg)`,
-                  fontSize: { xs: "1.5rem", sm: "1.8rem" },
-                }}
-              >
-                {icon}
-              </Box>
-            ))}
+        {isInitialLoading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+            <CircularProgress />
           </Box>
-
-          <Avatar
+        ) : (
+          <Paper
+            elevation={3}
             sx={{
-              m: 1,
-              bgcolor: "primary.main", // Primary color
-              width: 56,
-              height: 56,
-              boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+              p: 4,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              borderRadius: 2,
+              position: "relative",
+              overflow: "hidden",
+              borderTop: 3,
+              borderColor: "primary.main",
+              mt: 4,
             }}
           >
-            <FlightTakeoff fontSize="large" />
-          </Avatar>
-
-          <Typography component="h1" variant="h4" sx={{ mb: 1, color: "primary.main", fontWeight: "bold" }}>
-            Sveiki sugrįžę!
-          </Typography>
-
-          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: "100%" }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="El. paštas"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              error={!!errors.email}
-              helperText={errors.email}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email color="primary" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Slaptažodis"
-              type={showPassword ? "text" : "password"}
-              id="password"
-              autoComplete="current-password"
-              error={!!errors.password}
-              helperText={errors.password}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock color="primary" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
-                      edge="end"
-                      color="primary" // Change to secondary color
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 3 }}
-            />
-
-            {/* Forgot Password Link */}
-            <Box sx={{ textAlign: "right", mb: 2 }}>
-              <MuiLink component={Link} to="/forgot-password" variant="body2" color="primary">
-                Pamiršote slaptažodį?
-              </MuiLink>
-            </Box>
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary" // This is already using primary color
-              disabled={isLoading}
+            <Box
               sx={{
-                mt: 2,
+                display: "flex",
+                justifyContent: "space-around",
+                width: "100%",
                 mb: 3,
-                py: 1.5,
-                fontSize: "1rem",
-                bgcolor: "primary.main", // This is already using primary color
-                "&:hover": {
-                  bgcolor: "primary.dark",
-                },
+                color: "primary.main",
+                opacity: 0.8,
               }}
             >
-              {isLoading ? "Jungiamasi..." : "Prisijungti"}
-            </Button>
-          </Box>
-        </Paper>
+              {travelIcons.map((icon, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    transform: `rotate(${index % 2 === 0 ? -10 : 10}deg)`,
+                    fontSize: { xs: "1.5rem", sm: "1.8rem" },
+                  }}
+                >
+                  {icon}
+                </Box>
+              ))}
+            </Box>
+
+            <Avatar sx={{ m: 1, bgcolor: "primary.main", width: 56, height: 56 }}>
+              <Lock fontSize="large" />
+            </Avatar>
+
+            <Typography component="h1" variant="h5" sx={{ mb: 3, fontWeight: "bold" }}>
+              Prisijungimas
+            </Typography>
+
+            <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="El. paštas"
+                name="email"
+                autoComplete="email"
+                autoFocus
+                error={!!errors.email}
+                helperText={errors.email}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 2 }}
+              />
+
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Slaptažodis"
+                type={showPassword ? "text" : "password"}
+                id="password"
+                autoComplete="current-password"
+                error={!!errors.password}
+                helperText={errors.password}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 3 }}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                disabled={isLoading}
+                sx={{
+                  py: 1.5,
+                  fontSize: "1rem",
+                  textTransform: "none",
+                }}
+              >
+                {isLoading ? <CircularProgress size={24} color="inherit" /> : "Prisijungti"}
+              </Button>
+
+              <Box sx={{ mt: 3, textAlign: "center" }}>
+                <MuiLink component={Link} to="/forgot-password" variant="body2" color="primary">
+                  Pamiršote slaptažodį?
+                </MuiLink>
+              </Box>
+            </Box>
+          </Paper>
+        )}
       </Container>
     </ThemeProvider>
   )

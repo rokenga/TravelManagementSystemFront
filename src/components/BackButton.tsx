@@ -28,15 +28,12 @@ const BackButton: React.FC<BackButtonProps> = ({
 
   const handleBack = () => {
     if (previousPath) {
-      // Use the navigation context's back function
       navigateBack()
     } else {
-      // Fallback if no previous path
       navigate(fallbackPath)
     }
   }
 
-  // Use icon-only button on mobile or if explicitly requested
   if (isMobile || iconOnly) {
     return (
       <Tooltip title={tooltip}>

@@ -79,7 +79,6 @@ export default function TwoFactorAuth() {
     setSnackbar({ ...snackbar, open: false })
   }
 
-  // Handle code input to only allow numbers
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (value === "" || /^\d+$/.test(value)) {

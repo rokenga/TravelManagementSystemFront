@@ -1,8 +1,6 @@
-// Types for API requests and responses
 
 import type { TransportType, BoardBasisType } from "./Enums"
 
-// Transport
 export interface TransportRequest {
   transportType?: TransportType | null
   departureTime?: Date | null
@@ -30,7 +28,6 @@ export interface TransportResponse {
   cabinType?: string
 }
 
-// Accommodation
 export interface AccommodationRequest {
   hotelName?: string | null
   checkIn?: Date | null
@@ -52,7 +49,6 @@ export interface AccommodationResponse {
   roomType?: string
 }
 
-// Activity
 export interface ActivityRequest {
   description?: string | null
   activityTime?: Date | null
@@ -64,7 +60,6 @@ export interface ActivityResponse {
   activityTime?: string
 }
 
-// Itinerary Step
 export interface ItineraryStepRequest {
   dayNumber?: number | null
   description?: string | null
@@ -82,7 +77,6 @@ export interface ItineraryStepResponse {
   activities?: ActivityResponse[]
 }
 
-// Itinerary
 export interface ItineraryRequest {
   title?: string | null
   description?: string | null
@@ -96,7 +90,6 @@ export interface ItineraryResponse {
   itinerarySteps?: ItineraryStepResponse[]
 }
 
-// Trip
 export interface CreateTripRequest {
   agentId?: string | null
   clientId?: string | null

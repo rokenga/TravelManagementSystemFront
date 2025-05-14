@@ -13,7 +13,6 @@ import { translateTripCategory, translateTripStatus, translatePaymentStatus } fr
 import type { TripResponse } from "../types/ClientTrip"
 import { TripStatus, PaymentStatus, TripCategory } from "../types/ClientTrip"
 
-// Lithuanian date formatter (YYYY-MM-DD)
 const formatDate = (dateString?: string) => {
   if (!dateString) return "Nežinoma data"
   return new Intl.DateTimeFormat("lt-LT", {
@@ -36,27 +35,24 @@ const formatPrice = (price?: number) => {
   }).format(price)
 }
 
-// Using the same color scheme as the client card for consistency
 const categoryColors = {
-  [TripCategory.Tourist]: "#42A5F5", // Blue - like SpecialRequirements
-  [TripCategory.Group]: "#AB47BC", // Purple - like TravelPreference
-  [TripCategory.Relax]: "#FFA726", // Orange - like DestinationInterest
-  [TripCategory.Business]: "#66BB6A", // Green - like Other
-  [TripCategory.Cruise]: "#EC407A", // Pink - like TravelFrequency
+  [TripCategory.Tourist]: "#42A5F5", 
+  [TripCategory.Group]: "#AB47BC", 
+  [TripCategory.Relax]: "#FFA726", 
+  [TripCategory.Business]: "#66BB6A", 
+  [TripCategory.Cruise]: "#EC407A", 
 }
 
-// Status colors
 const statusColors = {
-  [TripStatus.Draft]: "#FF9800", // Orange
-  [TripStatus.Confirmed]: "#4CAF50", // Green
-  [TripStatus.Cancelled]: "#F44336", // Red
+  [TripStatus.Draft]: "#FF9800", 
+  [TripStatus.Confirmed]: "#4CAF50",
+  [TripStatus.Cancelled]: "#F44336", 
 }
 
-// Payment status colors
 const paymentStatusColors = {
-  [PaymentStatus.Unpaid]: "#F44336", // Red
-  [PaymentStatus.PartiallyPaid]: "#2196F3", // Blue
-  [PaymentStatus.Paid]: "#4CAF50", // Green
+  [PaymentStatus.Unpaid]: "#F44336", 
+  [PaymentStatus.PartiallyPaid]: "#2196F3", 
+  [PaymentStatus.Paid]: "#4CAF50", 
 }
 
 interface TripSummaryCardProps {
@@ -89,16 +85,13 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
             p: 3,
           }}
         >
-          {/* Header with title */}
           <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mr: 1 }}>
               {truncateText(trip.tripName || "Kelionė be pavadinimo")}
             </Typography>
           </Box>
 
-          {/* Status badges */}
           <Box sx={{ display: "flex", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 1 }}>
-            {/* Trip category */}
             {trip.category && (
               <Chip
                 icon={<LocalOfferIcon style={{ fontSize: "0.875rem", color: "white" }} />}
@@ -115,7 +108,6 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
               />
             )}
 
-            {/* Trip status */}
             {trip.status && (
               <Chip
                 icon={<AccessTimeIcon style={{ fontSize: "0.875rem", color: "white" }} />}
@@ -132,7 +124,6 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
               />
             )}
 
-            {/* Payment status if available */}
             {trip.paymentStatus && (
               <Chip
                 icon={<PaymentIcon style={{ fontSize: "0.875rem", color: "white" }} />}
@@ -148,14 +139,13 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
                 }}
               />
             )}
-            {/* Transfer status if applicable */}
             {trip.isTransferred && trip.transferredFromAgentName && (
               <Chip
                 icon={<SwapHorizIcon style={{ fontSize: "0.875rem", color: "white" }} />}
                 label="Perkeltas"
                 size="small"
                 sx={{
-                  bgcolor: "black", // Info blue
+                  bgcolor: "black", 
                   color: "white",
                   fontWeight: 500,
                   "& .MuiChip-icon": {
@@ -167,7 +157,6 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
             )}
           </Box>
 
-          {/* Client name if available - moved after tags */}
           {trip.clientFullName && (
             <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem", mb: 2 }}>
               <PersonIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
@@ -177,9 +166,7 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
             </Box>
           )}
 
-          {/* Trip details */}
           <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            {/* Date range */}
             <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
               <CalendarTodayIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
               <Typography variant="body2" color="text.secondary">
@@ -187,7 +174,6 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
               </Typography>
             </Box>
 
-            {/* Price if available */}
             {trip.price !== undefined && (
               <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
                 <PaymentIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />
@@ -197,7 +183,6 @@ const TripSummaryCard: React.FC<TripSummaryCardProps> = ({ trip, onClick }) => {
               </Box>
             )}
 
-            {/* Travelers count if available */}
             {(trip.adultsCount !== undefined || trip.childrenCount !== undefined) && (
               <Box sx={{ display: "flex", alignItems: "center", color: "text.secondary", fontSize: "0.875rem" }}>
                 <PeopleIcon sx={{ fontSize: "1rem", mr: 1, opacity: 0.7 }} />

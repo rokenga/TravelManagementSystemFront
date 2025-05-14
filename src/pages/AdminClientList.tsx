@@ -45,7 +45,6 @@ interface PaginatedResponse<T> {
   pageSize: number
 }
 
-// Define the list state interface
 interface ClientListState {
   page: number
   pageSize: number
@@ -54,7 +53,6 @@ interface ClientListState {
   filters: ClientFilters
 }
 
-// Default empty filters
 const defaultFilters: ClientFilters = {
   categoryFilters: [],
 }
@@ -71,7 +69,7 @@ const AdminClientList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1)
   const [sortOption, setSortOption] = useState<string>("Vardas A-Z")
   const [selectedFilters, setSelectedFilters] = useState<ClientFilters>(defaultFilters)
-  const [refreshTrigger, setRefreshTrigger] = useState(0) // Changed to number for better control
+  const [refreshTrigger, setRefreshTrigger] = useState(0) 
 
   const navigate = useNavigate()
   const user = useContext(UserContext)
@@ -81,7 +79,6 @@ const AdminClientList: React.FC = () => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
   const isInitialMount = useRef(true)
 
-  // Save current state to be restored when coming back
   const saveCurrentState = useCallback(() => {
     const state: ClientListState = {
       page: currentPage,
@@ -90,12 +87,10 @@ const AdminClientList: React.FC = () => {
       sortOption,
       filters: selectedFilters,
     }
-    console.log("Saving client list state:", state)
     savePageState("admin-client-list", state)
   }, [currentPage, pageSize, searchTerm, sortOption, selectedFilters, savePageState])
 
   useEffect(() => {
-    // If this is a navbar navigation, reset all filters
     if (isNavbarNavigation) {
       setCurrentPage(1)
       setPageSize(25)
@@ -103,27 +98,22 @@ const AdminClientList: React.FC = () => {
       setSortOption("Vardas A-Z")
       setSelectedFilters(defaultFilters)
 
-      // Fetch with default values
       fetchClients(1, 25, "", defaultFilters)
       return
     }
 
-    // Only try to restore state on initial mount
     if (isInitialMount.current) {
       isInitialMount.current = false
 
       const savedState = getPageState("admin-client-list") as ClientListState | null
-      console.log("Retrieved saved client list state:", savedState)
 
       if (savedState) {
-        console.log("Restoring state from saved state")
         if (savedState.page) setCurrentPage(savedState.page)
         if (savedState.pageSize) setPageSize(savedState.pageSize)
         if (savedState.searchTerm !== undefined) setSearchTerm(savedState.searchTerm)
         if (savedState.sortOption) setSortOption(savedState.sortOption)
         if (savedState.filters) setSelectedFilters(savedState.filters)
 
-        // Fetch with restored values
         fetchClients(
           savedState.page || 1,
           savedState.pageSize || 25,
@@ -131,21 +121,17 @@ const AdminClientList: React.FC = () => {
           savedState.filters || defaultFilters,
         )
       } else {
-        // No saved state, fetch with defaults
         fetchClients(1, 25, "", defaultFilters)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getPageState, isNavbarNavigation])
 
-  // Save state when component unmounts
   useEffect(() => {
     return () => {
       saveCurrentState()
     }
   }, [saveCurrentState])
 
-  // This effect will run when refreshTrigger changes
   useEffect(() => {
     if (!isInitialMount.current || refreshTrigger > 0) {
       fetchClients(currentPage, pageSize, searchTerm, selectedFilters)
@@ -156,7 +142,6 @@ const AdminClientList: React.FC = () => {
     try {
       setLoading(true)
 
-      // Convert your UI states into the final request body
       const params: ClientQueryParams = {
         pageNumber: page,
         pageSize: size,
@@ -166,7 +151,6 @@ const AdminClientList: React.FC = () => {
         categoryFilters: [],
       }
 
-      // Add sorting
       if (sortOption === "Vardas A-Z") {
         params.sortBy = "name"
         params.descending = false
@@ -181,14 +165,10 @@ const AdminClientList: React.FC = () => {
         params.descending = false
       }
 
-      // Add categoryFilters
       if (filters.categoryFilters && filters.categoryFilters.length > 0) {
         params.categoryFilters = filters.categoryFilters
       }
 
-      console.log("Sending request body:", params)
-
-      // Make the POST request
       const response = await axios.post<PaginatedResponse<Client>>(`${API_URL}/Client/search`, params, {
         headers: {
           "Content-Type": "application/json",
@@ -196,23 +176,13 @@ const AdminClientList: React.FC = () => {
         },
       })
 
-      // Update state with data from the backend
       setClients(response.data.items)
       setCurrentPage(response.data.pageNumber)
       setPageSize(response.data.pageSize)
 
-      // Calculate total pages based on the response data
       const calculatedTotalPages = Math.ceil(response.data.totalCount / response.data.pageSize)
       setTotalPages(calculatedTotalPages)
-
-      console.log("Pagination data:", {
-        currentPage: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: calculatedTotalPages,
-      })
     } catch (err: any) {
-      console.error("Failed to fetch clients:", err)
       setError("Nepavyko gauti klientų sąrašo.")
     } finally {
       setLoading(false)
@@ -220,63 +190,52 @@ const AdminClientList: React.FC = () => {
   }
 
   const handlePageChange = (newPage: number) => {
-    console.log(`Changing to page ${newPage}`)
     setCurrentPage(newPage)
     fetchClients(newPage, pageSize, searchTerm, selectedFilters)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
-    console.log(`Changing page size to ${newPageSize}`)
     setPageSize(newPageSize)
-    setCurrentPage(1) // Reset to first page when changing page size
+    setCurrentPage(1) 
     fetchClients(1, newPageSize, searchTerm, selectedFilters)
   }
 
   const handleSearchChange = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm)
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1) 
     fetchClients(1, pageSize, newSearchTerm, selectedFilters)
   }
 
   const handleSortChange = (option: string) => {
     setSortOption(option)
-    setCurrentPage(1) // Reset to first page when sorting
+    setCurrentPage(1)
     fetchClients(1, pageSize, searchTerm, selectedFilters)
   }
 
   const handleApplyFilters = (filters: ClientFilters) => {
-    console.log("Applied filters:", filters)
     setSelectedFilters(filters)
-    setCurrentPage(1) // Reset to first page when filtering
+    setCurrentPage(1)
     fetchClients(1, pageSize, searchTerm, filters)
     setIsFilterDrawerOpen(false)
   }
 
   const handleClientClick = (clientId: string) => {
-    // Save the current list state before navigating
     saveCurrentState()
     navigate(`/admin-client-list/${clientId}`)
   }
 
   const refreshClientTags = () => {
-    setRefreshTrigger((prev) => prev + 1) // Increment to force refresh
+    setRefreshTrigger((prev) => prev + 1) 
   }
 
   const refreshClientList = () => {
-    console.log("Refreshing client list after adding new client")
-    // Reset to first page to ensure new client is visible
     setCurrentPage(1)
-    // Increment refresh trigger to force data refresh
     setRefreshTrigger((prev) => prev + 1)
   }
 
-  /**
-   * Count how many filters are active
-   */
   const getActiveFilterCount = () => {
     let count = 0
     if (selectedFilters.categoryFilters.length > 0) {
-      // Count each category that has filters
       count += selectedFilters.categoryFilters.length
     }
     return count
@@ -370,7 +329,6 @@ const AdminClientList: React.FC = () => {
                   ))}
                 </Grid>
 
-                {/* Pagination Controls */}
                 <Box
                   sx={{
                     display: "flex",
@@ -391,14 +349,12 @@ const AdminClientList: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Client Tag Manager Modal */}
       <ClientTagManager
         open={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         onTagsUpdated={refreshClientTags}
       />
 
-      {/* Client Form Modal */}
       <ClientFormModal
         open={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}

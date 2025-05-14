@@ -46,7 +46,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Format date for display in the header
   const formatDate = (date: any) => {
     if (!date) return "Nenustatyta"
     return date.format("YYYY-MM-DD")
@@ -111,7 +110,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Company, Ship name, Code, Cabin type */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -151,7 +149,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Second row: Departure and arrival ports and times */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -206,7 +203,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Third row: Description */}
         <TextField
           label="Papildomas aprašymas"
           value={cruise.description}
@@ -218,7 +214,6 @@ const CruiseItem: React.FC<CruiseItemProps> = ({
           sx={{ mb: 2 }}
         />
 
-        {/* Fourth row: Price */}
         <Grid container spacing={2}>
           <Grid item xs={12} md={9}></Grid>
           <Grid item xs={12} md={3}>

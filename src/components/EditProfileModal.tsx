@@ -24,14 +24,13 @@ import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import CustomSnackbar from "../components/CustomSnackBar"
 
-// Update the User interface in EditProfileModal
 interface User {
   id: string
   email: string
   role: "Admin" | "Agent" | null
   firstName: string
   lastName: string
-  birthday: string // Changed from birthDay to birthday
+  birthday: string 
   wantsToReceiveReminders: boolean
 }
 
@@ -59,14 +58,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Replace submitError with snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "error" as "success" | "error" | "info" | "warning",
   })
 
-  // Update the useEffect to use the correct field name
   useEffect(() => {
     if (user) {
       setFormData({
@@ -85,7 +82,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
       [name]: value,
     }))
 
-    // Clear error for this field if it exists
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev }
@@ -110,7 +106,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
         birthday: date,
       }))
 
-      // Clear error for birthday if it exists
       if (errors.birthday) {
         setErrors((prev) => {
           const newErrors = { ...prev }
@@ -124,29 +119,24 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    // First name is required
     if (!formData.firstName?.trim()) {
       newErrors.firstName = "Vardas yra privalomas"
     }
 
-    // Last name is required
     if (!formData.lastName?.trim()) {
       newErrors.lastName = "Pavardė yra privaloma"
     }
 
-    // Birthday validation
     if (!formData.birthday) {
       newErrors.birthday = "Gimimo data yra privaloma"
     } else {
       const today = dayjs()
       const birthDate = formData.birthday
 
-      // Check if date is in the future
       if (birthDate.isAfter(today)) {
         newErrors.birthday = "Gimimo data negali būti ateityje"
       }
 
-      // Check if user is at least 18 years old
       const age = today.diff(birthDate, "year")
       if (age < 18) {
         newErrors.birthday = "Vartotojas turi būti bent 18 metų amžiaus"
@@ -157,7 +147,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
     return Object.keys(newErrors).length === 0
   }
 
-  // Update handleSubmit to use snackbar for errors
   const handleSubmit = async () => {
     if (!validateForm()) return
 
@@ -173,17 +162,13 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
         },
       })
 
-      // Call success callback with the updated user data
       if (onSuccess && response.data) {
         onSuccess(response.data)
       }
 
-      // Close the modal
       onClose()
     } catch (err: any) {
-      console.error("Failed to update profile:", err)
 
-      // Handle different error scenarios with snackbar
       if (err.response?.status === 401) {
         setSnackbar({
           open: true,
@@ -191,7 +176,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
           severity: "error",
         })
       } else if (err.response?.status === 400) {
-        // Handle validation errors from the server
         if (err.response.data?.errors) {
           const serverErrors: Record<string, string> = {}
           Object.entries(err.response.data.errors).forEach(([key, value]) => {
@@ -199,7 +183,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
           })
           setErrors(serverErrors)
 
-          // Show a general error message in the snackbar
           setSnackbar({
             open: true,
             message: "Patikrinkite įvestus duomenis ir bandykite dar kartą.",
@@ -236,7 +219,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
     setSnackbar({ ...snackbar, open: false })
   }
 
-  // Format date for display
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString("lt-LT", {
       year: "numeric",
@@ -245,7 +227,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, onSu
     })
   }
 
-  // Remove the Alert component from the DialogContent and add CustomSnackbar at the end
   return (
     <>
       <Dialog open={open} onClose={loading ? undefined : handleClose} maxWidth="md" fullWidth>

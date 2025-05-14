@@ -78,7 +78,6 @@ const PublicOfferFilterPanel: React.FC<PublicOfferFilterPanelProps> = ({
         const response = await axios.get<PublicOfferFilterOptions>(`${API_URL}/PublicTripOfferFacade/public-filter`)
         setFilterOptions(response.data)
       } catch (error) {
-        console.error("Failed to fetch filter options:", error)
         setError("Nepavyko gauti filtrų.")
       } finally {
         setLoading(false)

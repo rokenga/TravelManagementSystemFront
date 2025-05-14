@@ -16,7 +16,6 @@ import {
 } from "@mui/icons-material"
 import type { TripEvent, ValidationWarning } from "../../../types"
 
-// Extended event type with UI-specific properties
 interface ProcessedEvent extends TripEvent {
   timeInfo?: ReturnType<typeof formatEarliestTime> & { endDate?: Date | null }
   isArrivalEvent?: boolean
@@ -37,10 +36,8 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
   const mainLine = buildLine(evt)
   const desc = evt.description
 
-  // Check if this event should be highlighted
   const shouldHighlight = !hideHighlighting && (evt.isOverlapping || evt.isShortStay)
 
-  // Get icon for event type
   const getEventIcon = () => {
     switch (evt.type) {
       case "transport":
@@ -71,16 +68,13 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     }
   }
 
-  // Function to render star rating as stars
   const renderStarRating = (rating: number | string) => {
     const numRating = typeof rating === "number" ? rating : Number.parseInt(rating, 10)
     if (isNaN(numRating)) return null
 
-    // Create a string of star symbols
     return "★".repeat(numRating)
   }
 
-  // Function to build detailed info line for transport events
   const buildTransportDetailLine = (evt: any) => {
     const details = []
 
@@ -91,14 +85,12 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     return details.length > 0 ? details.join(" | ") : null
   }
 
-  // Function to build detailed info line for accommodation events
   const buildAccommodationDetailLine = (evt: any) => {
     const details = []
 
     if (evt.hotelName) details.push(`Viešbutis: ${evt.hotelName}`)
     if (evt.roomType) details.push(`Kambarys: ${evt.roomType}`)
 
-    // Add star rating if available
     if (evt.starRating) {
       const stars = typeof evt.starRating === "number" ? evt.starRating : Number.parseInt(evt.starRating, 10)
 
@@ -107,7 +99,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
       }
     }
 
-    // Add board basis (meal plan) if available
     if (evt.boardBasis) {
       const boardBasisLabels: Record<string, string> = {
         BedAndBreakfast: "Pusryčiai įskaičiuoti",
@@ -121,7 +112,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
       details.push(`Maitinimas: ${boardBasisLabel}`)
     }
 
-    // Add hotel link if available (as text, not clickable)
     if (evt.hotelLink) {
       details.push(`Nuoroda: ${evt.hotelLink}`)
     }
@@ -129,7 +119,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     return details.length > 0 ? details.join(" | ") : null
   }
 
-  // Function to build detailed info line for cruise events
   const buildCruiseDetailLine = (evt: any) => {
     const details = []
 
@@ -141,7 +130,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     return details.length > 0 ? details.join(" | ") : null
   }
 
-  // Common styles for all event types
   const commonBoxStyles = {
     mb: 2,
     pl: 2,
@@ -153,14 +141,12 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     transition: "all 0.2s ease-in-out",
   }
 
-  // Common text styles to handle overflow
   const textStyles = {
     wordBreak: "break-word",
     overflowWrap: "break-word",
     textAlign: "left",
   }
 
-  // For transport or cruise events
   if (evt.type === "transport" || evt.type === "cruise") {
     const timeStr = evt.isArrivalEvent ? timeInfo.arrivalTimeStr : timeInfo.departureTimeStr
     const detailLine = evt.type === "transport" ? buildTransportDetailLine(evt) : buildCruiseDetailLine(evt)
@@ -184,14 +170,12 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
               )}
             </Typography>
 
-            {/* Detailed information line */}
             {detailLine && (
               <Typography variant="body2" color="text.secondary" sx={{ ...textStyles, ml: 0, mt: 0.5 }}>
                 {detailLine}
               </Typography>
             )}
 
-            {/* Description */}
             {desc && (
               <Typography variant="body2" color="text.secondary" sx={{ ...textStyles, ml: 0, mt: 0.5 }}>
                 {desc}
@@ -204,7 +188,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     )
   }
 
-  // For accommodation events
   if (evt.type === "accommodation") {
     const checkInTime = evt.checkIn ? new Date(evt.checkIn) : null
     const checkOutTime = evt.checkOut ? new Date(evt.checkOut) : null
@@ -237,14 +220,12 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
               )}
             </Typography>
 
-            {/* Detailed information line */}
             {detailLine && !evt.isCheckoutEvent && (
               <Typography variant="body2" color="text.secondary" sx={{ ...textStyles, ml: 0, mt: 0.5 }}>
                 {detailLine}
               </Typography>
             )}
 
-            {/* Description */}
             {desc && (
               <Typography variant="body2" color="text.secondary" sx={{ ...textStyles, ml: 0, mt: 0.5 }}>
                 {desc}
@@ -257,7 +238,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     )
   }
 
-  // For activity events
   if (evt.type === "activity") {
     return (
       <Box sx={commonBoxStyles}>
@@ -280,9 +260,7 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     )
   }
 
-  // For images events
   if (evt.type === "images") {
-    // Check if we have images to display
     const hasImages = evt.images && evt.images.length > 0
 
     return (
@@ -301,7 +279,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
           </Box>
         </Box>
 
-        {/* Display images if available */}
         {hasImages && (
           <Box sx={{ mt: 2, ml: 4 }}>
             <Grid container spacing={1}>
@@ -333,7 +310,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
           </Box>
         )}
 
-        {/* Only show description, not "Nuotraukos" again */}
         {desc && desc !== "Nuotraukos" && (
           <Typography variant="body2" color="text.secondary" sx={{ ...textStyles, ml: 4, mt: 1 }}>
             {desc}
@@ -344,7 +320,6 @@ const PreviewEvent: React.FC<PreviewEventProps> = ({ evt, warnings = [], hideHig
     )
   }
 
-  // For other event types
   return (
     <Box sx={commonBoxStyles}>
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>

@@ -21,7 +21,6 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
     )
   }
 
-  // Show description even if there are no events
   if (day.events.length === 0) {
     if (day.dayDescription) {
       return (
@@ -47,12 +46,10 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
     )
   }
 
-  // Process events to get time information and create check-out events
   const processedEvents = day.events.flatMap((evt: TripEvent) => {
     const timeInfo = formatEarliestTime(evt)
     const processedEvent = { ...evt, timeInfo }
 
-    // Check for short-stay accommodations (less than 24 hours)
     if (evt.type === "accommodation" && evt.checkIn && evt.checkOut) {
       const checkInDate = new Date(evt.checkIn)
       const checkOutDate = new Date(evt.checkOut)
@@ -62,7 +59,6 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
         processedEvent.isShortStay = true
       }
 
-      // Always add checkout event, regardless of time
       if (checkInDate.toDateString() !== checkOutDate.toDateString()) {
         return [
           processedEvent,
@@ -81,7 +77,6 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
         ]
       }
     } else if ((evt.type === "transport" || evt.type === "cruise") && timeInfo.isMultiDay && timeInfo.arrivalTime) {
-      // Add arrival event for multi-day transport or cruise
       return [
         processedEvent,
         {
@@ -99,7 +94,6 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
     return [processedEvent]
   })
 
-  // Sort events by time
   const sortedEvents = processedEvents.sort(
     (a: { timeInfo: { date: { getTime: () => number } } }, b: { timeInfo: { date: { getTime: () => number } } }) => {
       if (!a.timeInfo.date) return 1
@@ -108,25 +102,22 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
     },
   )
 
-  // Mark overlapping events
   const eventsWithOverlapping = [...sortedEvents]
 
-  // Check for overlapping events
   for (let i = 0; i < eventsWithOverlapping.length; i++) {
     const event1 = eventsWithOverlapping[i]
     if (!event1.timeInfo.date) continue
 
     const event1Time = event1.timeInfo.date.getTime()
-    const event1End = event1.timeInfo.endDate ? new Date(event1.timeInfo.endDate).getTime() : event1Time + 3600000 // Default 1 hour duration
+    const event1End = event1.timeInfo.endDate ? new Date(event1.timeInfo.endDate).getTime() : event1Time + 3600000 
 
     for (let j = i + 1; j < eventsWithOverlapping.length; j++) {
       const event2 = eventsWithOverlapping[j]
       if (!event2.timeInfo.date) continue
 
       const event2Time = event2.timeInfo.date.getTime()
-      const event2End = event2.timeInfo.endDate ? new Date(event2.timeInfo.endDate).getTime() : event2Time + 3600000 // Default 1 hour duration
+      const event2End = event2.timeInfo.endDate ? new Date(event2.timeInfo.endDate).getTime() : event2Time + 3600000 
 
-      // Check if events have the same time or overlap
       if (event1Time === event2Time || (event1Time < event2End && event1End > event2Time)) {
         event1.isOverlapping = true
         event2.isOverlapping = true
@@ -134,7 +125,6 @@ const SingleDayPreview: React.FC<SingleDayPreviewProps> = ({ day, warnings = [],
     }
   }
 
-  // Group events by date
   const eventsByDate = eventsWithOverlapping.reduce((acc: any, evt: any) => {
     const dateStr = evt.timeInfo.date ? evt.timeInfo.date.toLocaleDateString("lt-LT") : "noDate"
     if (!acc[dateStr]) acc[dateStr] = []

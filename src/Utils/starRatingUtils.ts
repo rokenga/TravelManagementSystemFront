@@ -1,4 +1,3 @@
-// Enum to number mapping
 export function starRatingEnumToNumber(enumValue: string | null | undefined): number | null {
     if (!enumValue) return null;
     
@@ -13,7 +12,6 @@ export function starRatingEnumToNumber(enumValue: string | null | undefined): nu
     return mapping[enumValue] || null;
   }
   
-  // Number to enum mapping
   export function numberToStarRatingEnum(numValue: number | null | undefined): string | null {
     if (!numValue) return null;
     

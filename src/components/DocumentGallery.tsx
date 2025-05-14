@@ -18,8 +18,8 @@ import { PictureAsPdf, Description, Article, TableChart, Close, Download } from 
 
 interface DocumentFile {
   id: string
-  url?: string // Attachment SAS URL (forces browser to download)
-  urlInline?: string // Inline SAS URL (for <img> or <iframe>)
+  url?: string 
+  urlInline?: string 
   fileName?: string
   altText?: string
   type?: string
@@ -44,7 +44,6 @@ const DocumentGallery: React.FC<DocumentGalleryProps> = ({ documents, title = "D
     )
   }
 
-  // Fix the getDocumentIcon function to handle undefined or null fileName
   const getDocumentIcon = (fileName: string | undefined) => {
     if (!fileName) {
       return <Description fontSize="large" />
@@ -76,16 +75,13 @@ const DocumentGallery: React.FC<DocumentGalleryProps> = ({ documents, title = "D
   }
 
   const handleDownload = (doc: DocumentFile) => {
-    // Use the download URL (Url) if available, otherwise fall back to urlInline
     const downloadUrl = doc.url || doc.urlInline
 
     if (downloadUrl) {
-      // Open in a new tab to force download
       window.open(downloadUrl, "_blank")
     }
   }
 
-  // Check if a document can be previewed
   const canPreviewDocument = (doc: DocumentFile): boolean => {
     if (!doc.urlInline || !doc.fileName) return false
 
@@ -140,7 +136,6 @@ const DocumentGallery: React.FC<DocumentGalleryProps> = ({ documents, title = "D
         ))}
       </Grid>
 
-      {/* Document Preview Dialog */}
       <Dialog open={!!selectedDoc} onClose={handleClosePreview} maxWidth="lg" fullWidth>
         {selectedDoc && (
           <>

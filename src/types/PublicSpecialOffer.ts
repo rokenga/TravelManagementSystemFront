@@ -1,10 +1,9 @@
-// Types for public offer details
 
 export interface FileItem {
   id: string
   url: string
-  urlInline: string // Added this as it's used in the code
-  fileName: string // Added this as it's used in the code
+  urlInline: string 
+  fileName: string 
   container: string
   type: string
   altText: string
@@ -35,7 +34,7 @@ export interface Accommodation {
   boardBasis?: string
   description?: string
   price: number
-  starRating?: string // Added this property for star rating enum
+  starRating?: string 
 }
 
 export interface ItineraryStep {

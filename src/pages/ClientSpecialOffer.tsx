@@ -13,22 +13,11 @@ import {
   CardContent,
   CircularProgress,
   Paper,
-  Grid,
-  Chip,
   Container,
   Tabs,
   Tab,
 } from "@mui/material"
-import {
-  CalendarMonth as CalendarIcon,
-  Person as PersonIcon,
-  ChildCare as ChildIcon,
-  Euro as EuroIcon,
-  Category as CategoryIcon,
-  Flag as FlagIcon,
-} from "@mui/icons-material"
-import { translateTripStatus, translateTripCategory } from "../Utils/translateEnums"
-import { TripStatus } from "../types/Enums"
+
 import ImageGallery from "../components/ImageGallery"
 import ActionBar from "../components/ActionBar"
 import { useNavigation } from "../contexts/NavigationContext"
@@ -40,7 +29,7 @@ import ConvertOfferToTripPopup from "../components/ConvertOfferToTripPopup"
 import TripInfoCard from "../components/TripInfoCard"
 
 const lithuanianMonths = [
-  "", // index 0 unused for 1-based months
+  "",
   "sausio",
   "vasario",
   "kovo",
@@ -55,54 +44,40 @@ const lithuanianMonths = [
   "gruodžio",
 ]
 
-/**
- * If event starts and ends on the same day:
- *   e.g. "balandžio 20 d. 9:30–10:30"
- * Otherwise:
- *   e.g. "balandžio 20 d. 9:30 – balandžio 23 d. 14:30"
- */
 function formatLithuanianDateRange(start?: string, end?: string): string | null {
   if (!start) return null
   const startDate = new Date(start)
   if (!end) {
-    // no end => just show single
     return formatLithuanianMonthDayTime(startDate)
   }
 
   const endDate = new Date(end)
-  // same day?
   const sameDay =
     startDate.getFullYear() === endDate.getFullYear() &&
     startDate.getMonth() === endDate.getMonth() &&
     startDate.getDate() === endDate.getDate()
 
   if (sameDay) {
-    // "balandžio 20 d. 9:30–10:30"
     return `${formatLithuanianMonthDayTime(startDate)}–${formatTime(endDate)}`
   } else {
-    // "balandžio 20 d. 9:30 – balandžio 23 d. 14:30"
     return `${formatLithuanianMonthDayTime(startDate)} – ${formatLithuanianMonthDayTime(endDate)}`
   }
 }
 
-/** Format e.g. "balandžio 20 d. 9:30" */
 function formatLithuanianMonthDayTime(date: Date): string {
-  const day = date.getDate() // e.g. 20
-  const month = date.getMonth() + 1 // e.g. 4 => "balandžio"
-  const hour = date.getHours() // 0-23
+  const day = date.getDate()
+  const month = date.getMonth() + 1
+  const hour = date.getHours()
   const min = date.getMinutes()
 
   const monthName = lithuanianMonths[month]
-  // "balandžio 20 d. 9:30"
   return `${monthName} ${day} d. ${formatTimePart(hour)}:${formatTimePart(min)}`
 }
 
-/** Minimal zero-padding for hour/minute */
 function formatTimePart(value: number): string {
   return value < 10 ? `0${value}` : `${value}`
 }
 
-/** If we only need e.g. "9:30" from a date */
 function formatTime(date: Date): string {
   const h = formatTimePart(date.getHours())
   const m = formatTimePart(date.getMinutes())
@@ -136,13 +111,13 @@ const ClientSpecialOffer: React.FC = () => {
   const navigate = useNavigate()
   const [offer, setOffer] = useState<SpecialOfferResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [canEdit, setCanEdit] = useState(true)
   const [offerImages, setOfferImages] = useState<FileResponse[]>([])
   const [selectedTab, setSelectedTab] = useState(0)
   const [pdfLoading, setPdfLoading] = useState(false)
 
-  // New state for delete confirmation
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
@@ -168,7 +143,6 @@ const ClientSpecialOffer: React.FC = () => {
         })
         setOffer(response.data)
 
-        // Check if can edit
         if (response.data.startDate) {
           const startDate = new Date(response.data.startDate)
           const today = new Date()
@@ -176,14 +150,15 @@ const ClientSpecialOffer: React.FC = () => {
           setCanEdit(startDate > today)
         }
       } catch (err: any) {
-        console.error("Failed to fetch special offer:", err)
         setError(err.response?.data?.message || "Nepavyko gauti pasiūlymo informacijos.")
       } finally {
         setLoading(false)
+        setTimeout(() => {
+          setIsInitialLoading(false)
+        }, 1000)
       }
     }
 
-    // Fetch images (type = Image) for the offer
     const fetchOfferImages = async () => {
       try {
         const response = await axios.get<FileResponse[]>(`${API_URL}/File/trip/${tripId}/Image`, {
@@ -191,7 +166,7 @@ const ClientSpecialOffer: React.FC = () => {
         })
         setOfferImages(response.data)
       } catch (err) {
-        console.error("Nepavyko gauti nuotraukų:", err)
+        setError("Nepavyko gauti nuotraukų.")
       }
     }
 
@@ -222,21 +197,16 @@ const ClientSpecialOffer: React.FC = () => {
         },
       })
 
-      // Show success message
       setSnackbarMessage("Pasiūlymas sėkmingai ištrintas!")
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Close the dialog
       setShowDeleteConfirmDialog(false)
 
-      // Add a small delay before navigation to ensure the snackbar is seen
       setTimeout(() => {
         navigate("/special-offers")
-      }, 1500) // 1.5 second delay
+      }, 1500)
     } catch (err: any) {
-      console.error("Failed to delete special offer:", err)
-
       setSnackbarMessage(err.response?.data?.message || "Nepavyko ištrinti pasiūlymo.")
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -262,41 +232,34 @@ const ClientSpecialOffer: React.FC = () => {
     setSelectedTab(newValue)
   }
 
-  // New function to handle PDF download
   const handleDownloadPdf = async () => {
     if (!tripId) return
 
     setPdfLoading(true)
     try {
-      // Make a request to the PDF generation endpoint
       const response = await axios.get(`${API_URL}/Pdf/offer/${tripId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        responseType: "blob", // Important: we need to receive the response as a blob
+        responseType: "blob",
       })
 
-      // Create a blob URL for the PDF
       const blob = new Blob([response.data], { type: "application/pdf" })
       const url = window.URL.createObjectURL(blob)
 
-      // Create a temporary link element to trigger the download
       const link = document.createElement("a")
       link.href = url
-      link.download = `pasiulymas-${tripId}.pdf` // Set the filename
+      link.download = `pasiulymas-${tripId}.pdf`
       document.body.appendChild(link)
       link.click()
 
-      // Clean up
       window.URL.revokeObjectURL(url)
       document.body.removeChild(link)
 
-      // Show success message
       setSnackbarMessage("PDF dokumentas sėkmingai atsisiųstas!")
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
     } catch (err: any) {
-      console.error("Failed to download PDF:", err)
       setSnackbarMessage("Nepavyko atsisiųsti PDF dokumento.")
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -305,33 +268,27 @@ const ClientSpecialOffer: React.FC = () => {
     }
   }
 
-  // Function to preview PDF in a new tab
   const handlePreviewPdf = async () => {
     if (!tripId) return
 
     setPdfLoading(true)
     try {
-      // Make a request to the PDF generation endpoint
       const response = await axios.get(`${API_URL}/Pdf/offer/${tripId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        responseType: "blob", // Important: we need to receive the response as a blob
+        responseType: "blob",
       })
 
-      // Create a blob URL for the PDF
       const blob = new Blob([response.data], { type: "application/pdf" })
       const url = window.URL.createObjectURL(blob)
 
-      // Open the PDF in a new tab
       window.open(url, "_blank")
 
-      // Show success message
       setSnackbarMessage("PDF dokumentas sėkmingai sugeneruotas!")
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
     } catch (err: any) {
-      console.error("Failed to preview PDF:", err)
       setSnackbarMessage("Nepavyko sugeneruoti PDF dokumento.")
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -340,29 +297,25 @@ const ClientSpecialOffer: React.FC = () => {
     }
   }
 
-  // Function to open PDF in the embedded viewer
   const handleOpenPdfViewer = async () => {
     if (!tripId) return
 
     setPdfLoading(true)
     setPdfViewerOpen(true)
-    setPdfUrl(null) // Reset URL while loading
+    setPdfUrl(null)
 
     try {
-      // Make a request to the PDF generation endpoint
       const response = await axios.get(`${API_URL}/Pdf/offer/${tripId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        responseType: "blob", // Important: we need to receive the response as a blob
+        responseType: "blob",
       })
 
-      // Create a blob URL for the PDF
       const blob = new Blob([response.data], { type: "application/pdf" })
       const url = window.URL.createObjectURL(blob)
       setPdfUrl(url)
     } catch (err: any) {
-      console.error("Failed to generate PDF for viewer:", err)
       setSnackbarMessage("Nepavyko sugeneruoti PDF dokumento.")
       setSnackbarSeverity("error")
       setSnackbarOpen(true)
@@ -372,7 +325,6 @@ const ClientSpecialOffer: React.FC = () => {
     }
   }
 
-  // Clean up blob URLs when component unmounts
   useEffect(() => {
     return () => {
       if (pdfUrl) {
@@ -381,9 +333,9 @@ const ClientSpecialOffer: React.FC = () => {
     }
   }, [pdfUrl])
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
       </Box>
     )
@@ -413,7 +365,6 @@ const ClientSpecialOffer: React.FC = () => {
     )
   }
 
-  // Group events by step number to create different "options"
   const eventsByOption: { [key: number]: OfferEvent[] } = {}
   offer.itinerary?.sortedEvents?.forEach((ev: OfferEvent) => {
     const optionNum = ev.stepDayNumber
@@ -427,11 +378,9 @@ const ClientSpecialOffer: React.FC = () => {
     .map(Number)
     .sort((a, b) => a - b)
 
-  // A simple date-locale function for the overall offer
   function formatDate(dateString?: string) {
     if (!dateString) return "—"
     const d = new Date(dateString)
-    // E.g. "2025-04-20"
     return d.toLocaleDateString("lt-LT", {
       year: "numeric",
       month: "long",
@@ -439,7 +388,6 @@ const ClientSpecialOffer: React.FC = () => {
     })
   }
 
-  // Find option title for each variant
   const getOptionTitle = (optionKey: number): string => {
     const events = eventsByOption[optionKey] || []
     const headerEvent = events.find((ev) => ev.eventType === "OptionHeader")
@@ -448,31 +396,26 @@ const ClientSpecialOffer: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Action Bar */}
-      <ActionBar
-        backUrl="/special-offers"
-        showBackButton={true}
-        showEditButton={true}
-        showDeleteButton={true}
-        showConvertToTripButton={true}
-        showChangeStatusButton={true}
-        showPdfButtons={true}
-        pdfLoading={pdfLoading}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteClick}
-        onConvertToTrip={handleConvertToTripClick}
-        onChangeStatus={() => {
-          /* Non-functioning for now */
-        }}
-        onPreviewPdf={handleOpenPdfViewer}
-        onDownloadPdf={handleDownloadPdf}
-        onBackClick={navigateBack}
-      />
+      <Box sx={{ mb: 4 }}>
+        <ActionBar
+          backUrl="/special-offers"
+          showBackButton={true}
+          showEditButton={true}
+          showDeleteButton={true}
+          showConvertToTripButton={true}
+          showPdfButtons={true}
+          pdfLoading={pdfLoading}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          onConvertToTrip={handleConvertToTripClick}
+          onPreviewPdf={handleOpenPdfViewer}
+          onDownloadPdf={handleDownloadPdf}
+          onBackClick={navigateBack}
+        />
+      </Box>
 
-      {/* Offer Details Card */}
       <TripInfoCard trip={offer} variant="offer" images={offerImages} />
 
-      {/* Offer options section */}
       {!offer.itinerary?.sortedEvents || offer.itinerary.sortedEvents.length === 0 ? (
         <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
           <Typography variant="body1">Nėra maršruto / pasiūlymo elementų.</Typography>
@@ -480,7 +423,6 @@ const ClientSpecialOffer: React.FC = () => {
       ) : (
         <Card elevation={3} sx={{ borderRadius: 2 }}>
           <CardContent sx={{ p: 0 }}>
-            {/* Tabs for different offer options */}
             <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
               <Tabs
                 value={selectedTab}
@@ -492,10 +434,9 @@ const ClientSpecialOffer: React.FC = () => {
                   "& .MuiTab-root": {
                     fontWeight: "bold",
                     py: 2,
-                    minWidth: 120, // Ensure tabs have a minimum width
+                    minWidth: 120,
                   },
                   "& .MuiTabs-scrollButtons": {
-                    // Make scroll buttons more visible
                     color: "primary.main",
                     "&.Mui-disabled": {
                       opacity: 0.3,
@@ -514,9 +455,8 @@ const ClientSpecialOffer: React.FC = () => {
               </Tabs>
             </Box>
 
-            {/* Tab panels for each offer option */}
             {sortedOptionKeys.map((optionKey, i) => {
-              const events = eventsByOption[optionKey].filter((ev) => ev.eventType !== "OptionHeader") // Skip the header event since we're using it in the tab
+              const events = eventsByOption[optionKey].filter((ev) => ev.eventType !== "OptionHeader")
 
               return (
                 <TabPanel key={optionKey} value={selectedTab} index={i}>
@@ -528,7 +468,6 @@ const ClientSpecialOffer: React.FC = () => {
                     ) : (
                       <Box>
                         {events.map((ev, idx) => {
-                          // We'll build e.g. "balandžio 20 d. 9:30–10:30" or "balandžio 20 d. 9:30 – balandžio 22 d. 12:00"
                           const timeDisplay = formatLithuanianDateRange(ev.startDate, ev.endDate)
 
                           return (
@@ -556,7 +495,6 @@ const ClientSpecialOffer: React.FC = () => {
                                 </Typography>
                               )}
 
-                              {/* Add image gallery for event images */}
                               {ev.images && ev.images.length > 0 && (
                                 <Box sx={{ mt: 2 }}>
                                   <ImageGallery images={ev.images} thumbnailSize={100} />
@@ -574,7 +512,7 @@ const ClientSpecialOffer: React.FC = () => {
           </CardContent>
         </Card>
       )}
-      {/* PDF Viewer Modal */}
+
       <PdfViewerModal
         open={pdfViewerOpen}
         onClose={() => {
@@ -588,18 +526,21 @@ const ClientSpecialOffer: React.FC = () => {
         loading={pdfLoading}
         onDownload={handleDownloadPdf}
       />
-      {/* Convert to Trip Popup */}
-      <ConvertOfferToTripPopup open={showConvertPopup} onClose={() => setShowConvertPopup(false)} offer={offer} />
-      {/* Confirmation Dialog for Delete */}
+
+      <ConvertOfferToTripPopup
+        open={showConvertPopup}
+        onClose={() => setShowConvertPopup(false)}
+        offer={offer}
+      />
+
       <ConfirmationDialog
         open={showDeleteConfirmDialog}
         title="Ištrinti pasiūlymą"
-        message="Ar tikrai norite ištrinti šį pasiūlymą? Šis veiksmas yra negrįžtamas, bus ištrinta visa susijusi informacija."
+        message="Ar tikrai norite ištrinti šį pasiūlymą? Šis veiksmas negali būti atšauktas."
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbarOpen}
         message={snackbarMessage}

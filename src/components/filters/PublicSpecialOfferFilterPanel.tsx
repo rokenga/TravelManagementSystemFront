@@ -26,13 +26,11 @@ import { translateTripCategory } from "../../Utils/translateEnums"
 import countriesData from "../../assets/full-countries-lt.json"
 import { OfferStatus } from "../../pages/AdminPublicSpecialOffers"
 
-// Interface for country data
 interface Country {
   code: string
   name: string
 }
 
-// Function to translate offer status
 export const translateOfferStatus = (status: OfferStatus): string => {
   switch (status) {
     case OfferStatus.Active:
@@ -72,7 +70,6 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  // Initialize state with initialFilters
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialFilters.categories || [])
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialFilters.statuses || [])
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>(initialFilters.destinations || [])
@@ -86,14 +83,10 @@ const PublicSpecialOfferFilterPanel: React.FC<PublicSpecialOfferFilterPanelProps
   const [onlyMine, setOnlyMine] = useState<boolean>(initialFilters.onlyMine || false)
   const [countries, setCountries] = useState<Country[]>([])
 
-  // Load countries from JSON file
   useEffect(() => {
-    // In a real implementation, you would load the JSON file
-    // For now, we'll use the imported data directly
     setCountries(countriesData as Country[])
   }, [])
 
-  // Update local state when initialFilters change
   useEffect(() => {
     setSelectedCategories(initialFilters.categories || [])
     setSelectedStatuses(initialFilters.statuses || [])

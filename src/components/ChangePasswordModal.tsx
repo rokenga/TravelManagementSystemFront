@@ -99,17 +99,14 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ open, onClose
       )
 
       setSuccess(true)
-      // Reset form fields
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
 
-      // Close modal after a delay
       setTimeout(() => {
         onClose()
-      }, 2000)
+      }, 1500)
     } catch (err: any) {
-      console.error("Error changing password:", err)
       setError(
         err.response?.data?.message ||
           "Nepavyko pakeisti slaptažodžio. Patikrinkite, ar teisingai įvedėte dabartinį slaptažodį.",

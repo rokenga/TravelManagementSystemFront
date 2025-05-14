@@ -41,7 +41,6 @@ interface Step3ReviewProps {
   onImageDelete?: (stepIndex: number, imageId: string) => void
 }
 
-// Combined type for all offer elements
 type OfferElement = {
   type: "accommodation" | "transport" | "cruise" | "image"
   name: string
@@ -65,7 +64,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const isSmall = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Format date for display
   const formatDate = (date: Dayjs | null | string): string => {
     if (!date) return "Nenustatyta"
     if (typeof date === "string") {
@@ -74,7 +72,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     return date.format("YYYY-MM-DD")
   }
 
-  // Format date and time for display
   const formatDateTime = (date: Dayjs | null | string): string => {
     if (!date) return "Nenustatyta"
     if (typeof date === "string") {
@@ -83,7 +80,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     return date.format("YYYY-MM-DD HH:mm")
   }
 
-  // Get category label
   const getCategoryLabel = (category: string): string => {
     const categories: Record<string, string> = {
       Tourist: "Turistinė",
@@ -95,7 +91,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     return categories[category] || category || "Nepasirinkta"
   }
 
-  // Get transport type label in Lithuanian
   const getTransportTypeLabel = (type: string): string => {
     const transportTypes: Record<string, string> = {
       Flight: "Skrydis",
@@ -108,7 +103,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     return transportTypes[type] || type || "Transportas"
   }
 
-  // Get transport type icon
   const getTransportIcon = (type: string) => {
     switch (type) {
       case "Flight":
@@ -126,7 +120,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     }
   }
 
-  // Get board basis label
   const getBoardBasisLabel = (basis: string): string => {
     const options: Record<string, string> = {
       BedAndBreakfast: "Nakvynė su pusryčiais",
@@ -138,7 +131,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     return options[basis] || basis || "Nepasirinkta"
   }
 
-  // Calculate total price for a specific offer
   const calculateOfferTotal = (step: OfferStep): number => {
     const accommodationTotal = step.accommodations.reduce((sum, acc) => sum + (acc.price || 0), 0)
     const transportTotal = step.transports.reduce((sum, trans) => sum + (trans.price || 0), 0)
@@ -146,11 +138,9 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     return accommodationTotal + transportTotal + cruiseTotal
   }
 
-  // Function to get all offer elements in a single array and sort them chronologically
   const getChronologicalOfferElements = (offer: OfferStep, offerIndex: number): OfferElement[] => {
     const elements: OfferElement[] = []
 
-    // Add accommodations
     offer.accommodations.forEach((acc) => {
       const details = []
       if (acc.roomType) details.push(`Kambario tipas: ${acc.roomType}`)
@@ -168,7 +158,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
       })
     })
 
-    // Add transports
     offer.transports.forEach((trans) => {
       const details = []
       if (trans.companyName) details.push(`Kompanija: ${trans.companyName}`)
@@ -189,7 +178,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
       })
     })
 
-    // Add cruises
     if (offer.cruises) {
       offer.cruises.forEach((cruise) => {
         const details = []
@@ -212,7 +200,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
       })
     }
 
-    // Add image section if it exists
     const hasImageSection =
       Array.isArray(offer.stepImages) || (offer.existingStepImages && offer.existingStepImages.length > 0)
     if (hasImageSection) {
@@ -224,20 +211,16 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
       })
     }
 
-    // Sort by start date (but keep image section at the end)
     return elements.sort((a, b) => {
-      // Always put image section at the end
       if (a.type === "image") return 1
       if (b.type === "image") return -1
 
-      // Sort other elements by start date
       if (!a.startDate) return 1
       if (!b.startDate) return -1
       return a.startDate.valueOf() - b.startDate.valueOf()
     })
   }
 
-  // Get icon for element type
   const getElementIcon = (element: OfferElement) => {
     if (element.type === "accommodation") {
       return <Hotel sx={{ color: theme.palette.primary.main }} />
@@ -251,7 +234,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     }
   }
 
-  // Helper function to render stars
   const renderStars = (rating: number | undefined | null) => {
     if (!rating) return null
     return (
@@ -263,45 +245,31 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
     )
   }
 
-  // Handle image deletion
   const handleImageDelete = (stepIndex: number, imageId: string) => {
     if (onImageDelete) {
       onImageDelete(stepIndex, imageId)
     }
   }
 
-  // Debug the client name value
-  console.log("Client name in Step3Review:", tripData.clientName, "Type:", typeof tripData.clientName)
-
-  // Add this function near the top of the component, before the return statement
   const getImageUrl = (img: any): string => {
-    // Debug the image object to see what properties are available
-    console.log("Image object in Step3Review:", img)
 
-    // Check for various URL properties that might exist
     if (img.urlInline) return img.urlInline
     if (img.url) return img.url
     if (img.fileName && img.id) {
-      // Try to construct a URL if we have an ID and filename
-      console.log("Attempting to construct URL from ID and filename")
-      // You might need to adjust this based on your API structure
       return `/api/images/${img.id}`
     }
 
-    // Fallback to placeholder
     return "/placeholder.svg"
   }
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Main Trip Information */}
       <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
         <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 500, color: theme.palette.primary.main }}>
           {tripData.tripName || "Nepavadinta kelionė"}
         </Typography>
 
         <Grid container spacing={3}>
-          {/* Left column - Main trip details */}
           <Grid item xs={12} md={6}>
             <List disablePadding>
               <ListItem alignItems="center" sx={{ py: 1 }}>
@@ -381,7 +349,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
             </List>
           </Grid>
 
-          {/* Right column - Descriptions */}
           <Grid item xs={12} md={6}>
             {tripData.description && (
               <Box sx={{ mb: 2, textAlign: "left" }}>
@@ -410,7 +377,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
         </Grid>
       </Paper>
 
-      {/* Offer Options */}
       <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 500, color: theme.palette.primary.main }}>
         Pasiūlymo variantai
       </Typography>
@@ -461,7 +427,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                     <Grid item xs={12} key={elementIndex}>
                       {element.type === "image" ? (
                         <Paper sx={{ p: 2, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
-                          {/* Image section header */}
                           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                             <Box sx={{ mr: 1 }}>{getElementIcon(element)}</Box>
                             <Typography variant="subtitle2" fontWeight="medium">
@@ -469,22 +434,16 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                             </Typography>
                           </Box>
 
-                          {/* Display images in a compact grid */}
-                          {/* Combined display of all images without separate labels */}
                           <Box sx={{ mt: 1 }}>
                             <Grid container spacing={1}>
-                              {/* Display existing images */}
                               {element.existingImages &&
                                 element.existingImages.length > 0 &&
                                 element.existingImages.map((img) => {
-                                  // Skip rendering if the image object is invalid
                                   if (!img || (!img.url && !img.urlInline && !img.id)) {
-                                    console.log("Skipping invalid image object:", img)
                                     return null
                                   }
 
                                   const imageUrl = getImageUrl(img)
-                                  console.log(`Image ${img.id}: Using URL: ${imageUrl}`)
 
                                   return (
                                     <Grid item key={img.id || `img-${Math.random()}`} xs={6} sm={4} md={3} lg={2}>
@@ -496,7 +455,7 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                                           overflow: "hidden",
                                           position: "relative",
                                           border: "1px solid #eee",
-                                          backgroundColor: "#f5f5f5", // Add background color for empty images
+                                          backgroundColor: "#f5f5f5", 
                                         }}
                                       >
                                         {imageUrl && imageUrl !== "/placeholder.svg" ? (
@@ -509,13 +468,10 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                                               objectFit: "cover",
                                             }}
                                             onError={(e) => {
-                                              console.error("Failed to load image:", imageUrl)
-                                              // Fallback to placeholder
                                               ;(e.target as HTMLImageElement).src = "/placeholder.svg"
                                             }}
                                           />
                                         ) : (
-                                          // Show placeholder with image ID for debugging
                                           <Box
                                             sx={{
                                               display: "flex",
@@ -554,7 +510,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                                   )
                                 })}
 
-                              {/* Display new images */}
                               {element.images &&
                                 element.images.length > 0 &&
                                 element.images.map((file, idx) => (
@@ -583,7 +538,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                                 ))}
                             </Grid>
 
-                            {/* Show message if no images */}
                             {(!element.images || element.images.length === 0) &&
                               (!element.existingImages || element.existingImages.length === 0) && (
                                 <Typography
@@ -597,7 +551,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                         </Paper>
                       ) : (
                         <Paper sx={{ p: 2, borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
-                          {/* First row: Name, dates, locations, price */}
                           <Box
                             sx={{
                               display: "flex",
@@ -634,7 +587,6 @@ const Step3Review: React.FC<Step3ReviewProps> = ({ tripData, onImageDelete }) =>
                             </Typography>
                           </Box>
 
-                          {/* Second row: Additional details */}
                           {element.details && element.details.length > 0 && (
                             <Box sx={{ display: "flex", pl: 4 }}>
                               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>

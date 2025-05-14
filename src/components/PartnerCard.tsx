@@ -19,20 +19,16 @@ const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
     }
   }
 
-  // Function to get location string
   const getLocationString = () => {
     const locationParts = [partner.city, partner.country, partner.region].filter(Boolean)
     return locationParts.length > 0 ? locationParts.join(", ") : null
   }
 
-  // Check if any contact information exists
   const hasContactInfo = partner.websiteUrl || partner.email || partner.phone || partner.facebook || partner.notes
 
   const locationString = getLocationString()
 
-  // Get the color for the partner type
   const getTypeColor = () => {
-    // If type is a string (from API), convert to number
     if (typeof partner.type === "string") {
       const typeMap: Record<string, number> = {
         HotelSystem: 0,
@@ -41,12 +37,11 @@ const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
         TransportCompany: 3,
         Other: 4,
       }
-      const typeNumber = typeMap[partner.type] !== undefined ? typeMap[partner.type] : 4 // Default to Other
+      const typeNumber = typeMap[partner.type] !== undefined ? typeMap[partner.type] : 4 
       return partnerTypeColors[typeNumber]
     }
 
-    // If type is already a number
-    return partnerTypeColors[partner.type] || partnerTypeColors[4] // Default to Other color
+    return partnerTypeColors[partner.type] || partnerTypeColors[4] 
   }
 
   return (
@@ -96,7 +91,6 @@ const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
             </Avatar>
           )}
 
-          {/* Name and Type */}
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h5" component="div" sx={{ fontWeight: "bold", mb: 0.5 }}>
               {partner.name || "Nenurodyta"}
@@ -114,7 +108,6 @@ const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
           </Box>
         </Box>
 
-        {/* Location - only show if there's location data */}
         {locationString && (
           <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
             <LocationOn sx={{ color: "#757575", mr: 1 }} />
@@ -124,7 +117,6 @@ const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
           </Box>
         )}
 
-        {/* Contact Icons - only show if there's at least one contact method */}
         {hasContactInfo && (
           <Box sx={{ display: "flex", mt: 2, color: "#757575" }}>
             {partner.websiteUrl && (

@@ -30,7 +30,6 @@ const AddEventMenu: React.FC<AddEventMenuProps> = ({
     setAnchorEl(null)
   }
 
-  // Helper function to handle menu item clicks
   const handleMenuItemClick = (callback: () => void) => {
     callback()
     handleCloseMenu()

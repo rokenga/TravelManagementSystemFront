@@ -16,9 +16,7 @@ export function useItineraryValidation() {
     severity: "error",
   })
 
-  // Validate all events in the itinerary
   const validateItinerary = (itinerary: Day[], tripData: any): boolean => {
-    // Validate all events
     for (const day of itinerary) {
       for (const event of day.events) {
         if (!validateEventDates(event)) {
@@ -30,7 +28,6 @@ export function useItineraryValidation() {
           return false
         }
 
-        // For non-day-by-day itineraries, check if events are within trip date range
         if (
           !tripData.dayByDayItineraryNeeded &&
           !validateEventInTripRange(event, tripData.startDate, tripData.endDate)
@@ -48,7 +45,6 @@ export function useItineraryValidation() {
     return true
   }
 
-  // Sort events by earliest time
   const sortItineraryEvents = (itinerary: Day[]): Day[] => {
     return itinerary.map((day) => ({
       ...day,

@@ -26,7 +26,7 @@ interface Props {
   onClose: () => void
   clientId: string
   clientTags: ClientTagResponse[] 
-  onTagsUpdated?: () => void  // <-- ADD THIS
+  onTagsUpdated?: () => void 
 }
 
 const TagManagementModal: React.FC<Props> = ({ open, onClose, clientId, clientTags, onTagsUpdated }) => {
@@ -52,31 +52,21 @@ const TagManagementModal: React.FC<Props> = ({ open, onClose, clientId, clientTa
         }),
       ])
   
-      console.log("🔹 All Available Tags:", allTagsRes.data)
-      console.log("🔸 Client Assigned Tags:", clientTagsRes.data)
-  
       setTags(allTagsRes.data || {})
   
       if (!Array.isArray(clientTagsRes.data)) {
-        console.error("🚨 Unexpected response format for client tags:", clientTagsRes.data)
         showSnackbar("Nepavyko gauti kliento žymeklių. Bandykite dar kartą.", "error")
         return
       }
   
-      // Extract tag IDs from the assigned tags response
       const assignedTagIds = clientTagsRes.data.map(tag => tag.tagId)
-      console.log("✅ Assigned Tag IDs:", assignedTagIds)
-  
       setSelectedTags(assignedTagIds)
     } catch (err) {
-      console.error("❌ Failed to fetch tags:", err)
       showSnackbar("Nepavyko gauti žymeklių. Bandykite dar kartą.", "error")
     } finally {
       setLoading(false)
     }
   }
-  
-  
 
   const handleTagToggle = (tagId: string) => {
     setSelectedTags(prev =>
@@ -98,7 +88,6 @@ const TagManagementModal: React.FC<Props> = ({ open, onClose, clientId, clientTa
       onTagsUpdated?.()
       onClose()
     } catch (error) {
-      console.error("Failed to update client tags:", error)
       showSnackbar("Nepavyko atnaujinti žymeklių. Bandykite dar kartą.", "error")
     }
   }
@@ -158,7 +147,6 @@ const TagManagementModal: React.FC<Props> = ({ open, onClose, clientId, clientTa
         </DialogContent>
       </Dialog>
 
-      {/* Custom Snackbar for success/error messages */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

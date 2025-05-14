@@ -23,20 +23,17 @@ interface SpecialOffersTableProps {
   onOfferClick: (offerId: string) => void
 }
 
-// Function to format date in Lithuanian format (yyyy-mm-dd)
 const formatDate = (dateString?: string) => {
   if (!dateString) return ""
   const date = new Date(dateString)
   return date.toLocaleDateString("lt-LT")
 }
 
-// Function to truncate text to a specific length
 const truncateText = (text: string, maxLength: number): string => {
   if (!text) return ""
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text
 }
 
-// Function to get category color
 const getCategoryColor = (
   category: string,
 ): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
@@ -56,7 +53,6 @@ const getCategoryColor = (
   }
 }
 
-// Function to get status color
 const getStatusColor = (
   status: string,
 ): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
@@ -102,12 +98,7 @@ const SpecialOffersTable: React.FC<SpecialOffersTableProps> = ({ offers, onOffer
                   key={offer.id}
                   sx={{
                     backgroundColor: index % 2 === 0 ? "background.default" : "background.paper",
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: "action.hover",
-                    },
                   }}
-                  onClick={() => onOfferClick(offer.id)}
                 >
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center" }}>

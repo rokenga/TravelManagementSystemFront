@@ -17,15 +17,14 @@ import SortMenu from "../components/SortMenu"
 import TripSummaryCard from "../components/TripSummaryCard"
 import { useNavigation } from "../contexts/NavigationContext"
 
-// Default values for list state
 const defaultFilters: TripFilters = {
   categories: [],
   statuses: [],
-  paymentStatuses: [], // Added payment statuses with default empty array
+  paymentStatuses: [], 
   startDate: null,
   endDate: null,
   priceRange: [0, 20000],
-  destinations: [], // Added destinations with default empty array
+  destinations: [], 
 }
 
 const AdminTripList: React.FC = () => {
@@ -34,53 +33,39 @@ const AdminTripList: React.FC = () => {
   const theme = useTheme()
   const isFilterCollapsed = useMediaQuery(theme.breakpoints.down("md"))
 
-  // State for trips data
   const [trips, setTrips] = useState<TripResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // UI state
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
 
-  // List state with defaults
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOption, setSortOption] = useState<string>("Naujausios pirmos")
   const [selectedFilters, setSelectedFilters] = useState<TripFilters>(defaultFilters)
 
-  // Pagination state
   const [totalPages, setTotalPages] = useState(1)
 
-  // Ref to track if we should fetch data
   const shouldFetch = useRef(true)
 
   const token = localStorage.getItem("accessToken")
 
-  /**
-   * Fetch the trips from the API with all filtering options
-   * This is now a memoized function that doesn't take parameters
-   * but reads from component state
-   */
   const fetchTrips = useCallback(async () => {
     if (!shouldFetch.current) return
 
     try {
       setLoading(true)
 
-      // Create URLSearchParams object for proper parameter serialization
       const searchParams = new URLSearchParams()
 
-      // Add basic pagination parameters
       searchParams.append("PageNumber", currentPage.toString())
       searchParams.append("PageSize", pageSize.toString())
 
-      // Add search term if present
       if (searchTerm) {
         searchParams.append("SearchTerm", searchTerm)
       }
 
-      // Add sorting parameters
       if (sortOption) {
         let sortBy: string
         let descending: boolean
@@ -111,35 +96,30 @@ const AdminTripList: React.FC = () => {
         searchParams.append("Descending", descending.toString())
       }
 
-      // Add categories - using the exact parameter name 'Categories' with proper casing
       if (selectedFilters.categories.length > 0) {
         selectedFilters.categories.forEach((category) => {
           searchParams.append("Categories", category)
         })
       }
 
-      // Add statuses - using the exact parameter name 'Statuses' with proper casing
       if (selectedFilters.statuses.length > 0) {
         selectedFilters.statuses.forEach((status) => {
           searchParams.append("Statuses", status)
         })
       }
 
-      // Add payment statuses - using the exact parameter name 'Payments' as expected by the backend
       if (selectedFilters.paymentStatuses.length > 0) {
         selectedFilters.paymentStatuses.forEach((status) => {
           searchParams.append("Payments", status)
         })
       }
 
-      // Add destinations
       if (selectedFilters.destinations.length > 0) {
         selectedFilters.destinations.forEach((destination) => {
           searchParams.append("Destinations", destination)
         })
       }
 
-      // Add date filters
       if (selectedFilters.startDate) {
         searchParams.append("StartDate", selectedFilters.startDate)
       }
@@ -148,7 +128,6 @@ const AdminTripList: React.FC = () => {
         searchParams.append("EndDate", selectedFilters.endDate)
       }
 
-      // Add price range filters
       if (selectedFilters.priceRange) {
         if (selectedFilters.priceRange[0] > 0) {
           searchParams.append("PriceMin", selectedFilters.priceRange[0].toString())
@@ -159,91 +138,67 @@ const AdminTripList: React.FC = () => {
         }
       }
 
-      // Log the full URL for debugging
-      const queryString = searchParams.toString()
-      console.log(`Fetching trips with URL: ${API_URL}/client-trips?${queryString}`)
-
-      // Make the API call with the manually constructed query string
-      const response = await axios.get<PaginatedResponse<TripResponse>>(`${API_URL}/client-trips?${queryString}`, {
+      const response = await axios.get<PaginatedResponse<TripResponse>>(`${API_URL}/client-trips?${searchParams.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
-      // Update state with data from the backend
       setTrips(response.data.items)
       setCurrentPage(response.data.pageNumber)
       setPageSize(response.data.pageSize)
 
-      // Calculate total pages based on the response data
       const calculatedTotalPages = Math.ceil(response.data.totalCount / response.data.pageSize)
       setTotalPages(calculatedTotalPages)
-
-      console.log("Pagination data:", {
-        currentPage: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: calculatedTotalPages,
-      })
     } catch (err: any) {
-      console.error("Failed to fetch trips:", err)
       setError(err.response?.data?.message || "Nepavyko gauti kelionių sąrašo.")
     } finally {
       setLoading(false)
     }
   }, [currentPage, pageSize, searchTerm, selectedFilters, sortOption, token])
 
-  // Centralized data fetching in a single useEffect
   useEffect(() => {
     fetchTrips()
   }, [fetchTrips])
 
-  // These handlers now just update state, which triggers the useEffect
   const handlePageChange = (newPage: number) => {
-    console.log(`Changing to page ${newPage}`)
     setCurrentPage(newPage)
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
-    console.log(`Changing page size to ${newPageSize}`)
     setPageSize(newPageSize)
-    setCurrentPage(1) // Reset to first page when changing page size
+    setCurrentPage(1) 
   }
 
   const handleSearchChange = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm)
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1) 
   }
 
   const handleSortChange = (option: string) => {
     setSortOption(option)
-    setCurrentPage(1) // Reset to first page when sorting
+    setCurrentPage(1) 
   }
 
   const handleApplyFilters = (filters: TripFilters) => {
     setSelectedFilters(filters)
-    setCurrentPage(1) // Reset to first page when filtering
+    setCurrentPage(1) 
     setIsFilterDrawerOpen(false)
   }
 
   const handleTripClick = (id: string) => {
-    // Set the navigation source to identify where we came from
     setNavigationSource("admin-trip-list")
     navigate(`/admin-trip-list/${id}`)
   }
 
-  /**
-   * Count how many filters are active
-   */
   const getActiveFilterCount = () => {
     let count = 0
     if (selectedFilters.categories.length > 0) count++
     if (selectedFilters.statuses.length > 0) count++
-    if (selectedFilters.paymentStatuses.length > 0) count++ // Count payment statuses
+    if (selectedFilters.paymentStatuses.length > 0) count++ 
     if (selectedFilters.startDate) count++
     if (selectedFilters.endDate) count++
 
-    // Check if price range is different from default
     if (selectedFilters.priceRange && (selectedFilters.priceRange[0] > 0 || selectedFilters.priceRange[1] < 20000)) {
       count++
     }
@@ -251,7 +206,6 @@ const AdminTripList: React.FC = () => {
     return count
   }
 
-  // Initial data fetch - only on mount
   useEffect(() => {
     shouldFetch.current = true
     return () => {
@@ -344,7 +298,6 @@ const AdminTripList: React.FC = () => {
                 ))}
               </Grid>
 
-              {/* Pagination Controls */}
               <Box
                 sx={{
                   display: "flex",

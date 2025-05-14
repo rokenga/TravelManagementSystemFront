@@ -61,7 +61,6 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
     { value: "UltraAllInclusive", label: "Ultra viskas įskaičiuota" },
   ]
 
-  // Format date for display in the header
   const formatDate = (date: any) => {
     if (!date) return "Nenustatyta"
     return date.format("YYYY-MM-DD")
@@ -123,7 +122,6 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 3, bgcolor: "background.default" }}>
-        {/* First row: Hotel name and link */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} md={6}>
             <TextField
@@ -146,7 +144,6 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Second row: Check-in/Check-out times, Meal type, Room type */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
             <ConstrainedDateTimePicker
@@ -209,7 +206,6 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Third row: Star rating and description */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} md={3}>
             <StarRating
@@ -232,7 +228,6 @@ const AccommodationItem: React.FC<AccommodationItemProps> = ({
           </Grid>
         </Grid>
 
-        {/* Fourth row: Price */}
         <Grid container spacing={2}>
           <Grid item xs={12} md={9}></Grid>
           <Grid item xs={12} md={3}>

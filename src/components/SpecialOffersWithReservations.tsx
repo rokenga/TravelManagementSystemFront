@@ -8,7 +8,6 @@ import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import type { PublicOfferWithReservationCountResponse } from "../types/Reservation"
 
-// Helper function to format dates in Lithuanian
 const formatDate = (dateString: string | null): string => {
   if (!dateString) return "Nenustatyta"
 
@@ -43,11 +42,9 @@ const SpecialOffersWithReservations: React.FC = () => {
         },
       )
 
-      // Filter offers that have at least one reservation
       const offersWithReservations = response.data.filter((offer) => offer.reservationCount > 0)
       setOffers(offersWithReservations)
     } catch (err) {
-      console.error("Failed to fetch offers with reservations:", err)
       setError("Nepavyko gauti pasiūlymų su rezervacijomis.")
     } finally {
       setLoading(false)

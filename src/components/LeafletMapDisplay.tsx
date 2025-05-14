@@ -27,31 +27,25 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
   const mapRef = useRef<LeafletMap | null>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Check if address is valid before attempting to display map
   const isValidAddress = address && address.trim() !== ""
 
-  // Function to extract city from address
   const extractCity = (fullAddress: string): string => {
-    // Split by commas and take the first part (usually the city)
     const parts = fullAddress.split(",").map((part) => part.trim())
     if (parts.length > 0) {
-      return parts[0] // Return just the city
+      return parts[0] 
     }
     return fullAddress
   }
 
-  // Function to geocode an address to coordinates with fallback
   const geocodeAddress = async (addressToGeocode: string, L: any) => {
     try {
       setLoading(true)
       setError(null)
 
-      // Check if the address is already in coordinate format (e.g., "36.465040,32.118976")
       const coordsRegex = /^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/
       const coordsMatch = addressToGeocode.trim().match(coordsRegex)
 
       if (coordsMatch) {
-        // If it's already coordinates, parse them
         const lat = Number.parseFloat(coordsMatch[1])
         const lng = Number.parseFloat(coordsMatch[3])
         setCoordinates([lat, lng])
@@ -60,11 +54,9 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
         return true
       }
 
-      // Try with the full address first
       const success = await tryGeocode(addressToGeocode, L)
       if (success) return true
 
-      // If full address fails, try with just the city
       const city = extractCity(addressToGeocode)
       if (city !== addressToGeocode) {
         return await tryGeocode(city, L)
@@ -72,7 +64,6 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
 
       return false
     } catch (err: any) {
-      console.error("Geocoding error:", err)
       if (!hideErrors) {
         setError(`Failed to get coordinates: ${err instanceof Error ? err.message : String(err)}`)
       }
@@ -82,7 +73,6 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
     }
   }
 
-  // Helper function to try geocoding with a specific address
   const tryGeocode = async (addressToTry: string, L: any): Promise<boolean> => {
     try {
       const encodedAddress = encodeURIComponent(addressToTry)
@@ -107,77 +97,63 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
         return false
       }
     } catch (err: any) {
-      console.error(`Error geocoding ${addressToTry}:`, err)
       return false
     }
   }
 
-  // Function to update the map with new coordinates
   const updateMap = (coords: [number, number], L: any) => {
     if (!mapContainerRef.current) {
       return
     }
 
     try {
-      // If map doesn't exist, create it
       if (!mapRef.current) {
         mapRef.current = L.map(mapContainerRef.current).setView(coords, zoom)
 
-        // Add the OpenStreetMap tile layer
         const contributors = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: contributors,
         }).addTo(mapRef.current)
       } else {
-        // If map exists, update the view
         mapRef.current.setView(coords, zoom)
       }
 
-      // Clear existing markers
       mapRef.current.eachLayer((layer: any) => {
         if (layer instanceof L.Marker) {
           mapRef.current?.removeLayer(layer)
         }
       })
 
-      // Add a marker at the coordinates
       L.marker(coords).addTo(mapRef.current)
 
-      // Force a resize to ensure the map renders correctly
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.invalidateSize()
         }
       }, 100)
     } catch (err: any) {
-      console.error("Map update error:", err)
       if (!hideErrors) {
         setError(`Failed to update map: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
   }
 
-  // Initialize the map when the component mounts
   useEffect(() => {
     const initializeMap = async () => {
-      // Don't initialize if there's no valid address
       if (!isValidAddress) {
         setLoading(false)
         return
       }
 
-      // Make sure Leaflet is only initialized in the browser
       if (typeof window === "undefined") {
         return
       }
 
-      // Dynamically import Leaflet
       const initializeLeaflet = async () => {
         try {
           const leafletModule = await import("leaflet")
           const L = leafletModule.default
 
-          // Fix Leaflet icon issue
           delete (L.Icon.Default.prototype as any)._getIconUrl
 
           L.Icon.Default.mergeOptions({
@@ -186,7 +162,6 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
             shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
           })
 
-          // If address is provided, geocode it
           if (address) {
             const success = await geocodeAddress(address, L)
             if (!success && !hideErrors) {
@@ -194,7 +169,6 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
             }
           }
         } catch (err: any) {
-          console.error("Leaflet initialization error:", err)
           if (!hideErrors) {
             setError(`Failed to initialize map: ${err instanceof Error ? err.message : String(err)}`)
           }
@@ -208,7 +182,6 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
     initializeMap()
 
     return () => {
-      // Clean up the map when component unmounts
       if (mapRef.current) {
         mapRef.current.remove()
         mapRef.current = null
@@ -216,12 +189,10 @@ const LeafletMapDisplay: React.FC<LeafletMapDisplayProps> = ({
     }
   }, [address, zoom, isValidAddress, hideErrors])
 
-  // If there's no valid address, don't render the map
   if (!isValidAddress) {
     return null
   }
 
-  // If there's an error and hideErrors is true, don't render anything
   if (error && hideErrors) {
     return null
   }

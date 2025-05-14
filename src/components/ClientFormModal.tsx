@@ -37,8 +37,8 @@ interface ClientFormModalProps {
   open: boolean
   onClose: () => void
   onSuccess?: () => void
-  clientId?: string // If provided, we're in edit mode
-  initialData?: Partial<ClientFormData> // Initial data for edit mode
+  clientId?: string 
+  initialData?: Partial<ClientFormData> 
 }
 
 const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSuccess, clientId, initialData }) => {
@@ -71,7 +71,6 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
     [],
   )
 
-  // Fetch client data if in edit mode
   useEffect(() => {
     if (open && isEditMode && clientId) {
       const fetchClientData = async () => {
@@ -93,7 +92,6 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
             notes: clientData.notes || "",
           })
         } catch (err) {
-          console.error("Error fetching client data:", err)
           setSnackbarMessage("Nepavyko gauti kliento duomenų.")
           setSnackbarSeverity("error")
           setSnackbarOpen(true)
@@ -104,12 +102,10 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
 
       fetchClientData()
     } else if (open && !isEditMode) {
-      // Reset form for create mode
       setFormData(initialFormData())
     }
   }, [open, isEditMode, clientId, initialFormData])
 
-  // Apply initial data if provided (for edit mode)
   useEffect(() => {
     if (initialData && open) {
       setFormData((prev) => ({
@@ -132,7 +128,6 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
     e.preventDefault()
     setIsLoading(true)
 
-    // Construct payload with formatted birthday
     const payload = {
       name: formData.name.trim(),
       surname: formData.surname.trim(),
@@ -146,13 +141,11 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
       let response
 
       if (isEditMode && clientId) {
-        // Update existing client
         response = await axios.put(`${API_URL}/Client/${clientId}`, payload, {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         })
         setSnackbarMessage("Klientas sėkmingai atnaujintas!")
       } else {
-        // Create new client
         response = await axios.post(`${API_URL}/Client`, payload, {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         })
@@ -162,21 +155,15 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
       setSnackbarSeverity("success")
       setSnackbarOpen(true)
 
-      // Wait a bit before closing the modal
       setTimeout(() => {
         onClose()
-        // Call onSuccess callback to refresh the client list
         if (onSuccess) {
-          console.log("Calling onSuccess callback to refresh client list")
           onSuccess()
         }
       }, 1500)
     } catch (error: any) {
-      console.error(`Error ${isEditMode ? "updating" : "creating"} client:`, error)
 
-      // Check if backend provided an error response
       if (error.response) {
-        console.log("Server Response:", error.response.data)
         setSnackbarMessage(error.response.data?.message || `Nepavyko ${isEditMode ? "atnaujinti" : "sukurti"} kliento.`)
       } else {
         setSnackbarMessage("Serverio klaida, bandykite dar kartą.")
@@ -252,7 +239,7 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
                 label="Gimimo data"
                 value={formData.birthday}
                 onChange={(newDate: any) => setFormData((prev) => ({ ...prev, birthday: newDate }))}
-                showTime={false} // No time selection for birthdays
+                showTime={false} 
               />
               <TextField
                 label="Pastabos"
@@ -284,7 +271,6 @@ const ClientFormModal: React.FC<ClientFormModalProps> = ({ open, onClose, onSucc
         </DialogActions>
       </Dialog>
 
-      {/* Custom Snackbar Component */}
       <CustomSnackbar
         open={snackbarOpen}
         message={snackbarMessage || ""}

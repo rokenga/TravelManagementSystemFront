@@ -75,8 +75,8 @@ body {
   width: 100vw;
   min-height: 100vh;
   display: flex;
-  flex-direction: column; /* Adjust body layout for navbar and main content */
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  flex-direction: column;
+  overflow-x: hidden; 
 }
 
 h1 {

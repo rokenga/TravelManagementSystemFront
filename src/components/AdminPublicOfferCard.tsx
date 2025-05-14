@@ -13,7 +13,6 @@ import { type TripResponse as TripResponseType, TripCategory } from "../types/Cl
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 
-// Lithuanian date formatter (YYYY-MM-DD)
 const formatDate = (dateString?: string) => {
   if (!dateString) return "Nežinoma data"
   return new Intl.DateTimeFormat("lt-LT", {
@@ -36,7 +35,6 @@ const formatPrice = (price?: number) => {
   }).format(price)
 }
 
-// Lithuanian month names in genitive case
 const lithuanianMonths = [
   "sausio",
   "vasario",
@@ -52,22 +50,19 @@ const lithuanianMonths = [
   "gruodžio",
 ]
 
-// Using vibrant colors for categories to make them pop
 const categoryColors = {
-  [TripCategory.Tourist]: "#2196F3", // Bright blue
-  [TripCategory.Group]: "#9C27B0", // Vibrant purple
-  [TripCategory.Relax]: "#FF9800", // Bright orange
-  [TripCategory.Business]: "#4CAF50", // Vibrant green
-  [TripCategory.Cruise]: "#E91E63", // Bright pink
+  [TripCategory.Tourist]: "#2196F3", 
+  [TripCategory.Group]: "#9C27B0", 
+  [TripCategory.Relax]: "#FF9800", 
+  [TripCategory.Business]: "#4CAF50", 
+  [TripCategory.Cruise]: "#E91E63", 
 }
 
-// Status colors
 const statusColors = {
-  draft: "#FFA000", // Amber
-  confirmed: "#4CAF50", // Green
+  draft: "#FFA000", 
+  confirmed: "#4CAF50", 
 }
 
-// Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
   height: "100%",
   position: "relative",
@@ -96,7 +91,6 @@ const TopBadge = styled(Box)(({ theme }) => ({
   fontSize: "0.875rem",
 }))
 
-// New styled components for sticker-like elements
 const CategorySticker = styled(Box)(({ bgcolor }) => ({
   position: "absolute",
   top: 16,
@@ -171,7 +165,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Format date range in Lithuanian style (month first, then dates)
   const formatDateRange = () => {
     if (!offer.startDate && !offer.endDate) return "Datos nenustatytos"
 
@@ -179,7 +172,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
     const endDate = offer.endDate ? new Date(offer.endDate) : null
 
     if (startDate && endDate) {
-      // If same month and year, format as "mėnuo diena-diena"
       if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
         const monthIndex = startDate.getMonth()
         const monthName = lithuanianMonths[monthIndex]
@@ -190,7 +182,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
     return `${formatDate(offer.startDate)} - ${formatDate(offer.endDate)}`
   }
 
-  // Get status display info
   const getStatusInfo = (status: string) => {
     switch (status?.toLowerCase()) {
       case "draft":
@@ -202,11 +193,9 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
     }
   }
 
-  // Check if the offer already has files with images
   useEffect(() => {
     setLoading(true)
 
-    // If no files in the offer, fetch them separately
     const fetchImages = async () => {
       try {
         const response = await axios.get(`${API_URL}/File/public-offer/${offer.id}/Image`, {})
@@ -215,7 +204,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
           setCoverImage(response.data[0].url)
         }
       } catch (error) {
-        console.error("Failed to fetch offer images:", error)
       } finally {
         setLoading(false)
       }
@@ -234,7 +222,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
         onClick={() => onClick(offer.id)}
         sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch" }}
       >
-        {/* Image section with stickers */}
         <Box sx={{ position: "relative", height: 200 }}>
           {loading ? (
             <Skeleton variant="rectangular" height={200} animation="wave" />
@@ -260,13 +247,11 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
             </Box>
           )}
 
-          {/* Status sticker */}
           <StatusSticker bgcolor={statusInfo.color}>
             <AssignmentIcon sx={{ fontSize: "0.875rem" }} />
             {statusInfo.label}
           </StatusSticker>
 
-          {/* Category sticker */}
           {offer.category && (
             <CategorySticker bgcolor={categoryColors[offer.category]}>
               <LocalOfferIcon sx={{ fontSize: "0.875rem" }} />
@@ -274,7 +259,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
             </CategorySticker>
           )}
 
-          {/* Destination sticker - SMALLER */}
           <DestinationSticker>
             <Typography variant="body1" fontWeight="bold" noWrap>
               {truncateText(offer.tripName || "Pasiūlymas be pavadinimo", 30)}
@@ -289,16 +273,13 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
         </Box>
 
         <CardContent sx={{ p: 2, flexGrow: 1 }}>
-          {/* Trip description and price in a flex layout */}
           <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            {/* Trip description if available */}
             {offer.description && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 {truncateText(offer.description, 80)}
               </Typography>
             )}
 
-            {/* Agent information */}
             {offer.agentFirstName && offer.agentLastName && (
               <Box sx={{ display: "flex", alignItems: "center", mt: 1, mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -310,7 +291,6 @@ const AdminPublicOfferCard: React.FC<AdminPublicOfferCardProps> = ({ offer, onCl
               </Box>
             )}
 
-            {/* Price section - ALIGNED WITH TEXT, SMALLER FONT */}
             {offer.price !== undefined && (
               <Box
                 sx={{

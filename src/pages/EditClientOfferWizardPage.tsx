@@ -43,25 +43,18 @@ export default function EditClientOfferWizardPage() {
     setIsSaving(true)
 
     try {
-      // First try to use the form's saveAsDraft method with the pendingLocation
       if (formRef.current && formRef.current.saveAsDraft) {
         const saveResult = await formRef.current.saveAsDraft(pendingLocation)
 
         if (saveResult) {
-          // If save was successful, navigate to the pending location
           handleLeave(true)
         } else {
-          console.error("Save function returned false, not navigating")
           setIsSaving(false)
         }
       } else {
-        // Fallback to window.saveClientOfferAsDraft
         if (window.saveClientOfferAsDraft) {
           const latestFormData = getCurrentFormData()
-          console.log("Getting latest form data for save:", latestFormData)
-
           const latestStepData = getCurrentStepData()
-          console.log("Getting latest step data for save:", latestStepData)
 
           if (formRef.current && formRef.current.collectCurrentFormData) {
             await formRef.current.collectCurrentFormData()
@@ -72,16 +65,13 @@ export default function EditClientOfferWizardPage() {
           if (saveResult) {
             handleLeave(true)
           } else {
-            console.error("Save function returned false, not navigating")
             setIsSaving(false)
           }
         } else {
-          console.warn("No save method available")
           handleLeave(true)
         }
       }
     } catch (error) {
-      console.error("Error saving draft:", error)
       setIsSaving(false)
     }
   }

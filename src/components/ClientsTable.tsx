@@ -22,12 +22,10 @@ interface ClientsTableProps {
 }
 
 const ClientsTable: React.FC<ClientsTableProps> = ({ clients, onClientClick }) => {
-  // Function to format birthday
   const formatBirthday = (birthday: string): string => {
     return new Date(birthday).toLocaleDateString("lt-LT")
   }
 
-  // Function to determine if a client is new (created in the last 30 days)
   const isNewClient = (createdAt: string): boolean => {
     const creationDate = new Date(createdAt)
     const today = new Date()
@@ -66,12 +64,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ clients, onClientClick }) =
                   key={client.id}
                   sx={{
                     backgroundColor: index % 2 === 0 ? "background.default" : "background.paper",
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: "action.hover",
-                    },
                   }}
-                  onClick={() => onClientClick(client.id)}
                 >
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center" }}>

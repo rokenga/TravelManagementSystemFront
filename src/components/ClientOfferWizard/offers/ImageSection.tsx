@@ -15,8 +15,7 @@ import {
 } from "@mui/material"
 import { ExpandMore as ExpandMoreIcon, Delete as DeleteIcon, Image, Upload } from "@mui/icons-material"
 
-// Constants for file upload restrictions
-const MAX_FILE_SIZE_MB = 3 // 3MB per offer step
+const MAX_FILE_SIZE_MB = 3 
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
 
@@ -28,7 +27,7 @@ interface ImageSectionProps {
     url: string
     altText?: string
     fileName?: string
-    urlInline?: string // Add support for urlInline property
+    urlInline?: string 
   }>
   onImageChange: (stepIndex: number, files: File[]) => void
   onRemoveImageSection: (stepIndex: number) => void
@@ -43,42 +42,31 @@ const ImageSection: React.FC<ImageSectionProps> = ({
   onRemoveImageSection,
   onExistingImageDelete,
 }) => {
-  // State to track deleted images locally
   const [deletedImageIds, setDeletedImageIds] = useState<string[]>([])
-  // State to track image loading errors
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
 
-  // Calculate total size of current images
   const totalImageSizeMB = stepImages.reduce((total, file) => total + file.size, 0) / (1024 * 1024)
   const isOverSizeLimit = totalImageSizeMB > MAX_FILE_SIZE_BYTES
 
-  // Filter out deleted images from the display
   const filteredExistingImages = existingStepImages.filter((img) => !deletedImageIds.includes(img.id))
 
-  // Debug log to check what images we're receiving
   useEffect(() => {
-    console.log(`Step ${stepIndex} existing images:`, existingStepImages)
   }, [existingStepImages, stepIndex])
 
-  // Handle file selection for images
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    // Convert FileList to array
     const fileArray = Array.from(files)
 
-    // Validate files
     const validFiles: File[] = []
     const invalidFiles: string[] = []
 
-    // Calculate new total size
     const currentImages = stepImages || []
     const newTotalSize =
       currentImages.reduce((total, file) => total + file.size, 0) +
       fileArray.reduce((total, file) => total + file.size, 0)
 
-    // Check if adding these files would exceed the limit
     if (newTotalSize > MAX_FILE_SIZE_BYTES) {
       alert(`Viršytas maksimalus dydis (${MAX_FILE_SIZE_MB}MB). Pasirinkite mažesnius failus.`)
       event.target.value = ""
@@ -86,14 +74,12 @@ const ImageSection: React.FC<ImageSectionProps> = ({
     }
 
     fileArray.forEach((file) => {
-      // Check file extension
       const extension = `.${file.name.split(".").pop()?.toLowerCase()}`
       if (!ALLOWED_EXTENSIONS.includes(extension)) {
         invalidFiles.push(`${file.name} (netinkamas formatas)`)
         return
       }
 
-      // Check individual file size (optional additional check)
       if (file.size > MAX_FILE_SIZE_BYTES) {
         invalidFiles.push(`${file.name} (per didelis failas, max ${MAX_FILE_SIZE_MB}MB)`)
         return
@@ -102,49 +88,36 @@ const ImageSection: React.FC<ImageSectionProps> = ({
       validFiles.push(file)
     })
 
-    // Show error if there are invalid files
     if (invalidFiles.length > 0) {
       alert(`Kai kurie failai nebuvo įkelti: ${invalidFiles.join(", ")}`)
     }
 
-    // Add valid files to state
     if (validFiles.length > 0) {
       onImageChange(stepIndex, [...stepImages, ...validFiles])
     }
 
-    // Reset the input
     event.target.value = ""
   }
 
-  // Handle existing image deletion
   const handleExistingImageDelete = (imageId: string) => {
-    console.log("Deleting image with ID:", imageId)
 
-    // Add to local tracking of deleted images
     setDeletedImageIds((prev) => [...prev, imageId])
 
-    // Call the parent component's delete handler
     if (onExistingImageDelete) {
       onExistingImageDelete(stepIndex, imageId)
     }
   }
 
-  // Handle image load error
   const handleImageError = (imageId: string) => {
-    console.log(`Image with ID ${imageId} failed to load`)
     setImageErrors((prev) => ({
       ...prev,
       [imageId]: true,
     }))
   }
 
-  // Get the best URL for an image
   const getImageUrl = (img: any) => {
-    // Try urlInline first (which might be used in some API responses)
     if (img.urlInline) return img.urlInline
-    // Then try url
     if (img.url) return img.url
-    // Fallback to placeholder
     return "/placeholder.svg"
   }
 
@@ -218,8 +191,6 @@ const ImageSection: React.FC<ImageSectionProps> = ({
             </Alert>
           )}
 
-          {/* Display existing images from the server */}
-          {filteredExistingImages.length > 0 && (
             <>
               <Typography variant="subtitle2" gutterBottom>
                 Esamos nuotraukos:
@@ -284,9 +255,7 @@ const ImageSection: React.FC<ImageSectionProps> = ({
                 ))}
               </Grid>
             </>
-          )}
 
-          {/* Display newly added images */}
           {stepImages.length > 0 ? (
             <>
               <Typography variant="subtitle2" gutterBottom>

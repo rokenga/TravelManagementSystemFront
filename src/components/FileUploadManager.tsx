@@ -29,7 +29,6 @@ import {
   TableChart,
 } from "@mui/icons-material"
 
-// File types
 export interface FileWithPreview extends File {
   preview?: string
 }
@@ -46,14 +45,13 @@ interface FileUploadManagerProps {
   existingFiles?: ExistingFile[]
   onDeleteExisting?: (id: string) => void
   fileType: "image" | "document"
-  maxSize?: number // in bytes
+  maxSize?: number 
   allowedExtensions?: string[]
 }
 
-// Default allowed extensions and max file size
 const DEFAULT_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
 const DEFAULT_DOCUMENT_EXTENSIONS = [".pdf", ".docx", ".txt", ".xlsx"]
-const DEFAULT_MAX_SIZE = 5 * 1024 * 1024 // 5MB
+const DEFAULT_MAX_SIZE = 5 * 1024 * 1024 
 
 export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   newFiles,
@@ -69,13 +67,10 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Determine allowed extensions based on file type
   const extensions =
     allowedExtensions || (fileType === "image" ? DEFAULT_IMAGE_EXTENSIONS : DEFAULT_DOCUMENT_EXTENSIONS)
 
-  // Create object URLs for previews
   useEffect(() => {
-    // Generate previews for new files that are images
     if (fileType === "image") {
       const newPreviews: Record<string, string> = {}
 
@@ -91,7 +86,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
       }
     }
 
-    // Cleanup function to revoke object URLs
     return () => {
       Object.values(previews).forEach((url) => {
         URL.revokeObjectURL(url)
@@ -99,20 +93,16 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     }
   }, [newFiles, fileType])
 
-  // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    // Convert FileList to array
     const fileArray = Array.from(files)
 
-    // Validate each file
     const invalidFiles: string[] = []
     const validFiles: File[] = []
 
     fileArray.forEach((file) => {
-      // Check file extension
       const fileName = file.name || ""
       const extension = fileName.includes(".") ? `.${fileName.split(".").pop()?.toLowerCase()}` : ""
 
@@ -121,7 +111,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
         return
       }
 
-      // Check file size
       if (file.size > maxSize) {
         invalidFiles.push(`${fileName} (per didelis failas, max ${maxSize / 1024 / 1024}MB)`)
         return
@@ -130,28 +119,23 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
       validFiles.push(file)
     })
 
-    // Show error if there are invalid files
     if (invalidFiles.length > 0) {
       setError(`Kai kurie failai nebuvo įkelti: ${invalidFiles.join(", ")}`)
     } else {
       setError(null)
     }
 
-    // Add valid files to state
     setNewFiles([...newFiles, ...validFiles])
 
-    // Reset the input
     event.target.value = ""
   }
 
-  // Remove a new file
   const removeNewFile = (index: number) => {
     const updatedFiles = [...newFiles]
     updatedFiles.splice(index, 1)
     setNewFiles(updatedFiles)
   }
 
-  // Handle image load error
   const handleImageError = (url: string) => {
     console.error(`Image failed to load:`, url)
     setFailedImages((prev) => ({
@@ -160,9 +144,7 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     }))
   }
 
-  // Get icon for document type
   const getDocumentIcon = (fileName: string | undefined) => {
-    // Add null check to prevent the error
     if (!fileName) {
       return <Description />
     }
@@ -185,11 +167,9 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     }
   }
 
-  // Get the appropriate label for the file type
   const getFileTypeLabel = () => {
     if (fileType === "image") {
       const count = existingFiles.length + newFiles.length
-      // Lithuanian grammar rules for pluralization
       if (count === 0) return "nuotraukų"
       if (count === 1) return "nuotrauka"
       if (count % 10 === 0 || (count % 100 >= 11 && count % 100 <= 19)) return "nuotraukų"
@@ -197,7 +177,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
       return "nuotraukos"
     } else {
       const count = existingFiles.length + newFiles.length
-      // Lithuanian grammar rules for pluralization
       if (count === 0) return "dokumentų"
       if (count === 1) return "dokumentas"
       if (count % 10 === 0 || (count % 100 >= 11 && count % 100 <= 19)) return "dokumentų"
@@ -206,12 +185,10 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     }
   }
 
-  // Get the allowed extensions as a string
   const getAllowedExtensionsString = () => {
     return extensions.join(", ").replace(/\./g, "").toUpperCase()
   }
 
-  // Format file size to KB with proper handling
   const formatFileSize = (size: number | undefined) => {
     if (typeof size !== "number" || isNaN(size)) {
       return "0 KB"
@@ -219,15 +196,11 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
     return `${(size / 1024).toFixed(1)} KB`
   }
 
-  // Function to extract filename from URL for display
   const getFilenameFromUrl = (url: string) => {
     try {
-      // Extract the filename from the URL
       const urlParts = url.split("/")
       const filenameWithParams = urlParts[urlParts.length - 1]
-      // Remove query parameters
       const filename = filenameWithParams.split("?")[0]
-      // Decode URI components
       return decodeURIComponent(filename)
     } catch (e) {
       return fileType === "image" ? "Nuotrauka" : "Dokumentas"
@@ -287,7 +260,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
             </Box>
           ) : (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-              {/* Display existing images */}
               {existingFiles.map((file) => (
                 <Box
                   key={file.id}
@@ -343,7 +315,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
                 </Box>
               ))}
 
-              {/* Display new images */}
               {newFiles.map((file, index) => (
                 <Box
                   key={`new-img-${index}`}
@@ -395,7 +366,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
             </Box>
           ) : (
             <List dense sx={{ maxHeight: 300, overflow: "auto" }}>
-              {/* Display existing documents */}
               {existingFiles.map((file) => (
                 <ListItem key={file.id}>
                   <ListItemIcon>{getDocumentIcon(file.fileName)}</ListItemIcon>
@@ -417,7 +387,6 @@ export const FileUploadManager: React.FC<FileUploadManagerProps> = ({
                 </ListItem>
               ))}
 
-              {/* Display new documents */}
               {newFiles.map((file, index) => (
                 <ListItem key={`new-doc-${index}`}>
                   <ListItemIcon>{getDocumentIcon(file.name)}</ListItemIcon>

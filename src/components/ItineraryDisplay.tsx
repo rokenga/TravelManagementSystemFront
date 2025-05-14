@@ -51,7 +51,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Group events by day
   const eventsByDay: { [key: number]: TripEvent[] } = {}
   itinerary?.sortedEvents?.forEach((ev: TripEvent) => {
     const dayNum = ev.stepDayNumber ?? 0
@@ -65,10 +64,8 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
     .map((k) => Number(k))
     .sort((a, b) => a - b)
 
-  // For day-by-day view
   const [activeDay, setActiveDay] = useState(sortedDayKeys[0] || 0)
 
-  // Format time to show month, day, time (no year)
   const formatTime = (timeStr?: string) => {
     if (!timeStr) return "—"
     const dateObj = new Date(timeStr)
@@ -81,7 +78,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
     })
   }
 
-  // Get event title
   const getEventTitle = (event: TripEvent) => {
     if (event.type === "transport" || event.transportType) {
       return `${event.departurePlace || ""} → ${event.arrivalPlace || ""}`
@@ -92,7 +88,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
     }
   }
 
-  // Get event time display
   const getEventTimeDisplay = (event: TripEvent) => {
     if (event.type === "transport" || event.transportType) {
       return `${formatTime(event.departureTime)} - ${formatTime(event.arrivalTime)}`
@@ -115,12 +110,10 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
     )
   }
 
-  // Render day-by-day itinerary
   if (isDayByDay) {
     return (
       <Card elevation={0} sx={{ borderRadius: 0, boxShadow: "none" }}>
         <CardContent sx={{ p: 0 }}>
-          {/* Day selector buttons */}
           <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
             <ButtonGroup
               variant="outlined"
@@ -147,7 +140,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
             </ButtonGroup>
           </Box>
 
-          {/* Events for the selected day */}
           <Box sx={{ px: { xs: 1, sm: 2 } }}>
             {!eventsByDay[activeDay] || eventsByDay[activeDay].length === 0 ? (
               <Typography variant="body1" color="text.secondary" sx={{ textAlign: "center", py: 4 }}>
@@ -169,7 +161,7 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
                       <Typography variant="body1" sx={{ fontWeight: "bold", mr: 1 }}>
                         {getEventTimeDisplay(event)}
                       </Typography>
-                      <Typography variant="body1">- {getEventTitle(event)}</Typography>
+                      <Typography variant="body1">{getEventTitle(event)}</Typography>
                     </Box>
 
                     {event.details && (
@@ -178,7 +170,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
                       </Typography>
                     )}
 
-                    {/* Event images */}
                     {event.images && event.images.length > 0 && (
                       <Box sx={{ mt: 2 }}>
                         <ImageGallery images={event.images} thumbnailSize={100} showTitle={false} />
@@ -196,13 +187,11 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
     )
   }
 
-  // Render non-day-by-day itinerary
   return (
     <Card elevation={0} sx={{ borderRadius: 0, boxShadow: "none" }}>
       <CardContent sx={{ p: 0 }}>
         <Box sx={{ px: { xs: 0, sm: 2 } }}>
           {sortedDayKeys.length > 1 ? (
-            // Multiple options - use accordions
             sortedDayKeys.map((dayKey, idx) => (
               <Accordion key={dayKey} defaultExpanded={idx === 0} elevation={0} sx={{ mb: 2 }}>
                 <AccordionSummary
@@ -234,7 +223,7 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
                           <Typography variant="body1" sx={{ fontWeight: "bold", mr: 1 }}>
                             {getEventTimeDisplay(event)}
                           </Typography>
-                          <Typography variant="body1">- {getEventTitle(event)}</Typography>
+                          <Typography variant="body1">{getEventTitle(event)}</Typography>
                         </Box>
 
                         {event.details && (
@@ -243,7 +232,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
                           </Typography>
                         )}
 
-                        {/* Event images */}
                         {event.images && event.images.length > 0 && (
                           <Box sx={{ mt: 2 }}>
                             <ImageGallery images={event.images} thumbnailSize={80} showTitle={false} />
@@ -258,7 +246,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
               </Accordion>
             ))
           ) : (
-            // Single option - just show the list
             <List sx={{ width: "100%", p: 0 }}>
               {eventsByDay[sortedDayKeys[0]]?.map((event, eventIdx) => (
                 <ListItem
@@ -273,7 +260,7 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
                     <Typography variant="body1" sx={{ fontWeight: "bold", mr: 1 }}>
                       {getEventTimeDisplay(event)}
                     </Typography>
-                    <Typography variant="body1">- {getEventTitle(event)}</Typography>
+                    <Typography variant="body1">{getEventTitle(event)}</Typography>
                   </Box>
 
                   {event.details && (
@@ -282,7 +269,6 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isDayByD
                     </Typography>
                   )}
 
-                  {/* Event images */}
                   {event.images && event.images.length > 0 && (
                     <Box sx={{ mt: 2 }}>
                       <ImageGallery images={event.images} thumbnailSize={80} showTitle={false} />

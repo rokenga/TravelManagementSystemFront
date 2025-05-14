@@ -1,6 +1,5 @@
 import dayjs from "dayjs"
 
-// Helper to get the earliest relevant time from an event
 export const getEarliestTime = (e: any): number | null => {
   const times: number[] = []
   if (e.departureTime) times.push(new Date(e.departureTime).getTime())
@@ -13,25 +12,20 @@ export const getEarliestTime = (e: any): number | null => {
   return Math.min(...valid)
 }
 
-// Validate dates for an event
 export const validateEventDates = (event: any): boolean => {
   if (event.type === "transport" || event.type === "cruise") {
-    // Check if dates are valid
     if (event.departureTime && isNaN(new Date(event.departureTime).getTime())) return false
     if (event.arrivalTime && isNaN(new Date(event.arrivalTime).getTime())) return false
 
-    // Check if arrival is after departure
     if (event.departureTime && event.arrivalTime) {
       const departureTime = new Date(event.departureTime).getTime()
       const arrivalTime = new Date(event.arrivalTime).getTime()
       if (arrivalTime < departureTime) return false
     }
   } else if (event.type === "accommodation") {
-    // Check if dates are valid
     if (event.checkIn && isNaN(new Date(event.checkIn).getTime())) return false
     if (event.checkOut && isNaN(new Date(event.checkOut).getTime())) return false
 
-    // Check if checkout is after checkin
     if (event.checkIn && event.checkOut) {
       const checkInTime = new Date(event.checkIn).getTime()
       const checkOutTime = new Date(event.checkOut).getTime()
@@ -43,11 +37,9 @@ export const validateEventDates = (event: any): boolean => {
   return true
 }
 
-// Validate that event dates are within trip date range
 export const validateEventInTripRange = (event: any, startDate: string, endDate: string): boolean => {
   if (!startDate || !endDate) return true
 
-  // Create dates with time set to start and end of day to avoid timezone issues
   const tripStartDate = new Date(startDate)
   tripStartDate.setHours(0, 0, 0, 0) // Set to start of day
 
@@ -94,14 +86,12 @@ export const validateEventInTripRange = (event: any, startDate: string, endDate:
   return true
 }
 
-// Format day date for display
 export const formatDayDate = (dateStr: string) => {
   const date = dayjs(dateStr)
   if (!date.isValid()) return ""
   return date.format("YYYY-MM-DD")
 }
 
-// Get event title based on type
 export const getEventTitle = (event: any): string => {
   switch (event.type) {
     case "transport":
@@ -117,7 +107,6 @@ export const getEventTitle = (event: any): string => {
   }
 }
 
-// Check if an event has all required fields filled in
 export const isEventComplete = (event: any): boolean => {
   if (!event || !event.type) return false
 
@@ -137,7 +126,6 @@ export const isEventComplete = (event: any): boolean => {
       return Boolean(event.activityTime && event.description)
 
     case "images":
-      // For image events, check both new images and existing images
       const hasNewImages = Boolean(event.stepImages && event.stepImages.length > 0)
       const hasExistingImages = Boolean(event.existingImageUrls && event.existingImageUrls.length > 0)
       return hasNewImages || hasExistingImages
@@ -147,7 +135,6 @@ export const isEventComplete = (event: any): boolean => {
   }
 }
 
-// Validate all events in an itinerary
 export const validateAllEvents = (
   itinerary: any[],
   requireComplete = false,
@@ -158,14 +145,12 @@ export const validateAllEvents = (
 } => {
   const incompleteEvents: { dayIndex: number; eventIndex: number; type: string }[] = []
 
-  // First check for invalid dates
   for (let dayIndex = 0; dayIndex < itinerary.length; dayIndex++) {
     const day = itinerary[dayIndex]
 
     for (let eventIndex = 0; eventIndex < day.events.length; eventIndex++) {
       const event = day.events[eventIndex]
 
-      // Check for invalid dates
       if (!validateEventDates(event)) {
         return {
           valid: false,
@@ -174,7 +159,6 @@ export const validateAllEvents = (
         }
       }
 
-      // If we require complete events, check if all required fields are filled
       if (requireComplete && !isEventComplete(event)) {
         incompleteEvents.push({
           dayIndex,
@@ -200,7 +184,6 @@ export const validateAllEvents = (
   }
 }
 
-// Check if any events are outside the trip date range
 export const checkEventsOutsideRange = (
   itinerary: any[],
   startDateStr: string | null,
@@ -209,10 +192,10 @@ export const checkEventsOutsideRange = (
   if (!startDateStr || !endDateStr) return []
 
   const startDate = new Date(startDateStr)
-  startDate.setHours(0, 0, 0, 0) // Start of day
+  startDate.setHours(0, 0, 0, 0) 
 
   const endDate = new Date(endDateStr)
-  endDate.setHours(23, 59, 59, 999) // End of day
+  endDate.setHours(23, 59, 59, 999) 
 
   const eventsOutsideRange: any[] = []
 

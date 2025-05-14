@@ -43,13 +43,11 @@ const AddEventMenu: React.FC<AddEventMenuProps> = ({
     setAddMenuOpen(false)
   }
 
-  // Helper function to handle menu item clicks
   const handleMenuItemClick = (callback: () => void) => {
     callback()
     handleCloseAddMenu()
   }
 
-  // Message to show when images are disabled
   const imageDisabledMessage = "Ši diena jau turi nuotraukų pridėjimo elementą."
 
   if (isSmall) {

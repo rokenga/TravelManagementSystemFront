@@ -29,7 +29,6 @@ import { type CreatePartnerRequest, PartnerType, type PartnerResponse } from "..
 import { translatePartnerType } from "../Utils/translateEnums"
 import type { Continent, Country } from "../types/Geography"
 
-// Import the JSON data
 import continentsData from "../assets/continents.json"
 import countriesData from "../assets/full-countries-lt.json"
 
@@ -70,16 +69,13 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
   const [selectedContinent, setSelectedContinent] = useState<Continent | null>(null)
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
 
-  // Parse the JSON data
   const continents: Continent[] = continentsData as Continent[]
   const countries: Country[] = countriesData as Country[]
 
   const token = localStorage.getItem("accessToken")
 
-  // Initialize form data if editing
   useEffect(() => {
     if (isEditing && partner) {
-      // Convert partner data to form data format
       const partnerFormData: CreatePartnerRequest = {
         name: partner.name || "",
         type:
@@ -98,7 +94,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
 
       setFormData(partnerFormData)
 
-      // Set continent and country
       if (partner.region) {
         const continent = continents.find((c) => c.name === partner.region) || null
         setSelectedContinent(continent)
@@ -109,14 +104,12 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
         setSelectedCountry(country)
       }
     } else {
-      // Reset form for creation
       setFormData(initialFormState)
       setSelectedContinent(null)
       setSelectedCountry(null)
     }
   }, [isEditing, partner, continents, countries])
 
-  // Helper function to convert type string to enum
   const convertTypeStringToEnum = (typeString: string): PartnerType => {
     const typeMap: Record<string, PartnerType> = {
       HotelSystem: PartnerType.HotelSystem,
@@ -129,12 +122,10 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
     return typeMap[typeString] !== undefined ? typeMap[typeString] : PartnerType.Other
   }
 
-  // Filter countries based on selected continent
   const filteredCountries = selectedContinent
     ? countries.filter((country) => country.continent === selectedContinent.name)
     : countries
 
-  // Update continent when country changes
   useEffect(() => {
     if (selectedCountry) {
       const countryContinent = selectedCountry.continent
@@ -159,7 +150,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
       [name]: value,
     }))
 
-    // Clear error for this field if it exists
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev }
@@ -184,7 +174,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
       region: value?.name || "",
     }))
 
-    // If the selected country is not in this continent, reset it
     if (value && selectedCountry && selectedCountry.continent !== value.name) {
       setSelectedCountry(null)
       setFormData((prev) => ({
@@ -205,7 +194,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    // Name is required
     if (!formData.name?.trim()) {
       newErrors.name = "Pavadinimas yra privalomas"
     }
@@ -224,7 +212,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
       let response
 
       if (isEditing && partner) {
-        // Update existing partner
         response = await axios.put<PartnerResponse>(`${API_URL}/Partner/${partner.id}`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -232,7 +219,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
           },
         })
       } else {
-        // Create new partner
         response = await axios.post<PartnerResponse>(`${API_URL}/Partner`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -241,24 +227,19 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
         })
       }
 
-      // Reset form if not editing
       if (!isEditing) {
         setFormData(initialFormState)
         setSelectedContinent(null)
         setSelectedCountry(null)
       }
 
-      // Call success callback first with the response data
       if (onSuccess && response.data) {
         onSuccess(response.data)
       }
 
-      // Then close the modal
       onClose()
     } catch (err: any) {
-      console.error(`Failed to ${isEditing ? "update" : "create"} partner:`, err)
 
-      // Handle unauthorized error
       if (err.response?.status === 401) {
         setSubmitError("Jūs neturite teisių atlikti šį veiksmą.")
       } else {
@@ -297,7 +278,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
         )}
 
         <Grid container spacing={2}>
-          {/* Basic Information and Contact Info */}
           <Grid item xs={12}>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 0.5 }}>
               Pagrindinė informacija
@@ -391,7 +371,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
             />
           </Grid>
 
-          {/* Location Information */}
           <Grid item xs={12}>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
               Vietos informacija
@@ -432,7 +411,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
             />
           </Grid>
 
-          {/* Additional Information */}
           <Grid item xs={12}>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
               Papildoma informacija

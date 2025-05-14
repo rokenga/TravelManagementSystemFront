@@ -1,4 +1,3 @@
-// Common types used across the application
 
 export type Severity = "success" | "error" | "info" | "warning"
 

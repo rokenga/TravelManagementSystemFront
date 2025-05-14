@@ -42,7 +42,6 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
   const [error, setError] = useState<string | null>(null)
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
 
-  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setSelectedStatus("")
@@ -51,7 +50,6 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
     }
   }, [open, currentStatus])
 
-  // Validate status change
   useEffect(() => {
     setValidationMessage(null)
 
@@ -59,7 +57,6 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
       return
     }
 
-    // Check if the status transition is valid
     const isValid = isStatusChangeValid(currentStatus, selectedStatus)
     if (!isValid) {
       setValidationMessage(
@@ -100,7 +97,6 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
       onSuccess()
       onClose()
     } catch (err: any) {
-      // Handle specific error messages from the backend
       if (err.response && err.response.data) {
         if (err.response.data.error) {
           setError(err.response.data.error)
@@ -110,13 +106,11 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
       } else {
         setError("Nepavyko pakeisti statuso. Bandykite dar kartą.")
       }
-      console.error("Failed to change status:", err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Get available next statuses based on current status
   const getAvailableStatuses = (currentStatus: TripRequestStatus): TripRequestStatus[] => {
     switch (currentStatus) {
       case TripRequestStatus.New:
@@ -124,7 +118,7 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
       case TripRequestStatus.Confirmed:
         return [TripRequestStatus.Completed, TripRequestStatus.New]
       case TripRequestStatus.Completed:
-        return [] // No transitions from this state
+        return [] 
       default:
         return []
     }
@@ -153,10 +147,8 @@ const TripRequestStatusChangeDialog: React.FC<TripRequestStatusChangeDialogProps
             onChange={handleStatusChange}
             disabled={loading || !canChangeStatus}
           >
-            {/* Show current status */}
             <MenuItem value={currentStatus}>{translateTripRequestStatus(currentStatus)} (dabartinis)</MenuItem>
 
-            {/* Show available statuses */}
             {availableStatuses.map((status) => (
               <MenuItem key={status} value={status}>
                 {translateTripRequestStatus(status)}

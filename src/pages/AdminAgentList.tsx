@@ -53,7 +53,6 @@ const AdminAgentList: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
-  // Create a function to get initials from name and surname with null checks
   const getInitials = (firstName?: string, lastName?: string): string => {
     const firstInitial = firstName && firstName.length > 0 ? firstName.charAt(0).toUpperCase() : ""
     const lastInitial = lastName && lastName.length > 0 ? lastName.charAt(0).toUpperCase() : ""
@@ -62,11 +61,9 @@ const AdminAgentList: React.FC = () => {
       return `${firstInitial}${lastInitial}`
     }
 
-    // Fallback if both are empty
     return "?"
   }
 
-  // Create a function to get a consistent color based on name with null checks
   const getAvatarColor = (name?: string): string => {
     const colors = [
       "#F44336",
@@ -87,10 +84,9 @@ const AdminAgentList: React.FC = () => {
     ]
 
     if (!name || name.length === 0) {
-      return colors[0] // Default color if name is empty
+      return colors[0]
     }
 
-    // Simple hash function to get a consistent color
     let hash = 0
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash)
@@ -118,14 +114,12 @@ const AdminAgentList: React.FC = () => {
       setAgents(response.data.items)
       setTotalPages(Math.ceil(response.data.totalCount / pageSize))
     } catch (err: any) {
-      console.error("Failed to fetch agents:", err)
       setError("Nepavyko gauti agentų sąrašo.")
     } finally {
       setLoading(false)
     }
   }
 
-  // Use effect to fetch agents when page, pageSize or searchTerm changes
   useEffect(() => {
     fetchAgents()
   }, [currentPage, pageSize, searchTerm])
@@ -149,7 +143,7 @@ const AdminAgentList: React.FC = () => {
 
   const handleSearchChange = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm)
-    setCurrentPage(1) // Reset to first page on new search
+    setCurrentPage(1)
   }
 
   const handlePageChange = (newPage: number) => {
@@ -263,7 +257,6 @@ const AdminAgentList: React.FC = () => {
                   ))}
                 </Grid>
 
-                {/* Pagination Controls */}
                 <Box
                   sx={{
                     display: "flex",
@@ -288,7 +281,6 @@ const AdminAgentList: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Register Agent Modal */}
       <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle
           sx={{
@@ -312,7 +304,6 @@ const AdminAgentList: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Snackbar for notifications */}
       <CustomSnackbar
         open={snackbar.open}
         message={snackbar.message}

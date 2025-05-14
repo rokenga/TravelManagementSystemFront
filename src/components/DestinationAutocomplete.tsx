@@ -35,20 +35,17 @@ const DestinationAutocomplete: React.FC<DestinationAutocompleteProps> = ({
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    // Process the countries data
     try {
       const processedCountries: Country[] = countriesData.map((country: any) => ({
         code: country.code,
         name: country.name,
       }))
 
-      // Sort by name
       processedCountries.sort((a, b) => a.name.localeCompare(b.name))
 
       setCountries([...processedCountries])
       setLoading(false)
     } catch (error) {
-      console.error("Error loading countries data:", error)
       setLoading(false)
     }
   }, [])
