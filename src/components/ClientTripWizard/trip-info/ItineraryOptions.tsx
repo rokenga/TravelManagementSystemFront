@@ -30,7 +30,7 @@ const ItineraryOptions: React.FC<ItineraryOptionsProps> = ({
         </Typography>
         <FormControlLabel
           control={<Checkbox checked={dayByDayItineraryNeeded} onChange={onDayByDayChange} />}
-          label="Ar reikalingas kasdienis maršrutas?"
+          label="Ar reikalingas kasdienis planas?"
         />
         <Collapse in={dayByDayItineraryNeeded}>
           <Box sx={{ mt: 2 }}>

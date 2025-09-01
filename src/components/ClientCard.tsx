@@ -15,7 +15,7 @@ import {
   useTheme,
   Tooltip,
 } from "@mui/material"
-import { Email, Phone, Notes, LocalOffer, SwapHoriz } from "@mui/icons-material"
+import { Email, Phone, Notes, LocalOffer, SwapHoriz, Business } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import TagManagementModal from "./TagManagementModal"
@@ -73,8 +73,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
         headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
       })
       setClientTags(response.data)
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   useEffect(() => {
@@ -85,8 +84,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
         })
 
         setClientTags(response.data)
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     fetchClientTags()
@@ -120,10 +118,9 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
             transform: "translateY(-5px)",
             boxShadow: 6,
           },
-          position: "relative", 
+          position: "relative",
         }}
       >
-
         <CardActionArea onClick={handleCardClick}>
           <CardContent
             sx={{
@@ -160,6 +157,27 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
                         sx={{
                           ml: 1,
                           fontSize: "0.7rem",
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                  {client.companyName && (
+                    <Tooltip title={`Dirba: ${client.companyName}`}>
+                      <Chip
+                        icon={<Business />}
+                        label={client.companyName}
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                        sx={{
+                          ml: 1,
+                          fontSize: "0.7rem",
+                          maxWidth: "150px",
+                          "& .MuiChip-label": {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          },
                         }}
                       />
                     </Tooltip>
@@ -223,6 +241,22 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onClick }) => {
                     {client.phoneNumber}
                   </Typography>
                 </Box>
+                {client.occupation && (
+                  <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {client.occupation}
+                    </Typography>
+                  </Box>
+                )}
                 {client.notes && (
                   <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", minWidth: 0, flex: 1 }}>
                     <Notes fontSize="small" sx={{ mr: 0.5, color: "text.secondary", flexShrink: 0 }} />

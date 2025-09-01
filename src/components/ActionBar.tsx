@@ -18,6 +18,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility"
 import { useNavigate } from "react-router-dom"
 import { useNavigation } from "../contexts/NavigationContext"
 import SecurityIcon from "@mui/icons-material/Security"
+import VpnKeyIcon from "@mui/icons-material/VpnKey"
 
 interface MenuItem {
   key: string
@@ -63,6 +64,9 @@ interface ActionBarProps {
   onReset2FA?: () => void
   showReservationsButton?: boolean
   onViewReservations?: () => void
+  //  Added props for login information update functionality
+  showUpdateLoginButton?: boolean
+  onUpdateLogin?: () => void
 }
 
 const ActionBar: React.FC<ActionBarProps> = ({
@@ -98,6 +102,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onReset2FA,
   showReservationsButton = false,
   onViewReservations,
+  //  Added new props for login update functionality
+  showUpdateLoginButton = false,
+  onUpdateLogin,
 }) => {
   const navigate = useNavigate()
   const { navigateBack, previousPath } = useNavigation()
@@ -237,6 +244,18 @@ const ActionBar: React.FC<ActionBarProps> = ({
       })
     }
 
+    //  Added update login button to menu items as a primary action
+    if (showUpdateLoginButton && onUpdateLogin) {
+      items.push({
+        key: "update-login",
+        label: "Pakeisti prisijungimo informaciją",
+        icon: <VpnKeyIcon fontSize="small" />,
+        onClick: onUpdateLogin,
+        color: "primary" as const,
+        variant: "outlined" as const,
+      })
+    }
+
     if (showEditButton && onEdit) {
       items.push({
         key: "edit",
@@ -269,14 +288,18 @@ const ActionBar: React.FC<ActionBarProps> = ({
     const primaryButtons: MenuItem[] = []
 
     menuItems.forEach((item) => {
-      if (item.key === "edit" || item.key === "delete") {
+      //  Added update-login to primary buttons section to appear next to edit/delete
+      if (item.key === "edit" || item.key === "delete" || item.key === "update-login") {
         primaryButtons.push(item)
       } else {
         buttons.push(item)
       }
     })
 
+    //  Updated sorting to ensure proper order: update-login, edit, delete
     primaryButtons.sort((a, b) => {
+      if (a.key === "update-login") return -1
+      if (b.key === "update-login") return 1
       if (a.key === "edit") return -1
       if (b.key === "edit") return 1
       return 0

@@ -2,7 +2,18 @@
 
 import type React from "react"
 import { useState, useEffect, useContext, useCallback, useRef } from "react"
-import { Box, Typography, Grid, Button, CircularProgress, useMediaQuery, useTheme, Chip } from "@mui/material"
+import {
+  Box,
+  Typography,
+  Grid,
+  Button,
+  CircularProgress,
+  useMediaQuery,
+  useTheme,
+  Chip,
+  Tabs,
+  Tab,
+} from "@mui/material"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
@@ -13,10 +24,13 @@ import SortMenu from "../components/SortMenu"
 import { FilterList } from "@mui/icons-material"
 import ClientTagManager from "../components/ClientTagManager"
 import ClientCard from "../components/ClientCard"
+import CompanyCard from "../components/CompanyCard"
 import ClientFormModal from "../components/ClientFormModal"
+import CompanyFormModal from "../components/CompanyFormModal"
 import Pagination from "../components/Pagination"
 import PageSizeSelector from "../components/PageSizeSelector"
 import ClientFilterPanel, { type ClientFilters, type CategoryTagFilter } from "../components/filters/ClientFilterPanel"
+import type { CompanyResponse } from "../types/Company"
 
 interface Client {
   id: string
@@ -38,6 +52,14 @@ interface ClientQueryParams {
   categoryFilters?: CategoryTagFilter[]
 }
 
+interface CompanyQueryParams {
+  pageNumber: number
+  pageSize: number
+  searchTerm?: string
+  sortBy?: string
+  descending: boolean
+}
+
 interface PaginatedResponse<T> {
   items: T[]
   totalCount: number
@@ -51,6 +73,11 @@ interface ClientListState {
   searchTerm: string
   sortOption: string
   filters: ClientFilters
+  activeTab: number
+  companyPage: number
+  companyPageSize: number
+  companySearchTerm: string
+  companySortOption: string
 }
 
 const defaultFilters: ClientFilters = {
@@ -60,16 +87,28 @@ const defaultFilters: ClientFilters = {
 const AdminClientList: React.FC = () => {
   const { savePageState, getPageState, isNavbarNavigation } = useNavigation()
   const [clients, setClients] = useState<Client[]>([])
+  const [companies, setCompanies] = useState<CompanyResponse[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
+
+  // Client state
   const [searchTerm, setSearchTerm] = useState<string>("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalPages, setTotalPages] = useState(1)
   const [sortOption, setSortOption] = useState<string>("Vardas A-Z")
   const [selectedFilters, setSelectedFilters] = useState<ClientFilters>(defaultFilters)
-  const [refreshTrigger, setRefreshTrigger] = useState(0) 
+
+  // Company state
+  const [companySearchTerm, setCompanySearchTerm] = useState<string>("")
+  const [companyCurrentPage, setCompanyCurrentPage] = useState(1)
+  const [companyPageSize, setCompanyPageSize] = useState(25)
+  const [companyTotalPages, setCompanyTotalPages] = useState(1)
+  const [companySortOption, setCompanySortOption] = useState<string>("Pavadinimas A-Z")
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [activeTab, setActiveTab] = useState(0) // 0 = Clients, 1 = Companies
 
   const navigate = useNavigate()
   const user = useContext(UserContext)
@@ -77,6 +116,7 @@ const AdminClientList: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const [isTagModalOpen, setIsTagModalOpen] = useState(false)
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false)
   const isInitialMount = useRef(true)
 
   const saveCurrentState = useCallback(() => {
@@ -86,9 +126,26 @@ const AdminClientList: React.FC = () => {
       searchTerm,
       sortOption,
       filters: selectedFilters,
+      activeTab,
+      companyPage: companyCurrentPage,
+      companyPageSize,
+      companySearchTerm,
+      companySortOption,
     }
     savePageState("admin-client-list", state)
-  }, [currentPage, pageSize, searchTerm, sortOption, selectedFilters, savePageState])
+  }, [
+    currentPage,
+    pageSize,
+    searchTerm,
+    sortOption,
+    selectedFilters,
+    activeTab,
+    companyCurrentPage,
+    companyPageSize,
+    companySearchTerm,
+    companySortOption,
+    savePageState,
+  ])
 
   useEffect(() => {
     if (isNavbarNavigation) {
@@ -97,6 +154,11 @@ const AdminClientList: React.FC = () => {
       setSearchTerm("")
       setSortOption("Vardas A-Z")
       setSelectedFilters(defaultFilters)
+      setActiveTab(0)
+      setCompanyCurrentPage(1)
+      setCompanyPageSize(25)
+      setCompanySearchTerm("")
+      setCompanySortOption("Pavadinimas A-Z")
 
       fetchClients(1, 25, "", defaultFilters)
       return
@@ -113,13 +175,27 @@ const AdminClientList: React.FC = () => {
         if (savedState.searchTerm !== undefined) setSearchTerm(savedState.searchTerm)
         if (savedState.sortOption) setSortOption(savedState.sortOption)
         if (savedState.filters) setSelectedFilters(savedState.filters)
+        if (savedState.activeTab !== undefined) setActiveTab(savedState.activeTab)
+        if (savedState.companyPage) setCompanyCurrentPage(savedState.companyPage)
+        if (savedState.companyPageSize) setCompanyPageSize(savedState.companyPageSize)
+        if (savedState.companySearchTerm !== undefined) setCompanySearchTerm(savedState.companySearchTerm)
+        if (savedState.companySortOption) setCompanySortOption(savedState.companySortOption)
 
-        fetchClients(
-          savedState.page || 1,
-          savedState.pageSize || 25,
-          savedState.searchTerm || "",
-          savedState.filters || defaultFilters,
-        )
+        if (savedState.activeTab === 1) {
+          fetchCompanies(
+            savedState.companyPage || 1,
+            savedState.companyPageSize || 25,
+            savedState.companySearchTerm || "",
+            savedState.companySortOption || "Pavadinimas A-Z",
+          )
+        } else {
+          fetchClients(
+            savedState.page || 1,
+            savedState.pageSize || 25,
+            savedState.searchTerm || "",
+            savedState.filters || defaultFilters,
+          )
+        }
       } else {
         fetchClients(1, 25, "", defaultFilters)
       }
@@ -134,9 +210,25 @@ const AdminClientList: React.FC = () => {
 
   useEffect(() => {
     if (!isInitialMount.current || refreshTrigger > 0) {
-      fetchClients(currentPage, pageSize, searchTerm, selectedFilters)
+      if (activeTab === 0) {
+        fetchClients(currentPage, pageSize, searchTerm, selectedFilters)
+      } else {
+        fetchCompanies(companyCurrentPage, companyPageSize, companySearchTerm, companySortOption)
+      }
     }
-  }, [sortOption, currentPage, pageSize, searchTerm, selectedFilters, refreshTrigger])
+  }, [
+    sortOption,
+    currentPage,
+    pageSize,
+    searchTerm,
+    selectedFilters,
+    refreshTrigger,
+    activeTab,
+    companySortOption,
+    companyCurrentPage,
+    companyPageSize,
+    companySearchTerm,
+  ])
 
   const fetchClients = async (page: number, size: number, search: string, filters: ClientFilters) => {
     try {
@@ -189,27 +281,101 @@ const AdminClientList: React.FC = () => {
     }
   }
 
+  const fetchCompanies = async (page: number, size: number, search: string, sortOption: string) => {
+    try {
+      setLoading(true)
+
+      const params: CompanyQueryParams = {
+        pageNumber: page,
+        pageSize: size,
+        searchTerm: search || undefined,
+        sortBy: "name",
+        descending: false,
+      }
+
+      if (sortOption === "Pavadinimas A-Z") {
+        params.sortBy = "name"
+        params.descending = false
+      } else if (sortOption === "Pavadinimas Z-A") {
+        params.sortBy = "name"
+        params.descending = true
+      }
+
+      const response = await axios.post<PaginatedResponse<CompanyResponse>>(`${API_URL}/Company/search`, params, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+
+      setCompanies(response.data.items)
+      setCompanyCurrentPage(response.data.pageNumber)
+      setCompanyPageSize(response.data.pageSize)
+
+      const calculatedTotalPages = Math.ceil(response.data.totalCount / response.data.pageSize)
+      setCompanyTotalPages(calculatedTotalPages)
+    } catch (err: any) {
+      setError("Nepavyko gauti įmonių sąrašo.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue)
+    setError(null)
+
+    if (newValue === 0) {
+      fetchClients(currentPage, pageSize, searchTerm, selectedFilters)
+    } else {
+      fetchCompanies(companyCurrentPage, companyPageSize, companySearchTerm, companySortOption)
+    }
+  }
+
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage)
-    fetchClients(newPage, pageSize, searchTerm, selectedFilters)
+    if (activeTab === 0) {
+      setCurrentPage(newPage)
+      fetchClients(newPage, pageSize, searchTerm, selectedFilters)
+    } else {
+      setCompanyCurrentPage(newPage)
+      fetchCompanies(newPage, companyPageSize, companySearchTerm, companySortOption)
+    }
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize)
-    setCurrentPage(1) 
-    fetchClients(1, newPageSize, searchTerm, selectedFilters)
+    if (activeTab === 0) {
+      setPageSize(newPageSize)
+      setCurrentPage(1)
+      fetchClients(1, newPageSize, searchTerm, selectedFilters)
+    } else {
+      setCompanyPageSize(newPageSize)
+      setCompanyCurrentPage(1)
+      fetchCompanies(1, newPageSize, companySearchTerm, companySortOption)
+    }
   }
 
   const handleSearchChange = (newSearchTerm: string) => {
-    setSearchTerm(newSearchTerm)
-    setCurrentPage(1) 
-    fetchClients(1, pageSize, newSearchTerm, selectedFilters)
+    if (activeTab === 0) {
+      setSearchTerm(newSearchTerm)
+      setCurrentPage(1)
+      fetchClients(1, pageSize, newSearchTerm, selectedFilters)
+    } else {
+      setCompanySearchTerm(newSearchTerm)
+      setCompanyCurrentPage(1)
+      fetchCompanies(1, companyPageSize, newSearchTerm, companySortOption)
+    }
   }
 
   const handleSortChange = (option: string) => {
-    setSortOption(option)
-    setCurrentPage(1)
-    fetchClients(1, pageSize, searchTerm, selectedFilters)
+    if (activeTab === 0) {
+      setSortOption(option)
+      setCurrentPage(1)
+      fetchClients(1, pageSize, searchTerm, selectedFilters)
+    } else {
+      setCompanySortOption(option)
+      setCompanyCurrentPage(1)
+      fetchCompanies(1, companyPageSize, companySearchTerm, option)
+    }
   }
 
   const handleApplyFilters = (filters: ClientFilters) => {
@@ -221,15 +387,24 @@ const AdminClientList: React.FC = () => {
 
   const handleClientClick = (clientId: string) => {
     saveCurrentState()
-    navigate(`/admin-client-list/${clientId}`)
+    navigate(`/admin-client-list/client/${clientId}`)
+  }
+
+  const handleCompanyClick = (companyId: string) => {
+    saveCurrentState()
+    navigate(`/admin-client-list/company/${companyId}`)
   }
 
   const refreshClientTags = () => {
-    setRefreshTrigger((prev) => prev + 1) 
+    setRefreshTrigger((prev) => prev + 1)
   }
 
-  const refreshClientList = () => {
-    setCurrentPage(1)
+  const refreshList = () => {
+    if (activeTab === 0) {
+      setCurrentPage(1)
+    } else {
+      setCompanyCurrentPage(1)
+    }
     setRefreshTrigger((prev) => prev + 1)
   }
 
@@ -241,14 +416,38 @@ const AdminClientList: React.FC = () => {
     return count
   }
 
+  const isClientsTab = activeTab === 0
+  const isCompaniesTab = activeTab === 1
+
+  const currentSearchTerm = isClientsTab ? searchTerm : companySearchTerm
+  const currentSortOption = isClientsTab ? sortOption : companySortOption
+  const currentPageSize = isClientsTab ? pageSize : companyPageSize
+  const currentTotalPages = isClientsTab ? totalPages : companyTotalPages
+  const currentPageNumber = isClientsTab ? currentPage : companyCurrentPage
+
+  const sortOptions = isClientsTab
+    ? ["Vardas A-Z", "Vardas Z-A", "Naujausi pirmi", "Seniausi pirmi"]
+    : ["Pavadinimas A-Z", "Pavadinimas Z-A"]
+
+  const searchPlaceholder = isClientsTab ? "Ieškoti klientų..." : "Ieškoti įmonių..."
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column" }}>
       <Box sx={{ p: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Klientų sąrašas
+          Kontaktai
         </Typography>
 
-        <SearchBar value={searchTerm} onChange={handleSearchChange} placeholder="Ieškoti klientų..." />
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3, display: "flex", justifyContent: "center" }}>
+          <Tabs value={activeTab} onChange={handleTabChange} aria-label="client company tabs" centered>
+            <Tab label="Klientai" />
+            <Tab label="Įmonės" />
+          </Tabs>
+        </Box>
+
+        {/* Search Bar */}
+        <SearchBar value={currentSearchTerm} onChange={handleSearchChange} placeholder={searchPlaceholder} />
 
         <Box
           sx={{
@@ -262,24 +461,41 @@ const AdminClientList: React.FC = () => {
           }}
         >
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setIsClientModalOpen(true)}
-              sx={{ textTransform: "none" }}
-            >
-              Sukurti naują klientą
-            </Button>
-
-            <Button variant="outlined" color="secondary" onClick={() => setIsTagModalOpen(true)}>
-              Tvarkyti žymeklius
-            </Button>
+            {isClientsTab && (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => setIsClientModalOpen(true)}
+                  sx={{ textTransform: "none" }}
+                >
+                  Sukurti naują klientą
+                </Button>
+                <Button variant="outlined" color="secondary" onClick={() => setIsTagModalOpen(true)}>
+                  Tvarkyti žymeklius
+                </Button>
+              </>
+            )}
+            {isCompaniesTab && (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setIsCompanyModalOpen(true)}
+                sx={{ textTransform: "none" }}
+              >
+                Sukurti naują įmonę
+              </Button>
+            )}
           </Box>
 
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <PageSizeSelector pageSize={pageSize} onPageSizeChange={handlePageSizeChange} options={[25, 50, 100]} />
+            <PageSizeSelector
+              pageSize={currentPageSize}
+              onPageSizeChange={handlePageSizeChange}
+              options={[25, 50, 100]}
+            />
 
-            {isMobile && (
+            {isClientsTab && isMobile && (
               <Button
                 variant="outlined"
                 startIcon={<FilterList />}
@@ -292,16 +508,12 @@ const AdminClientList: React.FC = () => {
               </Button>
             )}
 
-            <SortMenu
-              options={["Vardas A-Z", "Vardas Z-A", "Naujausi pirmi", "Seniausi pirmi"]}
-              onSort={handleSortChange}
-              value={sortOption}
-            />
+            <SortMenu options={sortOptions} onSort={handleSortChange} value={currentSortOption} />
           </Box>
         </Box>
 
         <Box sx={{ display: "flex", gap: 3 }}>
-          {!isMobile && (
+          {!isMobile && isClientsTab && (
             <ClientFilterPanel
               isOpen={isFilterDrawerOpen}
               onClose={() => setIsFilterDrawerOpen(false)}
@@ -319,31 +531,78 @@ const AdminClientList: React.FC = () => {
               <Typography color="error" align="center">
                 {error}
               </Typography>
-            ) : clients.length > 0 ? (
-              <>
-                <Grid container spacing={2}>
-                  {clients.map((client) => (
-                    <Grid item xs={12} key={client.id}>
-                      <ClientCard client={client} onClick={() => handleClientClick(client.id)} />
-                    </Grid>
-                  ))}
-                </Grid>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    mt: 3,
-                  }}
-                >
-                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
-                </Box>
-              </>
             ) : (
-              <Typography variant="body1" align="center">
-                Nėra sukurtų klientų.
-              </Typography>
+              <>
+                {isClientsTab && (
+                  <>
+                    {clients.length > 0 ? (
+                      <>
+                        <Grid container spacing={2}>
+                          {clients.map((client) => (
+                            <Grid item xs={12} key={client.id}>
+                              <ClientCard client={client} onClick={() => handleClientClick(client.id)} />
+                            </Grid>
+                          ))}
+                        </Grid>
+
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            mt: 3,
+                          }}
+                        >
+                          <Pagination
+                            currentPage={currentPageNumber}
+                            totalPages={currentTotalPages}
+                            onPageChange={handlePageChange}
+                          />
+                        </Box>
+                      </>
+                    ) : (
+                      <Typography variant="body1" align="center">
+                        {searchTerm ? "Nerasta klientų pagal paieškos kriterijus." : "Nėra sukurtų klientų."}
+                      </Typography>
+                    )}
+                  </>
+                )}
+
+                {isCompaniesTab && (
+                  <>
+                    {companies.length > 0 ? (
+                      <>
+                        <Grid container spacing={3}>
+                          {companies.map((company) => (
+                            <Grid item xs={12} sm={6} md={4} lg={3} key={company.id}>
+                              <CompanyCard company={company} onClick={() => handleCompanyClick(company.id)} />
+                            </Grid>
+                          ))}
+                        </Grid>
+
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            mt: 3,
+                          }}
+                        >
+                          <Pagination
+                            currentPage={currentPageNumber}
+                            totalPages={currentTotalPages}
+                            onPageChange={handlePageChange}
+                          />
+                        </Box>
+                      </>
+                    ) : (
+                      <Typography variant="body1" align="center">
+                        {companySearchTerm ? "Nerasta įmonių pagal paieškos kriterijus." : "Nėra sukurtų įmonių."}
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </Box>
         </Box>
@@ -355,13 +614,15 @@ const AdminClientList: React.FC = () => {
         onTagsUpdated={refreshClientTags}
       />
 
-      <ClientFormModal
-        open={isClientModalOpen}
-        onClose={() => setIsClientModalOpen(false)}
-        onSuccess={refreshClientList}
+      <ClientFormModal open={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSuccess={refreshList} />
+
+      <CompanyFormModal
+        open={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+        onSuccess={refreshList}
       />
 
-      {isMobile && (
+      {isMobile && isClientsTab && (
         <ClientFilterPanel
           isOpen={isFilterDrawerOpen}
           onClose={() => setIsFilterDrawerOpen(false)}

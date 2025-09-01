@@ -5,6 +5,8 @@ import { Card, CardContent, CardActionArea, Typography, Box, Chip } from "@mui/m
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday"
 import AccessTimeIcon from "@mui/icons-material/AccessTime"
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff"
+import LocalOfferIcon from "@mui/icons-material/LocalOffer"
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz"
 import { translateOfferStatus, translateTripCategory } from "../Utils/translateEnums"
 import { type TripResponse, TripCategory, OfferStatus } from "../types/ClientTrip"
 
@@ -34,16 +36,16 @@ const calculateDuration = (startDate?: string, endDate?: string) => {
 }
 
 const categoryColors = {
-  [TripCategory.Tourist]: "#90CAF9", 
-  [TripCategory.Group]: "#CE93D8", 
-  [TripCategory.Relax]: "#FFCC80", 
-  [TripCategory.Business]: "#A5D6A7", 
-  [TripCategory.Cruise]: "#F48FB1", 
+  [TripCategory.Tourist]: "#42A5F5", 
+  [TripCategory.Group]: "#AB47BC", 
+  [TripCategory.Relax]: "#FFA726", 
+  [TripCategory.Business]: "#66BB6A", 
+  [TripCategory.Cruise]: "#EC407A", 
 }
 
 const statusColors = {
-  [OfferStatus.Draft]: "#FFB74D",
-  [OfferStatus.Confirmed]: "#81C784", 
+  [OfferStatus.Draft]: "#FF9800",
+  [OfferStatus.Confirmed]: "#4CAF50", 
 }
 
 interface SpecialOfferCardProps {
@@ -87,41 +89,50 @@ const SpecialOfferCard: React.FC<SpecialOfferCardProps> = ({ offer, onClick }) =
             </Box>
           )}
 
-          <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, flexWrap: "wrap", gap: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, flexWrap: "wrap", gap: 1 }}>
             {offer.category && (
               <Chip
+                icon={<LocalOfferIcon style={{ fontSize: "0.875rem", color: "white" }} />}
                 label={translateTripCategory(offer.category)}
                 size="small"
                 sx={{
-                  height: "20px",
-                  fontSize: "0.7rem",
-                  bgcolor: categoryColors[offer.category] || "#E0E0E0",
-                  color: "rgba(0,0,0,0.7)",
+                  bgcolor: categoryColors[offer.category] || "#757575",
+                  color: "white",
+                  fontWeight: 500,
+                  fontSize: "0.8rem",
+                  height: 24,
+                  '& .MuiChip-icon': { color: 'white' },
                 }}
               />
             )}
 
             {offer.status && (
               <Chip
+                icon={<AccessTimeIcon style={{ fontSize: "0.875rem", color: "white" }} />}
                 label={translateOfferStatus(offer.status)}
                 size="small"
                 sx={{
-                  height: "20px",
-                  fontSize: "0.7rem",
-                  bgcolor: statusColors[offer.status] || "#E0E0E0",
-                  color: "rgba(0,0,0,0.7)",
+                  bgcolor: statusColors[offer.status] || "#757575",
+                  color: "white",
+                  fontWeight: 500,
+                  fontSize: "0.8rem",
+                  height: 24,
+                  '& .MuiChip-icon': { color: 'white' },
                 }}
               />
             )}
             {offer.isTransferred && offer.transferredFromAgentName && (
               <Chip
+                icon={<SwapHorizIcon style={{ fontSize: "0.875rem", color: "white" }} />}
                 label="Perkeltas"
                 size="small"
                 sx={{
-                  height: "20px",
-                  fontSize: "0.7rem",
-                  bgcolor: "#2196F3", 
+                  bgcolor: "black",
                   color: "white",
+                  fontWeight: 500,
+                  fontSize: "0.8rem",
+                  height: 24,
+                  '& .MuiChip-icon': { color: 'white' },
                 }}
                 title={`Perkeltas nuo: ${offer.transferredFromAgentName}`}
               />

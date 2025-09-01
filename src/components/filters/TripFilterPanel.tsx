@@ -130,7 +130,7 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Kryptys
       </Typography>
       <Box sx={{ mb: 2 }}>
@@ -153,7 +153,7 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Kategorija
       </Typography>
       <FormGroup sx={{ mb: 2 }}>
@@ -197,7 +197,7 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Būsena
       </Typography>
       <FormGroup sx={{ mb: 2 }}>
@@ -229,7 +229,7 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Mokėjimo būsena
       </Typography>
       <FormGroup sx={{ mb: 2 }}>
@@ -264,7 +264,7 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Datos
       </Typography>
       <Box sx={{ mb: 3 }}>
@@ -287,7 +287,7 @@ const TripFilterPanel: React.FC<TripFilterPanelProps> = ({ isOpen, onClose, onAp
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Kaina (€)
       </Typography>
       <Box sx={{ px: 1, mb: 3 }}>

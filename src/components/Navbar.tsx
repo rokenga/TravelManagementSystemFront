@@ -29,7 +29,7 @@ import StarIcon from "@mui/icons-material/Star"
 import ArticleIcon from "@mui/icons-material/Article"
 import AgentsIcon from "@mui/icons-material/Group"
 import PartnerIcon from "@mui/icons-material/Business"
-
+import RssFeedIcon from "@mui/icons-material/RssFeed" // New icon for blog
 import { UserContext } from "../contexts/UserContext"
 import Logo from "./Logo"
 
@@ -43,10 +43,8 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
   const location = useLocation()
   const user = useContext(UserContext)
   const role = user?.role
-
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
-
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
@@ -83,6 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
     Guest: [
       { text: "Pagrindinis", path: "/", icon: <HomeIcon /> },
       { text: "Karšti kelionių pasiūlymai", path: "/specialOffers", icon: <StarIcon /> },
+      { text: "Tinklaraštis", path: "/blogs", icon: <RssFeedIcon /> }, // Added blog navigation for guests to view public blogs
     ],
     Admin: [
       { text: "Pagrindinis", path: "/", icon: <HomeIcon /> },
@@ -92,6 +91,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       { text: "Klientų pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
       { text: "Vieši pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
       { text: "Partneriai", path: "/partner-list", icon: <PartnerIcon /> },
+      { text: "Tinklaraštis", path: "/admin-blog-list", icon: <RssFeedIcon /> },
     ],
     Agent: [
       { text: "Pagrindinis", path: "/", icon: <HomeIcon /> },
@@ -100,6 +100,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
       { text: "Klientų pasiūlymai", path: "/special-offers", icon: <StarIcon /> },
       { text: "Vieši pasiūlymai", path: "/public-offers", icon: <ArticleIcon /> },
       { text: "Partneriai", path: "/partner-list", icon: <PartnerIcon /> },
+      { text: "Tinklaraštis", path: "/admin-blog-list", icon: <RssFeedIcon /> },
     ],
   }
 
@@ -189,7 +190,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                   }}
                   onClick={() => navigateTo(item.path)}
                   startIcon={item.icon}
-                  data-path={item.path} 
+                  data-path={item.path}
                 >
                   {item.text}
                 </Button>
@@ -243,7 +244,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                         alignItems: "center",
                         gap: 1,
                       }}
-                      data-path="/profile-page" 
+                      data-path="/profile-page"
                     >
                       <ProfileIcon sx={{ fontSize: 20 }} />
                       Peržiūrėti paskyrą
@@ -258,7 +259,7 @@ const Navbar: React.FC<NavbarProps> = ({ children, onLogout }) => {
                         alignItems: "center",
                         gap: 1,
                       }}
-                      data-path="/login" 
+                      data-path="/login"
                     >
                       <LogoutIcon sx={{ fontSize: 20 }} />
                       Atsijungti

@@ -560,7 +560,7 @@ const Step1TripInfo: React.FC<Step1Props> = ({ initialData, currentItinerary, on
         title={warningDialogType === "dayByDay" ? "Dėmesio" : "Įspėjimas dėl datų keitimo"}
         message={
           warningDialogType === "dayByDay"
-            ? "Pakeitus maršruto tipą, visi įvesti įvykiai bus ištrinti. Ar tikrai norite tęsti?"
+            ? "Pakeitus plano tipą, visi įvesti įvykiai bus ištrinti. Ar tikrai norite tęsti?"
             : formData.dayByDayItineraryNeeded
               ? `Pakeitus kelionės datas, ${eventsOutsideRange.length} dienos su įvykiais nebepateks į kelionės intervalą. Šie įvykiai bus pašalinti. Ar tikrai norite tęsti?`
               : `Pakeitus kelionės datas, ${eventsOutsideRange.length} įvykiai nebepateks į kelionės intervalą. Prašome pataisyti įvykių datas arba kelionės intervalą. Ar tikrai norite tęsti?`

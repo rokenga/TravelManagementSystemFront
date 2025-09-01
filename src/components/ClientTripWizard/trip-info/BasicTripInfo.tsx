@@ -1,8 +1,20 @@
 "use client"
 
 import type React from "react"
-import { Grid, TextField, InputAdornment, Autocomplete } from "@mui/material"
-import { Person } from "@mui/icons-material"
+import { useState } from "react"
+import {
+  Grid,
+  TextField,
+  InputAdornment,
+  Autocomplete,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Box,
+} from "@mui/material"
+import { Person, AutoAwesome } from "@mui/icons-material"
+import axios from "axios"
+import { API_URL } from "../../../Utils/Configuration"
 import type { Client } from "../../../types/Client"
 import type { Country } from "../../DestinationAutocomplete"
 import DestinationAutocomplete from "../../DestinationAutocomplete"
@@ -34,6 +46,38 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
   onClientChange,
   onDestinationChange,
 }) => {
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGenerateDescription = async () => {
+    if (!description.trim() || isGenerating) return
+
+    setIsGenerating(true)
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/client-trips/generate`, 
+        { prompt: description.trim() },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        },
+      )
+
+      if (response.data && response.data.description) {
+        onInputChange("description", response.data.description)
+      }
+    } catch (error) {
+      console.error("Error generating description:", error)
+      // You might want to show a snackbar error here
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const isGenerateButtonDisabled = !description.trim() || isGenerating
+
   return (
     <>
       <Grid item xs={12} md={6}>
@@ -96,6 +140,36 @@ const BasicTripInfo: React.FC<BasicTripInfoProps> = ({
           multiline
           rows={3}
           fullWidth
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  {isGenerating ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <Tooltip title="Įveskite kokio kelionės aprašymo norite ir jis bus sugeneruotas" placement="top">
+                      <span>
+                        <IconButton
+                          onClick={handleGenerateDescription}
+                          disabled={isGenerateButtonDisabled}
+                          size="small"
+                          sx={{
+                            color: isGenerateButtonDisabled ? "action.disabled" : "primary.main",
+                            "&:hover": {
+                              backgroundColor: "primary.light",
+                              color: "primary.contrastText",
+                            },
+                          }}
+                        >
+                          <AutoAwesome />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
+                </Box>
+              </InputAdornment>
+            ),
+          }}
         />
       </Grid>
     </>

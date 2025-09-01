@@ -33,7 +33,7 @@ import {
   Person as PersonIcon,
   ChildCare as ChildIcon,
   Info as InfoIcon,
-  DirectionsBus as DirectionsBusIcon,
+  Train as TrainIcon,
   ShoppingCart as ShoppingCartIcon,
   Star as StarIcon,
   Euro as EuroIcon,
@@ -69,22 +69,45 @@ const getTransportIcon = (type: string) => {
     case "Cruise":
       return <BoatIcon />
     case "Train":
-      return <DirectionsBusIcon sx={{ transform: "rotate(90deg)" }} />
+      return <TrainIcon />
     default:
       return <FlightIcon />
   }
 }
 
-const renderStarRating = (rating?: number) => {
+const renderStarRating = (rating?: string | number) => {
   if (!rating) return null
 
+  // Convert string rating to number if needed
+  const numRating =
+    typeof rating === "string"
+      ? Number.parseInt(rating.replace(/\D/g, "")) || starRatingEnumToNumber(rating) || 0
+      : Number(rating)
+
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-      {[...Array(rating)].map((_, i) => (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, ml: 1 }}>
+      {[...Array(numRating)].map((_, i) => (
         <StarIcon key={i} sx={{ color: "#FFD700", fontSize: "1rem" }} />
       ))}
     </Box>
   )
+}
+
+const starRatingEnumToNumber = (rating: string): number | undefined => {
+  switch (rating) {
+    case "OneStar":
+      return 1
+    case "TwoStars":
+      return 2
+    case "ThreeStars":
+      return 3
+    case "FourStars":
+      return 4
+    case "FiveStars":
+      return 5
+    default:
+      return undefined
+  }
 }
 
 const SpecialOfferDetailsPage: React.FC = () => {
@@ -102,7 +125,28 @@ const SpecialOfferDetailsPage: React.FC = () => {
       try {
         setLoading(true)
         const response = await axios.get<PublicOfferDetails>(`${API_URL}/PublicTripOfferFacade/${id}`)
-        setOffer(response.data)
+
+        // Process and sort the data before setting it to state
+        if (response.data && response.data.itinerary && response.data.itinerary.steps) {
+          const processedData = {
+            ...response.data,
+            itinerary: {
+              ...response.data.itinerary,
+              steps: response.data.itinerary.steps.map((step) => ({
+                ...step,
+                transports: [...step.transports].sort(
+                  (a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime(),
+                ),
+                accommodations: [...step.accommodations].sort(
+                  (a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime(),
+                ),
+              })),
+            },
+          }
+          setOffer(processedData)
+        } else {
+          setOffer(response.data)
+        }
       } catch (err) {
         setError("Nepavyko gauti pasiūlymo detalių. Bandykite vėliau.")
       } finally {
@@ -187,11 +231,7 @@ const SpecialOfferDetailsPage: React.FC = () => {
           >
             {galleryImages.length > 0 && (
               <Box sx={{ position: "relative" }}>
-                <ImageSlider
-                  images={galleryImages}
-                  onImageClick={(index) => {
-                  }}
-                />
+                <ImageSlider images={galleryImages} onImageClick={(index) => {}} />
               </Box>
             )}
           </Paper>
@@ -263,7 +303,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
               />
             </Box>
 
-            {/* Trip description */}
             <Typography
               variant="body1"
               sx={{
@@ -277,7 +316,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
             </Typography>
           </Paper>
 
-          {/* Itinerary Steps */}
           {offer.itinerary.steps.map((step, index) => (
             <Paper key={index} elevation={3} sx={{ borderRadius: 2, p: { xs: 2, sm: 3 }, mb: 3 }}>
               <Typography
@@ -292,7 +330,6 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 {step.description}
               </Typography>
 
-              {/* Transport section */}
               {step.transports.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   {step.transports.map((transport, tIndex) => (
@@ -302,13 +339,25 @@ const SpecialOfferDetailsPage: React.FC = () => {
                         mb: 2,
                         pb: 2,
                         borderBottom: tIndex < step.transports.length - 1 ? "1px solid rgba(0,0,0,0.1)" : "none",
+                        backgroundColor: "rgba(245, 247, 250, 0.5)",
+                        borderRadius: 1,
+                        p: 2,
                       }}
                     >
                       <Typography
                         variant="subtitle1"
                         fontWeight="bold"
-                        sx={{ fontSize: { xs: "0.9rem", sm: "1rem" }, textAlign: "left", mb: 1 }}
+                        sx={{
+                          fontSize: { xs: "0.9rem", sm: "1rem" },
+                          textAlign: "left",
+                          mb: 1,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
                       >
+                        <Box sx={{ mr: 1, display: "flex", alignItems: "center", color: theme.palette.primary.main }}>
+                          {getTransportIcon(transport.transportType)}
+                        </Box>
                         {transport.companyName}
                         {transport.transportName && transport.companyName && " - "}
                         {transport.transportName}
@@ -406,12 +455,21 @@ const SpecialOfferDetailsPage: React.FC = () => {
                         mb: 2,
                         pb: 2,
                         borderBottom: aIndex < step.accommodations.length - 1 ? "1px solid rgba(0,0,0,0.1)" : "none",
+                        backgroundColor: "rgba(245, 247, 250, 0.5)",
+                        borderRadius: 1,
+                        p: 2,
                       }}
                     >
                       <Typography
                         variant="subtitle1"
                         fontWeight="bold"
-                        sx={{ fontSize: { xs: "1rem", sm: "1.1rem" }, textAlign: "left", mb: 1 }}
+                        sx={{
+                          fontSize: { xs: "1rem", sm: "1.1rem" },
+                          textAlign: "left",
+                          mb: 1,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
                       >
                         {accommodation.hotelName}
                         {accommodation.starRating && renderStarRating(accommodation.starRating)}
@@ -585,9 +643,9 @@ const SpecialOfferDetailsPage: React.FC = () => {
                 startIcon={<EmailIcon />}
                 sx={{ py: 1, justifyContent: "flex-start" }}
                 component="a"
-                href="mailto:info@saitas.lt"
+                href="mailto:travel@saitas.lt"
               >
-                info@saitas.lt
+                travel@saitas.lt
               </Button>
             </Paper>
           </Box>

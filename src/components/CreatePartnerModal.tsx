@@ -21,8 +21,11 @@ import {
   Typography,
   Autocomplete,
   Alert,
+  InputAdornment,
 } from "@mui/material"
 import CloseIcon from "@mui/icons-material/Close"
+import VisibilityIcon from "@mui/icons-material/Visibility"
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
 import { type CreatePartnerRequest, PartnerType, type PartnerResponse } from "../types/Partner"
@@ -57,7 +60,8 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
     email: "",
     phone: "",
     facebook: "",
-    loginInfo: "",
+    loginEmail: "",
+    loginPassword: "",
     notes: "",
     isVisibleToAll: true,
   }
@@ -68,6 +72,7 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [selectedContinent, setSelectedContinent] = useState<Continent | null>(null)
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const continents: Continent[] = continentsData as Continent[]
   const countries: Country[] = countriesData as Country[]
@@ -87,7 +92,9 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
         email: partner.email || "",
         phone: partner.phone || "",
         facebook: partner.facebook || "",
-        loginInfo: partner.loginInfo || "",
+        //  Don't include login credentials in edit mode
+        loginEmail: "",
+        loginPassword: "",
         notes: partner.notes || "",
         isVisibleToAll: partner.isVisibleToAll !== undefined ? partner.isVisibleToAll : true,
       }
@@ -212,7 +219,12 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
       let response
 
       if (isEditing && partner) {
-        response = await axios.put<PartnerResponse>(`${API_URL}/Partner/${partner.id}`, formData, {
+        //  Remove login credentials from edit request
+        const editData = { ...formData }
+        delete editData.loginEmail
+        delete editData.loginPassword
+        
+        response = await axios.put<PartnerResponse>(`${API_URL}/Partner/${partner.id}`, editData, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -239,7 +251,6 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
 
       onClose()
     } catch (err: any) {
-
       if (err.response?.status === 401) {
         setSubmitError("Jūs neturite teisių atlikti šį veiksmą.")
       } else {
@@ -257,6 +268,7 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
       setSubmitError(null)
       setSelectedContinent(null)
       setSelectedCountry(null)
+      setShowPassword(false)
       onClose()
     }
   }
@@ -411,24 +423,61 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({
             />
           </Grid>
 
+          {/*  Add login credentials section only for creation */}
+          {!isEditing && (
+            <>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
+                  Prisijungimo duomenys
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="loginEmail"
+                  label="Prisijungimo el. paštas"
+                  type="email"
+                  value={formData.loginEmail}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={loading}
+                  size="small"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="loginPassword"
+                  label="Prisijungimo slaptažodis"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.loginPassword}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={loading}
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            </>
+          )}
+
           <Grid item xs={12}>
             <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
               Papildoma informacija
             </Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <TextField
-              name="loginInfo"
-              label="Prisijungimo informacija"
-              value={formData.loginInfo}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={2}
-              disabled={loading}
-              size="small"
-            />
           </Grid>
 
           <Grid item xs={12}>

@@ -18,6 +18,11 @@ import {
   Avatar,
   Link,
   useTheme,
+  IconButton,
+  Collapse,
+  TextField,
+  InputAdornment,
+  Alert,
 } from "@mui/material"
 import {
   Email as EmailIcon,
@@ -29,10 +34,14 @@ import {
   VpnKey as VpnKeyIcon,
   ArrowBack as ArrowBackIcon,
   Business as BusinessIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  ContentCopy as ContentCopyIcon,
+  Security as SecurityIcon,
 } from "@mui/icons-material"
 import axios from "axios"
 import { API_URL } from "../Utils/Configuration"
-import { type PartnerResponse, partnerTypeColors } from "../types/Partner"
+import { type PartnerResponse, type PartnerLoginResponse, partnerTypeColors } from "../types/Partner"
 import { translatePartnerType } from "../Utils/translateEnums"
 import LeafletMapDisplay from "../components/LeafletMapDisplay"
 import ConfirmationDialog from "../components/ConfirmationDialog"
@@ -41,6 +50,7 @@ import { useNavigation } from "../contexts/NavigationContext"
 import { UserContext } from "../contexts/UserContext"
 import PartnerFormModal from "../components/CreatePartnerModal"
 import ActionBar from "../components/ActionBar"
+import UpdateLoginModal from "../components/UpdatePartnerLoginModal"
 
 const PartnerDetailsPage: React.FC = () => {
   const { partnerId } = useParams<{ partnerId: string }>()
@@ -55,7 +65,14 @@ const PartnerDetailsPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [updateLoginModalOpen, setUpdateLoginModalOpen] = useState(false)
   const [canEdit, setCanEdit] = useState(false)
+  
+  // Add state for credentials section
+  const [showCredentials, setShowCredentials] = useState(false)
+  const [loginCredentials, setLoginCredentials] = useState<PartnerLoginResponse | null>(null)
+  const [credentialsLoading, setCredentialsLoading] = useState(false)
+  const [credentialsError, setCredentialsError] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -75,7 +92,6 @@ const PartnerDetailsPage: React.FC = () => {
         },
       })
       setPartner(response.data)
-
       setCanEdit(response.data.createdBy === user?.email)
     } catch (err: any) {
       setError(err.response?.data?.message || "Nepavyko gauti partnerio informacijos.")
@@ -84,14 +100,77 @@ const PartnerDetailsPage: React.FC = () => {
     }
   }, [partnerId, token, user?.email])
 
+  // Add function to fetch login credentials
+  const fetchLoginCredentials = async () => {
+    if (!partnerId) return
+
+    setCredentialsLoading(true)
+    setCredentialsError(null)
+    try {
+      const response = await axios.get<PartnerLoginResponse>(`${API_URL}/Partner/${partnerId}/login-info`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      setLoginCredentials(response.data)
+    } catch (err: any) {
+      setCredentialsError(err.response?.data?.message || "Nepavyko gauti prisijungimo duomenų.")
+    } finally {
+      setCredentialsLoading(false)
+    }
+  }
+
+  // Handle credentials visibility toggle
+  const handleToggleCredentials = () => {
+    if (!showCredentials) {
+      fetchLoginCredentials()
+    } else {
+      // Hide credentials and clear data
+      setLoginCredentials(null)
+      setCredentialsError(null)
+    }
+    setShowCredentials(!showCredentials)
+  }
+
+  // Handle copying to clipboard
+  const handleCopyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setSnackbar({
+        open: true,
+        message: `${label} nukopijuotas į iškarpinę!`,
+        severity: "success",
+      })
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: `Nepavyko nukopijuoti ${label.toLowerCase()}`,
+        severity: "error",
+      })
+    }
+  }
+
   useEffect(() => {
     if (partnerId) {
       fetchPartner()
     }
   }, [partnerId, fetchPartner])
 
+  // Reset credentials when leaving page
+  useEffect(() => {
+    return () => {
+      setShowCredentials(false)
+      setLoginCredentials(null)
+      setCredentialsError(null)
+    }
+  }, [])
+
   const handleEdit = () => {
     setEditModalOpen(true)
+  }
+
+  const handleUpdateLogin = () => {
+    setUpdateLoginModalOpen(true)
   }
 
   const handleDelete = () => {
@@ -121,7 +200,6 @@ const PartnerDetailsPage: React.FC = () => {
         navigate("/partner-list")
       }, 1500)
     } catch (err: any) {
-
       if (err.response?.status === 401) {
         setSnackbar({
           open: true,
@@ -142,9 +220,7 @@ const PartnerDetailsPage: React.FC = () => {
   }
 
   const handleEditSuccess = (updatedPartner: PartnerResponse) => {
-
     setPartner(updatedPartner)
-
     setSnackbar({
       open: true,
       message: "Partneris sėkmingai atnaujintas!",
@@ -154,6 +230,19 @@ const PartnerDetailsPage: React.FC = () => {
     setTimeout(() => {
       fetchPartner()
     }, 500)
+  }
+
+  const handleUpdateLoginSuccess = () => {
+    setSnackbar({
+      open: true,
+      message: "Prisijungimo duomenys sėkmingai atnaujinti!",
+      severity: "success",
+    })
+
+    // Refresh credentials if they're currently visible
+    if (showCredentials) {
+      fetchLoginCredentials()
+    }
   }
 
   const cancelDelete = () => {
@@ -168,12 +257,8 @@ const PartnerDetailsPage: React.FC = () => {
     if (!partner) return ""
 
     if (partner.city) return partner.city
-
     if (partner.country) return partner.country
-
-    if (partner.region) {
-      return partner.region
-    }
+    if (partner.region) return partner.region
 
     return ""
   }
@@ -200,7 +285,8 @@ const PartnerDetailsPage: React.FC = () => {
 
   const hasContactInfo = partner && (partner.email || partner.phone || partner.websiteUrl || partner.facebook)
 
-  const hasAdditionalInfo = partner && (partner.loginInfo || partner.notes)
+  // Check if partner has additional info (only notes now)
+  const hasAdditionalInfo = partner && partner.notes
 
   if (loading) {
     return (
@@ -245,8 +331,10 @@ const PartnerDetailsPage: React.FC = () => {
         title={partner.name}
         showBackButton={true}
         backUrl="/partner-list"
+        showUpdateLoginButton={canEdit}
         showEditButton={canEdit}
         showDeleteButton={canEdit}
+        onUpdateLogin={handleUpdateLogin}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
@@ -306,7 +394,107 @@ const PartnerDetailsPage: React.FC = () => {
                   }}
                 />
               </Box>
+            </CardContent>
+          </Card>
 
+          {/* Add secure credentials section */}
+          <Card sx={{ mb: 3, borderRadius: 2 }}>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <SecurityIcon sx={{ color: "primary.main", mr: 2 }} />
+                  <Typography variant="h6" fontWeight="bold">
+                    Prisijungimo duomenys
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleToggleCredentials}
+                  startIcon={showCredentials ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  disabled={credentialsLoading}
+                >
+                  {showCredentials ? "Slėpti" : "Rodyti"}
+                </Button>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+
+              <Collapse in={showCredentials}>
+                {credentialsLoading && (
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                )}
+
+                {credentialsError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {credentialsError}
+                  </Alert>
+                )}
+
+                {loginCredentials && !credentialsLoading && (
+                  <Box sx={{ space: 2 }}>
+                    {loginCredentials.loginEmail && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Prisijungimo el. paštas
+                        </Typography>
+                        <TextField
+                          value={loginCredentials.loginEmail}
+                          fullWidth
+                          size="small"
+                          InputProps={{
+                            readOnly: true,
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCopyToClipboard(loginCredentials.loginEmail!, "El. paštas")}
+                                >
+                                  <ContentCopyIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                    {loginCredentials.loginPassword && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Slaptažodis
+                        </Typography>
+                        <TextField
+                          value={loginCredentials.loginPassword}
+                          type="password"
+                          fullWidth
+                          size="small"
+                          InputProps={{
+                            readOnly: true,
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleCopyToClipboard(loginCredentials.loginPassword!, "Slaptažodis")}
+                                >
+                                  <ContentCopyIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                    {!loginCredentials.loginEmail && !loginCredentials.loginPassword && (
+                      <Typography color="text.secondary" variant="body2" sx={{ textAlign: "center", py: 2 }}>
+                        Nėra prisijungimo duomenų
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Collapse>
             </CardContent>
           </Card>
 
@@ -405,22 +593,6 @@ const PartnerDetailsPage: React.FC = () => {
                 </Box>
                 <Divider sx={{ mb: 2 }} />
 
-                {partner.loginInfo && (
-                  <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1 }}>
-                      <VpnKeyIcon sx={{ color: "text.secondary", mr: 2, mt: 0.5 }} />
-                      <Box sx={{ textAlign: "left" }}>
-                        <Typography variant="subtitle2" fontWeight="medium">
-                          Prisijungimo informacija
-                        </Typography>
-                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 1 }}>
-                          {partner.loginInfo}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                )}
-
                 {partner.notes && (
                   <Box>
                     <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1 }}>
@@ -506,6 +678,15 @@ const PartnerDetailsPage: React.FC = () => {
           onSuccess={handleEditSuccess}
           partner={partner}
           isEditing={true}
+        />
+      )}
+
+      {partnerId && (
+        <UpdateLoginModal
+          open={updateLoginModalOpen}
+          onClose={() => setUpdateLoginModalOpen(false)}
+          onSuccess={handleUpdateLoginSuccess}
+          partnerId={partnerId}
         />
       )}
 

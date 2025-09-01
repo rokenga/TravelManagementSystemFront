@@ -46,6 +46,12 @@ import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
 import EditPublicOfferWizardPage from "./pages/EditPublicOfferWizardPage"
 import AdminPublicSpecialOfferReservations from "./pages/AdminPublicSpecialOfferReservations"
+import CompanyDetail from "./pages/CompanyDetail"
+import AdminBlogList from "./pages/AdminBlogList"
+import BlogDetail from "./pages/BlogDetail"
+//  Added new blog-related imports
+import BlogList from "./pages/BlogList"
+import BlogEditor from "./pages/BlogEditor"
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -115,16 +121,20 @@ function App() {
                     <Route path="/reset-password" element={<ResetPassword />} />
 
                     <Route path="/specialOffers" element={<SpecialOffers />} />
-
                     <Route path="/specialOfferDetails/:id" element={<SpecialOfferDetails />} />
                     <Route path="/reserve-special-offer/:id" element={<SpecialOfferReservation />} />
+
+                    {/*  Added public blog routes */}
+                    <Route path="/blogs" element={<BlogList />} />
+                    <Route path="/blog/:slug" element={<BlogDetail />} />
 
                     <Route path="/2fa-setup" element={<TwoFactorSetup />} />
 
                     <Route element={<ProtectedRoute requiredRoles={["Admin", "Agent"]} />}>
                       <Route path="/profile-page" element={<ProfilePage />} />
                       <Route path="/admin-client-list" element={<AdminClientList />} />
-                      <Route path="/admin-client-list/:clientId" element={<ClientDetail />} />
+                      <Route path="/admin-client-list/client/:clientId" element={<ClientDetail />} />
+                      <Route path="/admin-client-list/company/:companyId" element={<CompanyDetail />} />
                       <Route path="/admin-trip-list" element={<AdminTripList />} />
                       <Route path="/admin-trip-list/:tripId" element={<ClientTrip />} />
                       <Route path="/admin-trip-list/:tripId/edit" element={<WizardEditFormPage />} />
@@ -146,6 +156,13 @@ function App() {
                       <Route path="/public-offers/:tripId/edit" element={<EditPublicOfferWizardPage />} />
                       <Route path="/2fa-verify" element={<TwoFactorAuth />} />
                       <Route path="/agent-onboarding" element={<AgentOnboarding />} />
+
+                      {/*  Added admin blog routes */}
+                      <Route path="/admin-blog-list" element={<AdminBlogList />} />
+                      <Route path="/admin-blog-list/blog/:blogId" element={<BlogDetail />} />
+                      <Route path="/admin-blog-list/create" element={<BlogEditor />} />
+                      <Route path="/admin-blog-list/blog/:blogId/edit" element={<BlogEditor />} />
+                      
                     </Route>
 
                     <Route element={<ProtectedRoute requiredRoles={["Admin"]} />}>

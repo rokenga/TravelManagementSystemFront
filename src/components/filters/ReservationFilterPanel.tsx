@@ -76,7 +76,7 @@ const ReservationFilterPanel: React.FC<ReservationFilterPanelProps> = ({
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="subtitle1" gutterBottom>
+      <Typography variant="subtitle1" gutterBottom sx={{ textAlign: "left" }}>
         Rezervacijos būsena
       </Typography>
       <FormGroup sx={{ mb: 2 }}>
